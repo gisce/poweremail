@@ -147,13 +147,9 @@ class poweremail_send_wizard(osv.osv_memory):
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
     }
 
-    #def fields_get(self, cr, uid, fields=None, context=None, read_access=True):
-    #    result = super(poweremail_send_wizard, self).fields_get(cr, uid, fields, context, read_access)
-    #    if 'attachment_ids' in result:
-    #        result['attachment_ids']['domain'] = [('res_model','=','purchase.order'),('res_id','=',context['active_id'])]
-    #    return result
-    def fields_get(self, cr, uid, fields=None, context=None, write_access=True):
-        result = super(poweremail_send_wizard, self).fields_get(cr, uid, fields, context, write_access)
+
+    def fields_get(self, cr, uid, fields=None, context=None, read_access=True):
+        result = super(poweremail_send_wizard, self).fields_get(cr, uid, fields, context, read_access)
         if 'attachment_ids' in result and 'src_model' in context:
             result['attachment_ids']['domain'] = [('res_model','=',context['src_model']),('res_id','=',context['active_id'])]
         return result
