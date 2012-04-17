@@ -83,12 +83,15 @@ def send_on_create(self, cr, uid, vals, context=None):
 
 
 def send_on_write(self, cr, uid, ids, vals, context=None):
+    if not context:
+        context = {}
     result = self.old_write(cr, uid, ids, vals, context)
     for tid in self.template_hooks['sow']:
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on write
         if template.send_on_write:
+            context['vals'] = vals.copy()
             self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
                                                                 ids, context)
     return result
