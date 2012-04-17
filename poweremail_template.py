@@ -69,20 +69,28 @@ import tools
 import report
 import pooler
 
+
 def send_on_create(self, cr, uid, vals, context=None):
-    id = self.old_create(cr, uid, vals, context)
-    template = self.pool.get('poweremail.templates').browse(cr, uid, self.template_id, context)
-    # Ensure it's still configured to send on create
-    if template.send_on_create:
-        self.pool.get('poweremail.templates').generate_mail(cr, uid, self.template_id, [id], context)
-    return id
+    oid = self.old_create(cr, uid, vals, context)
+    for tid in self.template_hooks['soc']:
+        template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
+                                                                context)
+        # Ensure it's still configured to send on create
+        if template.send_on_create:
+            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
+                                                                [oid], context)
+    return oid
+
 
 def send_on_write(self, cr, uid, ids, vals, context=None):
     result = self.old_write(cr, uid, ids, vals, context)
-    template = self.pool.get('poweremail.templates').browse(cr, uid, self.template_id, context)
-    # Ensure it's still configured to send on write
-    if template.send_on_write:
-        self.pool.get('poweremail.templates').generate_mail(cr, uid, self.template_id, ids, context)
+    for tid in self.template_hooks['sow']:
+        template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
+                                                                context)
+        # Ensure it's still configured to send on write
+        if template.send_on_write:
+            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
+                                                                ids, context)
     return result
 
 
@@ -117,28 +125,25 @@ def new_register_all(db):
             pt.object_name = im.id
     """)
     for record in cr.fetchall():
-        id = record[0]
+        tid = record[0]
         model = record[1]
         soc = record[2]
         sow = record[3]
         obj = pool.get(model)
         if not obj:
             continue
-        if hasattr(obj, 'old_create'):
-            obj.create = obj.old_create
-            del obj.old_create
-        if hasattr(obj, 'old_write'):
-            obj.write = obj.old_write
-            del obj.old_write
+        if not hasattr(obj, 'template_hooks'):
+            obj.template_hooks = {'soc': [], 'sow': []}
         if soc:
-            obj.template_id = id
-            obj.old_create = obj.create
-            obj.create = types.MethodType(send_on_create, obj, osv.osv)
+            if not obj.template_hooks['soc']:
+                obj.old_create = obj.create
+                obj.create = types.MethodType(send_on_create, obj, osv.osv)
+            obj.template_hooks['soc'] += [tid]
         if sow:
-            obj.template_id = id
-            obj.old_write = obj.write
-            obj.write = types.MethodType(send_on_write, obj, osv.osv)
-
+            if not obj.template_hooks['sow']:
+                obj.old_write = obj.write
+                obj.write = types.MethodType(send_on_write, obj, osv.osv)
+            obj.template_hooks['sow'] += [tid]
     cr.close()
     return value
 
@@ -430,20 +435,18 @@ class poweremail_templates(osv.osv):
     def update_send_on_store(self, cr, uid, ids, context):
         for template in self.browse(cr, uid, ids, context):
             obj = self.pool.get(template.object_name.model)
-            if hasattr(obj, 'old_create'):
-                obj.create = obj.old_create
-                del obj.old_create
-            if hasattr(obj, 'old_write'):
-                obj.write = obj.old_write
-                del obj.old_write
+            if not hasattr(obj, 'template_hooks'):
+                obj.template_hooks = {'soc': [], 'sow': []}
             if template.send_on_create:
-                obj.template_id = template.id
-                obj.old_create = obj.create
-                obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                if not obj.template_hooks['soc']:
+                    obj.old_create = obj.create
+                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                obj.template_hooks['soc'] += [template.id]
             if template.send_on_write:
-                obj.template_id = template.id
-                obj.old_write = obj.write
-                obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                if not obj.template_hooks['sow']:
+                    obj.old_write = obj.write
+                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                obj.template_hooks['sow'] += [template.id]
 
     def create(self, cr, uid, vals, context=None):
         id = super(poweremail_templates, self).create(cr, uid, vals, context)
