@@ -435,20 +435,18 @@ class poweremail_templates(osv.osv):
     def update_send_on_store(self, cr, uid, ids, context):
         for template in self.browse(cr, uid, ids, context):
             obj = self.pool.get(template.object_name.model)
-            if hasattr(obj, 'old_create'):
-                obj.create = obj.old_create
-                del obj.old_create
-            if hasattr(obj, 'old_write'):
-                obj.write = obj.old_write
-                del obj.old_write
+            if not hasattr(obj, 'template_hooks'):
+                obj.template_hooks = {'soc': [], 'sow': []}
             if template.send_on_create:
-                obj.template_id = template.id
-                obj.old_create = obj.create
-                obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                if not obj.template_hooks['soc']:
+                    obj.old_create = obj.create
+                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                obj.template_hooks['soc'] += [template.id]
             if template.send_on_write:
-                obj.template_id = template.id
-                obj.old_write = obj.write
-                obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                if not obj.template_hooks['sow']:
+                    obj.old_write = obj.write
+                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                obj.template_hooks['sow'] += [template.id]
 
     def create(self, cr, uid, vals, context=None):
         id = super(poweremail_templates, self).create(cr, uid, vals, context)
