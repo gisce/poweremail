@@ -254,9 +254,9 @@ class poweremail_core_accounts(osv.osv):
                 except Exception, error:
                     raise error
                 try:
-                    if serv.has_extn('AUTH') or this_object.smtpuname or this_object.smtppass:
-                        #serv.login(this_object.smtpuname, this_object.smtppass)
-                        pass
+                    if serv.has_extn('AUTH'):
+                        if this_object.smtpuname or this_object.smtppass:
+                            serv.login(this_object.smtpuname, this_object.smtppass)
                 except Exception, error:
                     raise error
                 return serv
