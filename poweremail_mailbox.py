@@ -353,15 +353,26 @@ class PoweremailMailboxConversation(osv.osv):
     def create(self, cursor, uid, vals, context=None):
         mail_orig = vals.get('pem_mail_orig', '')
         conv_obj = self.pool.get('poweremail.conversation')
-        if mail_orig:
-            mail = email.message_from_string(mail_orig)
-            if mail.get('In-Reply-To', ''):
-                search_params = [('pem_message_id', '=', mail['In-Reply-To'])]
-                msg_id = self.search(cursor, uid, search_params)
-                if msg_id:
-                    conv = self.browse(cursor, uid, msg_id[0]).conversation_id
-                    vals['conversation_id'] = conv and conv.id or False
-            else:
+        if not vals.get('conversation_id', False):
+            vals['conversation_id '] = False
+            if mail_orig:
+                mail = email.message_from_string(mail_orig)
+                if mail.get('In-Reply-To', ''):
+                    search_params = [('pem_message_id', '=', mail['In-Reply-To'])]
+                    msg_id = self.search(cursor, uid, search_params)
+                    if msg_id:
+                        conv = self.browse(cursor, uid,
+                                           msg_id[0]).conversation_id
+                        vals['conversation_id'] = conv and conv.id or False
+                    elif mail.get('References', ''):
+                        refs = re.findall('(<.*>)', mail['References'])
+                        search_params = [('pem_message_id', 'in', refs)]
+                        msg_id = self.search(cursor, uid, search_params)
+                        if msg_id:
+                            conv = self.browse(cursor, uid,
+                                               msg_id[0]).conversation_id
+                            vals['conversation_id'] = conv and conv.id or False
+            if not vals['conversation_id']:
                 conv_id = conv_obj.create(cursor, uid,
                                           {'name': vals['pem_subject']})
                 vals['conversation_id'] = conv_id
