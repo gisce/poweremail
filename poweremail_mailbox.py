@@ -32,6 +32,8 @@ from tools.translate import _
 import tools
 
 import re
+import email
+from email.utils import make_msgid
 
 LOGGER = netsvc.Logger()
 
@@ -111,9 +113,14 @@ class PoweremailMailbox(osv.osv):
             ids = []
         #8888888888888 SENDS THIS MAIL IN OUTBOX 8888888888888888888#
         #send mails one by one
+        if not context:
+            context = {}
+        core_obj = self.pool.get('poweremail.core_accounts')
+        conv_obj = self.pool.get('poweremail.conversation')
         for id in ids:
             try:
-                core_obj = self.pool.get('poweremail.core_accounts')
+                context['headers'] = {}
+                headers = context['headers']
                 values = self.read(cr, uid, id, [], context) #Values will be a dictionary of all entries in the record ref by id
                 pem_to = (values['pem_to'] or '').strip()
                 if pem_to in ('', 'False'):
@@ -129,6 +136,14 @@ class PoweremailMailbox(osv.osv):
                             att_name = "%s%d" % ( attachment.datas_fname or attachment.name, counter )
                             counter += 1
                         payload[att_name] = attachment.datas
+                if values['conversation_id']:
+                    mails = conv_obj.browse(cr, uid,
+                                            values['conversation_id'][0]).mails
+                    headers['References'] = " ".join(
+                        [m.pem_message_id for m in mails
+                    ])
+                    if not headers.get('In-Reply-To', ''):
+                        headers['In-Reply-To'] = mails[-1].pem_message_id
                 result = core_obj.send_mail(cr, uid,
                                   [values['pem_account_id'][0]],
                                   {'To':values.get('pem_to', u'') or u'', 'CC':values.get('pem_cc', u'') or u'', 'BCC':values.get('pem_bcc', u'') or u''},
@@ -253,12 +268,16 @@ class PoweremailMailbox(osv.osv):
             'history':fields.text(
                             'History',
                             readonly=True,
-                            store=True)
+                            store=True),
+            'pem_message_id': fields.char('Message-Id', size=256,
+                                          required=True),
+            'pem_mail_orig': fields.text('Original Mail')
         }
 
     _defaults = {
         'state': lambda * a: 'na',
         'folder': lambda * a: 'outbox',
+        'pem_message_id': lambda *a: make_msgid('poweremail'),
     }
 
     def search(self, cr, uid, args, offset=0, limit=None, order=None, context=None, count=False):
@@ -299,23 +318,67 @@ class PoweremailConversation(osv.osv):
     _name = "poweremail.conversation"
     _description = "Conversations are groups of related emails"
 
+    def _from_abstract(self, cursor, uid, ids, field_name, arg, context=None):
+        res = {}
+        mail_obj = self.pool.get('poweremail.mailbox')
+        for conv in self.read(cursor, uid, ids, ['mails']):
+            res[conv['id']] = ", ".join(
+                set([m['pem_from'].split('<')[0].strip()
+                     for m in mail_obj.read(cursor, uid, conv['mails'],
+                                            ['pem_from'])])
+            )
+        return res
+
     _columns = {
-        'name':fields.char(
+        'name': fields.char(
                     'Name',
                     size=250),
-        'mails':fields.one2many(
+        'mails': fields.one2many(
                     'poweremail.mailbox',
                     'conversation_id',
                     'Related Emails'),
-                }
+        'from_abstract': fields.function(_from_abstract, type='text',
+                                         method=True, store=False)
+    }
 PoweremailConversation()
 
 
 class PoweremailMailboxConversation(osv.osv):
     _inherit = "poweremail.mailbox"
     _columns = {
-        'conversation_id':fields.many2one('poweremail.conversation', 'Conversation')
-                }
+        'conversation_id': fields.many2one('poweremail.conversation',
+                                           'Conversation')
+    }
+
+    def create(self, cursor, uid, vals, context=None):
+        mail_orig = vals.get('pem_mail_orig', '')
+        conv_obj = self.pool.get('poweremail.conversation')
+        if not vals.get('conversation_id', False):
+            vals['conversation_id'] = False
+            if mail_orig:
+                mail = email.message_from_string(mail_orig)
+                if mail.get('In-Reply-To', ''):
+                    search_params = [('pem_message_id', '=', mail['In-Reply-To'])]
+                    msg_id = self.search(cursor, uid, search_params)
+                    if msg_id:
+                        conv = self.browse(cursor, uid,
+                                           msg_id[0]).conversation_id
+                        vals['conversation_id'] = conv and conv.id or False
+                    elif mail.get('References', ''):
+                        refs = re.findall('(<.*>)', mail['References'])
+                        search_params = [('pem_message_id', 'in', refs)]
+                        msg_id = self.search(cursor, uid, search_params)
+                        if msg_id:
+                            conv = self.browse(cursor, uid,
+                                               msg_id[0]).conversation_id
+                            vals['conversation_id'] = conv and conv.id or False
+            if not vals['conversation_id']:
+                conv_id = conv_obj.create(cursor, uid,
+                                          {'name': vals['pem_subject']})
+                vals['conversation_id'] = conv_id
+        res_id = super(PoweremailMailboxConversation,
+                       self).create(cursor, uid, vals, context)
+        return res_id
 PoweremailMailboxConversation()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

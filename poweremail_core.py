@@ -447,6 +447,8 @@ class poweremail_core_accounts(osv.osv):
             if serv:
                 try:
                     msg = MIMEMultipart()
+                    for header, value in context.get('headers', {}).items():
+                        msg.add_header(header, value)
                     if subject:
                         msg['Subject'] = subject
                     sender_name = Header(core_obj.name, 'utf-8').encode()
@@ -584,7 +586,9 @@ class poweremail_core_accounts(osv.osv):
             'state':context.get('state', 'unread'),
             'pem_body_text':'Mail not downloaded...',
             'pem_body_html':'Mail not downloaded...',
-            'pem_account_id':coreaccountid
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': str(mail)
             }
         #Identify Mail Type
         if mail.get_content_type() in self._known_content_types:
@@ -651,7 +655,9 @@ class poweremail_core_accounts(osv.osv):
             'state':context.get('state', 'unread'),
             'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
             'pem_body_html':'Mail not downloaded...', #TODO:Replace
-            'pem_account_id':coreaccountid
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': str(mail)
             }
         parsed_mail = self.get_payloads(mail)
         vals['pem_body_text'] = parsed_mail['text']
@@ -715,7 +721,9 @@ class poweremail_core_accounts(osv.osv):
             'state':context.get('state', 'unread'),
             'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
             'pem_body_html':'Mail not downloaded...', #TODO:Replace
-            'pem_account_id':coreaccountid
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': str(mail)
             }
         #Identify Mail Type and get payload
         parsed_mail = self.get_payloads(mail)
