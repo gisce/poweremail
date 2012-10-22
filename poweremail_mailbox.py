@@ -354,7 +354,7 @@ class PoweremailMailboxConversation(osv.osv):
         mail_orig = vals.get('pem_mail_orig', '')
         conv_obj = self.pool.get('poweremail.conversation')
         if not vals.get('conversation_id', False):
-            vals['conversation_id '] = False
+            vals['conversation_id'] = False
             if mail_orig:
                 mail = email.message_from_string(mail_orig)
                 if mail.get('In-Reply-To', ''):
