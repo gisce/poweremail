@@ -780,6 +780,7 @@ class poweremail_templates(osv.osv):
         @param mail: Browse record of email object
         @return: True
         """
+        attachment_obj = self.pool.get('ir.attachment')
         lang = get_value(cursor,
                          user,
                          record_ids[0],
@@ -790,42 +791,60 @@ class poweremail_templates(osv.osv):
             ctx = context.copy()
             ctx.update({'lang':lang})
             template = self.browse(cursor, user, template.id, context=ctx)
-        reportname = 'report.' + \
-            self.pool.get('ir.actions.report.xml').read(
-                                         cursor,
-                                         user,
-                                         template.report_template.id,
-                                         ['report_name'],
-                                         context)['report_name']
-        service = netsvc.LocalService(reportname)
-        data = {}
-        data['model'] = template.model_int_name
-        (result, format) = service.create(cursor,
-                                          user,
-                                          record_ids,
-                                          data,
-                                          context)
-        attachment_obj = self.pool.get('ir.attachment')
-        new_att_vals = {
-            'name': mail.pem_subject + ' (Email Attachment)',
-            'datas': base64.b64encode(result),
-            'datas_fname': tools.ustr(
-                             get_value(
-                                   cursor,
-                                   user,
-                                   record_ids[0],
-                                   template.file_name,
-                                   template,
-                                   context
-                                   ) or 'Report') + "." + format,
-            'description': mail.pem_subject or "No Description",
-            'res_model': 'poweremail.mailbox',
-            'res_id': mail.id
-        }
-        attachment_id = attachment_obj.create(cursor,
+        attachment_id = []
+        if template.report_template:
+            reportname = 'report.' + \
+                self.pool.get('ir.actions.report.xml').read(
+                                             cursor,
+                                             user,
+                                             template.report_template.id,
+                                             ['report_name'],
+                                             context)['report_name']
+            service = netsvc.LocalService(reportname)
+            data = {}
+            data['model'] = template.model_int_name
+            (result, format) = service.create(cursor,
                                               user,
-                                              new_att_vals,
+                                              record_ids,
+                                              data,
                                               context)
+            new_att_vals = {
+                'name': mail.pem_subject + ' (Email Attachment)',
+                'datas': base64.b64encode(result),
+                'datas_fname': tools.ustr(
+                                 get_value(
+                                       cursor,
+                                       user,
+                                       record_ids[0],
+                                       template.file_name,
+                                       template,
+                                       context
+                                       ) or 'Report') + "." + format,
+                'description': mail.pem_subject or "No Description",
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail.id
+            }
+            attachment_id.append(attachment_obj.create(cursor,
+                                                  user,
+                                                  new_att_vals,
+                                                  context))
+        search_params = [
+            ('res_model', '=', 'poweremail.templates'),
+            ('res_id', '=', template.id),
+        ]
+        if lang:
+            search_params += [('datas_fname', 'ilike', '%%.%s.%%' % lang)]
+        attach_ids = attachment_obj.search(cursor, user, search_params,
+                                       context=context)
+        for attach in attachment_obj.browse(cursor, user, attach_ids, context):
+            new_id = attachment_obj.copy(cursor, user, attach.id, {
+               'res_model': 'poweremail.mailbox',
+               'res_id': mail.id,
+               'name': attach.name.replace('.%s' % ctx['lang'], ''),
+               'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'],
+                                                         '')
+            })
+            attachment_id.append(new_id)
         if attachment_id:
             self.pool.get('poweremail.mailbox').write(
                               cursor,
@@ -833,7 +852,7 @@ class poweremail_templates(osv.osv):
                               mail.id,
                               {
                                'pem_attachments_ids':[
-                                                  [6, 0, [attachment_id]]
+                                                  [6, 0, attachment_id]
                                                     ],
                                'mail_type':'multipart/mixed'
                                },
@@ -987,26 +1006,25 @@ class poweremail_templates(osv.osv):
                                                         mailbox_id,
                                                         context=context
                                                               )
-            if template.report_template:
-                if template.single_email and len(report_record_ids) > 1:
-                    # The optional attachment will be generated as a single file for all these records
-                    self._generate_attach_reports(
-                                              cursor,
-                                              user,
-                                              template,
-                                              report_record_ids,
-                                              mail,
-                                              context
-                                              )
-                else:                              
-                    self._generate_attach_reports(
-                                              cursor,
-                                              user,
-                                              template,
-                                              [record_id],
-                                              mail,
-                                              context
-                                              )
+            if template.single_email and len(report_record_ids) > 1:
+                # The optional attachment will be generated as a single file for all these records
+                self._generate_attach_reports(
+                                          cursor,
+                                          user,
+                                          template,
+                                          report_record_ids,
+                                          mail,
+                                          context
+                                          )
+            else:
+                self._generate_attach_reports(
+                                          cursor,
+                                          user,
+                                          template,
+                                          [record_id],
+                                          mail,
+                                          context
+                                          )
             # Create a partner event
             cursor.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
             mail_gateway = cursor.fetchall()

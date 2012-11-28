@@ -235,7 +235,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 return self.get_value(cr, uid, template, value, context, id)
             else:
                 return value
-
+        attach_obj = self.pool.get('ir.attachment')
         mail_ids = []
         template = self._get_template(cr, uid, context)
         screen_vals = self.read(cr, uid, ids[0], [], context)
@@ -245,7 +245,6 @@ class poweremail_send_wizard(osv.osv_memory):
         if screen_vals['single_email'] and len(context['src_rec_ids']) > 1:
             # We send a single email for several records
             context['src_rec_ids'] = context['src_rec_ids'][:1]
-
         for id in context['src_rec_ids']:
             accounts = self.pool.get('poweremail.core_accounts').read(cr, uid, screen_vals['from'], context=context)
             vals = {
@@ -271,20 +270,19 @@ class poweremail_send_wizard(osv.osv_memory):
             #Create partly the mail and later update attachments
             mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, context)
             mail_ids.append(mail_id)
+            # Ensure report is rendered using template's language. If not found, user's launguage is used.
+            ctx = context.copy()
+            if template.lang:
+                ctx['lang'] = self.get_value(cr, uid, template, template.lang, context, id)
+                lang = self.get_value(cr, uid, template, template.lang, context, id)
+                if len(self.pool.get('res.lang').search(cr, uid, [('name','=',lang)], context = context)):
+                    ctx['lang'] = lang
+            if not ctx.get('lang', False) or ctx['lang'] == 'False':
+                ctx['lang'] = self.pool.get('res.users').read(cr, uid, uid, ['context_lang'], context)['context_lang']
             if template.report_template:
                 reportname = 'report.' + self.pool.get('ir.actions.report.xml').read(cr, uid, template.report_template.id, ['report_name'], context)['report_name']
                 data = {}
                 data['model'] = self.pool.get('ir.model').browse(cr, uid, screen_vals['rel_model'], context).model
-
-                # Ensure report is rendered using template's language. If not found, user's launguage is used.
-                ctx = context.copy()
-                if template.lang:
-                    ctx['lang'] = self.get_value(cr, uid, template, template.lang, context, id)
-                    lang = self.get_value(cr, uid, template, template.lang, context, id)
-                    if len(self.pool.get('res.lang').search(cr, uid, [('name','=',lang)], context = context)):
-                        ctx['lang'] = lang
-                if not ctx.get('lang', False) or ctx['lang'] == 'False':
-                    ctx['lang'] = self.pool.get('res.users').read(cr, uid, uid, ['context_lang'], context)['context_lang']
                 service = netsvc.LocalService(reportname)
                 if screen_vals['single_email'] and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
@@ -308,6 +306,27 @@ class poweremail_send_wizard(osv.osv_memory):
                     'res_id': mail_id,
                 }, context)
                 attachment_ids.append( new_id )
+
+            # Add template attachments
+            search_params = [
+                ('res_model', '=', 'poweremail.templates'),
+                ('res_id', '=', template.id),
+            ]
+            if ctx['lang']:
+                search_params += [
+                    ('datas_fname', 'ilike', '%%.%s.%%' % ctx['lang'])
+                ]
+                attach_ids = attach_obj.search(cr, uid, search_params,
+                                           context=context)
+        for attach in attach_obj.browse(cr, uid, attach_ids, context):
+            new_id = attach_obj.copy(cr, uid, attach.id, {
+               'res_model': 'poweremail.mailbox',
+               'res_id': mail_id,
+               'name': attach.name.replace('.%s' % ctx['lang'], ''),
+               'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'],
+                                                         '')
+            })
+            attachment_ids.append(new_id)
 
             if attachment_ids:
                 self.pool.get('poweremail.mailbox').write(cr, uid, mail_id, {
