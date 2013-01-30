@@ -285,6 +285,7 @@ class poweremail_send_wizard(osv.osv_memory):
                         ctx['lang'] = lang
                 if not ctx.get('lang', False) or ctx['lang'] == 'False':
                     ctx['lang'] = self.pool.get('res.users').read(cr, uid, uid, ['context_lang'], context)['context_lang']
+                ctx['poweremail'] = True
                 service = netsvc.LocalService(reportname)
                 if screen_vals['single_email'] and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
