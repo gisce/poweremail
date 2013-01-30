@@ -45,6 +45,11 @@ import poweremail_engines
 from tools.translate import _
 import tools
 
+
+def filter_send_emails(emails_str):
+    return ', '.join(set([e.strip() for e in emails_str.split(',')]))
+
+
 class poweremail_core_accounts(osv.osv):
     """
     Object to store email account settings
