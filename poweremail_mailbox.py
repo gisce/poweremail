@@ -27,6 +27,7 @@ The mailbox is an object which stores the actual email
 from osv import osv, fields
 import time
 import poweremail_engines
+from poweremail_core import filter_send_emails
 import netsvc
 from tools.translate import _
 import tools
@@ -179,6 +180,14 @@ class PoweremailMailbox(osv.osv):
                     return False
                     break
         return True
+
+    def create(self, cursor, user, vals, context=None):
+        for field in ('pem_to', 'pem_cc', 'pem_bcc'):
+            if field in vals:
+                vals[field] = filter_send_emails(vals[field])
+        res_id = super(PoweremailMailbox, self).create(cursor, user, vals,
+                                                       context)
+        return res_id
 
     _columns = {
             'pem_from':fields.char(
