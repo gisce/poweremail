@@ -47,6 +47,8 @@ import tools
 
 
 def filter_send_emails(emails_str):
+    if not emails_str:
+        emails_str = ''
     return ', '.join(set([e.strip() for e in emails_str.split(',')]))
 
 
