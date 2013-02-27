@@ -269,7 +269,9 @@ class poweremail_send_wizard(osv.osv_memory):
             attachment_ids = []
 
             #Create partly the mail and later update attachments
-            mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, context)
+            ctx = context.copy()
+            ctx.update({'src_rec_id': id})
+            mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, ctx)
             mail_ids.append(mail_id)
             if template.report_template:
                 reportname = 'report.' + self.pool.get('ir.actions.report.xml').read(cr, uid, template.report_template.id, ['report_name'], context)['report_name']
