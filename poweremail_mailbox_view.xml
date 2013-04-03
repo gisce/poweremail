@@ -8,6 +8,29 @@
 -->
 <openerp>
 	<data>
+		<record model="ir.ui.view" id="poweremail_conversation_form">
+			<field name="name">poweremail.conversation.form</field>
+			<field name="model">poweremail.conversation</field>
+			<field name="type">form</field>
+			<field name="arch" type="xml">
+				<form string="Power Email Conversation">
+						<field name="name" colspan="4" select="1"/>
+						<field name="mails" colspan="4" nolabel="1"/>
+				</form>
+			</field>
+		</record>
+		<record model="ir.ui.view" id="poweremail_conversation_tree">
+			<field name="name">poweremail.conversation.tree</field>
+			<field name="model">poweremail.conversation</field>
+			<field name="type">tree</field>
+			<field name="arch" type="xml">
+				<tree string="Power Email Conversation">
+						<field name="from_abstract"/>
+						<field name="name"/>
+						<field name="mails"/>
+				</tree>
+			</field>
+		</record>
 		<!-- Power Email Template PReview -->
 		<record model="ir.ui.view" id="poweremail_mailbox_form">
 			<field name="name">poweremail.mailbox.form</field>
@@ -168,6 +191,13 @@
 			</field>
 		</record>
 		<!--8888888888888888888888888888888888 ACTIONS 8888888888888888888888888888888888888888-->
+		<record model="ir.actions.act_window" id="action_poweremail_conversation_tree">
+			<field name="name">Email Mailbox Conversation</field>
+			<field name="res_model">poweremail.conversation</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form,tree</field>
+			<field name="view_id" ref="poweremail_conversation_tree" />
+		</record>
 		<!--INBOX-->
 		<record model="ir.actions.act_window" id="action_poweremail_inbox_tree">
 			<field name="name">Email Mailbox</field>
@@ -287,6 +317,7 @@
 		<menuitem name="MailBox" id="menu_poweremail_mailbox_all_main2" parent="menu_poweremail_administration_server" />
 		<menuitem name="Personal" id="menu_poweremail_personal" parent="menu_poweremail_mailbox_all_main2" />
 		<menuitem name="Inbox" id="menu_poweremail_inbox" parent="menu_poweremail_personal" action="action_poweremail_inbox_tree" />
+		<menuitem name="Inbox Conversations" id="menu_poweremail_inbox_conversation" parent="menu_poweremail_personal" action="action_poweremail_conversation_tree" />
 		<menuitem name="Drafts" id="menu_poweremail_drafts" parent="menu_poweremail_personal" action="action_poweremail_drafts_tree" />
 		<menuitem name="Outbox" id="menu_poweremail_outbox" parent="menu_poweremail_personal" action="action_poweremail_outbox_tree" />
 		<menuitem name="Follow-up" id="menu_poweremail_follow" parent="menu_poweremail_personal" action="action_poweremail_follow_tree" />
