@@ -11,3 +11,6 @@
 "access_pe_mailbox_settings_manager","poweremail.mailbox","model_poweremail_mailbox","res_groups_pemanager",1,1,1,1
 "access_pe_mailbox_external_users","poweremail.mailbox","model_poweremail_mailbox","res_groups_peuserse",1,1,1,1
 "access_pe_mailbox_internal_users","poweremail.mailbox","model_poweremail_mailbox","res_groups_peusersi",1,1,1,1
+"access_pe_conversation_internal_users","poweremail.conversation","model_poweremail_conversation","res_groups_peusersi",1,1,1,1
+"access_pe_conversation_external_users","poweremail.conversation","model_poweremail_conversation","res_groups_peuserse",1,1,1,1
+"access_pe_conversation_settings_manager","poweremail.conversation","model_poweremail_conversation","res_groups_pemanager",1,1,1,1
