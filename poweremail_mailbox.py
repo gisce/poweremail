@@ -31,8 +31,10 @@ from poweremail_core import filter_send_emails
 import netsvc
 from tools.translate import _
 import tools
+import pooler
 
 import re
+import os
 import email
 from email.utils import make_msgid
 
@@ -103,8 +105,20 @@ class PoweremailMailbox(osv.osv):
             for each_filter in context['filters']:
                 filters.append(each_filter)
         ids = self.search(cr, uid, filters, context=context)
+        LOGGER.notifyChannel('Power Email', netsvc.LOG_INFO,
+                             'Sending All mail (PID: %s)' % os.getpid())
         # To prevent resend the same emails in several send_all_mail() calls
-        self.write(cr, uid, ids, {'state':'sending'}, context)
+        # We put this in a new cursor/transaction to avoid concurrent
+        # transaction isolation problems
+        db = pooler.get_db_only(cr.dbname)
+        cr_tmp = db.cursor()
+        try:
+            self.write(cr_tmp, uid, ids, {'state':'sending'}, context)
+            cr_tmp.commit()
+        except:
+            cr_tmp.rollback()
+        finally:
+            cr_tmp.close()
         #send mails one by one
         self.send_this_mail(cr, uid, ids, context)
         return True
