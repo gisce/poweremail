@@ -112,9 +112,13 @@ class PoweremailMailbox(osv.osv):
         # transaction isolation problems
         db = pooler.get_db_only(cr.dbname)
         cr_tmp = db.cursor()
-        self.write(cr_tmp, uid, ids, {'state':'sending'}, context)
-        cr_tmp.commit()
-        cr_tmp.close()
+        try:
+            self.write(cr_tmp, uid, ids, {'state':'sending'}, context)
+            cr_tmp.commit()
+        except:
+            cr_tmp.rollback()
+        finally:
+            cr_tmp.close()
         #send mails one by one
         self.send_this_mail(cr, uid, ids, context)
         return True
