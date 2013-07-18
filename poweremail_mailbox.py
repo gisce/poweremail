@@ -27,7 +27,7 @@ The mailbox is an object which stores the actual email
 from osv import osv, fields
 import time
 import poweremail_engines
-from poweremail_core import filter_send_emails
+from poweremail_core import filter_send_emails, _priority_selection
 import netsvc
 from tools.translate import _
 import tools
@@ -59,7 +59,7 @@ class PoweremailMailbox(osv.osv):
                                  netsvc.LOG_ERROR,
                                  _("Error receiving mail: %s") % str(e))
         try:
-            self.send_all_mail(cursor, user, context)
+            self.send_all_mail(cursor, user, context=context)
         except Exception, e:
             LOGGER.notifyChannel(
                                  _("Power Email"),
@@ -104,7 +104,11 @@ class PoweremailMailbox(osv.osv):
         if 'filters' in context.keys():
             for each_filter in context['filters']:
                 filters.append(each_filter)
-        ids = self.search(cr, uid, filters, context=context)
+        limit = context.get('limit', None)
+        order = "priority desc, date_mail desc"
+        ids = self.search(cr, uid, filters,
+                          limit=limit, order=order,
+                          context=context)
         LOGGER.notifyChannel('Power Email', netsvc.LOG_INFO,
                              'Sending All mail (PID: %s)' % os.getpid())
         # To prevent resend the same emails in several send_all_mail() calls
@@ -294,13 +298,16 @@ class PoweremailMailbox(osv.osv):
                             store=True),
             'pem_message_id': fields.char('Message-Id', size=256,
                                           required=True),
-            'pem_mail_orig': fields.text('Original Mail')
+            'pem_mail_orig': fields.text('Original Mail'),
+            'priority': fields.selection(_priority_selection,
+                                         'Priority')
         }
 
     _defaults = {
         'state': lambda * a: 'na',
         'folder': lambda * a: 'outbox',
         'pem_message_id': lambda *a: make_msgid('poweremail'),
+        'priority': lambda *a: '1',
     }
 
     def search(self, cr, uid, args, offset=0, limit=None, order=None, context=None, count=False):

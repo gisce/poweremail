@@ -48,6 +48,7 @@
 						<field name="pem_to" colspan="4" required="1" select="1" />
 						<field name="pem_bcc" colspan="4" select="2"/>
 						<field name="pem_subject" colspan="4" select="1"/>
+						<field name="priority" colspan="4" select="2"/>
 					</group>
 					<notebook colspan="4">
 						<page string="Standard Body">
