@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 5.0.3\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2013-07-18 11:21:25+0000\n"
-"PO-Revision-Date: 2013-07-18 14:03+0100\n"
+"POT-Creation-Date: 2013-07-19 09:00:09+0000\n"
+"PO-Revision-Date: 2013-07-19 11:02+0100\n"
 "Last-Translator: Joan M. Grande <totaler@gmail.com>\n"
 "Language-Team: \n"
 "Language: \n"
@@ -85,7 +85,7 @@ msgid "Incoming"
 msgstr "Entrada"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_mailbox.py:179
+#: code:addons/poweremail/poweremail_mailbox.py:182
 #, python-format
 msgid ""
 "Sending of Mail %s failed. Probable Reason: Could not login to server\n"
@@ -592,7 +592,7 @@ msgstr ""
 #: code:addons/poweremail/poweremail_core.py:1030
 #: code:addons/poweremail/poweremail_mailbox.py:58
 #: code:addons/poweremail/poweremail_mailbox.py:65
-#: code:addons/poweremail/poweremail_mailbox.py:179
+#: code:addons/poweremail/poweremail_mailbox.py:182
 #: code:addons/poweremail/poweremail_send_wizard.py:61
 #: code:addons/poweremail/poweremail_send_wizard.py:62
 #: code:addons/poweremail/poweremail_send_wizard.py:225
@@ -933,9 +933,10 @@ msgid "Auto Email"
 msgstr "Correu electrònic automàtic"
 
 #. module: poweremail
-#: field:poweremail.core_accounts,smtpport:0
-msgid "SMTP Port "
-msgstr "Port SMTP"
+#: code:addons/poweremail/poweremail_mailbox.py:199
+#, fuzzy, python-format
+msgid "Error sending email: %s"
+msgstr "Error enviant correu: %s"
 
 #. module: poweremail
 #: help:poweremail.templates,copyvalue:0
@@ -1199,6 +1200,11 @@ msgstr "Exemple: elvostrenom@elvostredomini.com"
 #: field:poweremail.core_selfolder,folder:0
 msgid "IMAP Folder"
 msgstr "Carpeta IMAP"
+
+#. module: poweremail
+#: field:poweremail.core_accounts,smtpport:0
+msgid "SMTP Port "
+msgstr "Port SMTP"
 
 #. module: poweremail
 #: field:poweremail.core_accounts,isssl:0
