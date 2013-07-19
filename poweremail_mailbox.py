@@ -144,7 +144,7 @@ class PoweremailMailbox(osv.osv):
                 pem_to = (values['pem_to'] or '').strip()
                 if pem_to in ('', 'False'):
                     self.historise(cr, uid, [id],
-                                   "No sender: Email cannot be sent",
+                                   "No recipient: Email cannot be sent",
                                    context, error=True)
                     continue
                 payload = {}
@@ -185,8 +185,13 @@ class PoweremailMailbox(osv.osv):
         return True
 
     def historise(self, cr, uid, ids, message='', context=None, error=False):
+
+        user_obj = self.pool.get('res.users')
         if not context:
             context = {}
+        user = user_obj.browse(cr, uid, uid)
+        if 'lang' not in context:
+            context.update({'lang': user.context_lang})
         for id in ids:
             #Notify the sender errors
             if (context.get('notify_errors', False)
