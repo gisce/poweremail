@@ -143,7 +143,10 @@ class PoweremailMailbox(osv.osv):
                 values = self.read(cr, uid, id, [], context) #Values will be a dictionary of all entries in the record ref by id
                 pem_to = (values['pem_to'] or '').strip()
                 if pem_to in ('', 'False'):
-                        continue
+                    self.historise(cr, uid, [id],
+                                   "No sender: Email cannot be sent",
+                                   context, error=True)
+                    continue
                 payload = {}
                 if values['pem_attachments_ids']:
                     #Get filenames & binary of attachments
@@ -173,18 +176,37 @@ class PoweremailMailbox(osv.osv):
                     self.write(cr, uid, id, {'folder':'sent', 'state':'na', 'date_mail':time.strftime("%Y-%m-%d %H:%M:%S")}, context)
                     self.historise(cr, uid, [id], "Email sent successfully", context)
                 else:
-                    self.historise(cr, uid, [id], result, context)
+                    self.historise(cr, uid, [id], result, context, error=True)
             except Exception, error:
                 logger = netsvc.Logger()
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, error))
-                self.historise(cr, uid, [id], error, context)
+                self.historise(cr, uid, [id], error, context, error=True)
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
 
-    def historise(self, cr, uid, ids, message='', context=None):
+    def historise(self, cr, uid, ids, message='', context=None, error=False):
+        if not context:
+            context = {}
         for id in ids:
+            #Notify the sender errors
+            if (context.get('notify_errors', False)
+                and error
+                and not context.get('bounce', False)):
+                mail = self.browse(cr, uid, id)
+                vals = {'folder': 'outbox',
+                        'history': '',
+                        'pem_to': mail.pem_account_id.email_id,
+                        'pem_subject': _(u"Error sending email: %s") % mail.pem_subject}
+                bounce_mail_id = self.copy(cr, uid, id, vals)
+                ctx = context.copy()
+                ctx.update({'bounce': True})
+                self.send_this_mail(cr, uid, [bounce_mail_id], ctx)
+                bounce_mail = self.browse(cr, uid, bounce_mail_id)
+                #If bounce mail cannot be sent, unlink it
+                if bounce_mail.folder != 'sent':
+                    bounce_mail.unlink()
             history = self.read(cr, uid, id, ['history'], context).get('history', '')
-            self.write(cr, uid, id, {'history':history or '' + "\n" + time.strftime("%Y-%m-%d %H:%M:%S") + ": " + tools.ustr(message)}, context)
+            self.write(cr, uid, id, {'history': (history or '') + "\n" + time.strftime("%Y-%m-%d %H:%M:%S") + ": " + tools.ustr(message)}, context)
 
     def complete_mail(self, cr, uid, ids, context=None):
         #8888888888888 COMPLETE PARTIALLY DOWNLOADED MAILS 8888888888888888888#
