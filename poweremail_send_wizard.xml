@@ -48,6 +48,7 @@ ecords). If you don't check it, an email with its optional attachment will be se
                         <group col="4" colspan="4">
                             <field name="rel_model" colspan="2" />
                             <field name="from" attrs="{'required':[('state','!=','send_type')]}" colspan="2" />
+                            <field name="priority" colspan="2"/>
                         </group>
                         <group col="4" colspan="4">
                             <group col="6" colspan="4">
