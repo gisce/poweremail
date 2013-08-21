@@ -51,6 +51,9 @@ def filter_send_emails(emails_str):
         emails_str = ''
     return ', '.join(set([e.strip() for e in emails_str.split(',')]))
 
+_priority_selection = [('0', 'Low'),
+                       ('1', 'Normal'),
+                       ('2', 'High')]
 
 class poweremail_core_accounts(osv.osv):
     """

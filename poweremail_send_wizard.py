@@ -32,7 +32,7 @@ import re
 from tools.translate import _
 import tools
 from poweremail_template import get_value
-from poweremail_core import filter_send_emails
+from poweremail_core import filter_send_emails, _priority_selection
 
 
 class poweremail_send_wizard(osv.osv_memory):
@@ -129,6 +129,7 @@ class poweremail_send_wizard(osv.osv_memory):
         'full_success':fields.boolean('Complete Success',readonly=True),
         'attachment_ids': fields.many2many('ir.attachment','send_wizard_attachment_rel', 'wizard_id', 'attachment_id', 'Attachments'),
         'single_email': fields.boolean("Single email", help="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these records). If you don't check it, an email with its optional attachment will be send for each record."),
+        'priority': fields.selection(_priority_selection, 'Priority'),
     }
 
     _defaults = {
@@ -147,6 +148,7 @@ class poweremail_send_wizard(osv.osv_memory):
         'requested':lambda self,cr,uid,ctx: len(ctx['src_rec_ids']),
         'full_success': lambda *a: False,
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
+        'priority': lambda *a: '1',
     }
 
 
@@ -259,6 +261,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 'pem_body_text': get_end_value(id, screen_vals['body_text']),
                 'pem_body_html': get_end_value(id, screen_vals['body_html']),
                 'pem_account_id': screen_vals['from'],
+                'priority': screen_vals['priority'],
                 'state':'na',
                 'mail_type':'multipart/alternative' #Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
