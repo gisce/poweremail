@@ -192,7 +192,8 @@ class poweremail_send_wizard(osv.osv_memory):
         if context is None:
             context = {}
         mailbox_obj = self.pool.get('poweremail.mailbox')
-        values = {'folder':'outbox'}
+        folder = context.get('folder', 'outbox')
+        values = {'folder': folder}
         check_email = True
 
         mailid = self.save_to_mailbox(cr, uid, ids, context)
@@ -216,12 +217,13 @@ class poweremail_send_wizard(osv.osv_memory):
             ids = []
         if context is None:
             context = {}
+        folder = context.get('folder', 'outbox')
         logger = netsvc.Logger()
         if context['src_rec_ids'] and len(context['src_rec_ids'])>1:
             #Means there are multiple items selected for email.
             mail_ids = self.save_to_mailbox(cr, uid, ids, context)
             if mail_ids:
-                self.pool.get('poweremail.mailbox').write(cr, uid, mail_ids, {'folder':'outbox'}, context)
+                self.pool.get('poweremail.mailbox').write(cr, uid, mail_ids, {'folder': folder}, context)
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Emails for multiple items saved in outbox."))
                 self.write(cr, uid, ids, {
                     'generated':len(mail_ids),
