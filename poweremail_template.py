@@ -192,6 +192,21 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
     else:
         return message
 
+class poweremail_template_attachment(osv.osv):
+
+    _name = 'poweremail.template.attachment'
+
+    _columns = {
+        'report_id': fields.many2one('ir.actions.report.xml',
+                                    'Report to send', required=True),
+        'file_name': fields.char('File name', size=250, required=True),
+        'search_params': fields.char('Search params', size=250,
+                                     required=True),
+        'template_id': fields.many2one('poweremail.templates', 'Template')
+    }
+
+poweremail_template_attachment()
+
 class poweremail_templates(osv.osv):
     "Templates for sending Email"
 
@@ -394,6 +409,9 @@ class poweremail_templates(osv.osv):
                     "result is True the mail will be send if it false the mail "
                     "won't be send.\n"
                     "Example : o.type == 'out_invoice' and o.number and o.number[:3]<>'os_' "),
+        'tmpl_attachment_ids': fields.one2many('poweremail.template.attachment',
+                                               'template_id',
+                                               'Attachments')
     }
 
     _defaults = {

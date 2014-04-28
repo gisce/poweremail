@@ -234,6 +234,9 @@ class poweremail_send_wizard(osv.osv_memory):
         return True
 
     def save_to_mailbox(self, cr, uid, ids, context=None):
+
+        model_obj = self.pool.get('ir.model')
+        
         if context is None:
             context = {}
         def get_end_value(id, value):
@@ -280,20 +283,20 @@ class poweremail_send_wizard(osv.osv_memory):
             ctx.update({'src_rec_id': id})
             mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, ctx)
             mail_ids.append(mail_id)
+            # Ensure report is rendered using template's language. If not found, user's launguage is used.
+            ctx = context.copy()
+            if template.lang:
+                ctx['lang'] = self.get_value(cr, uid, template, template.lang, context, id)
+                lang = self.get_value(cr, uid, template, template.lang, context, id)
+                if len(self.pool.get('res.lang').search(cr, uid, [('name','=',lang)], context = context)):
+                    ctx['lang'] = lang
+            if not ctx.get('lang', False) or ctx['lang'] == 'False':
+                ctx['lang'] = self.pool.get('res.users').read(cr, uid, uid, ['context_lang'], context)['context_lang']
             if template.report_template:
                 reportname = 'report.' + self.pool.get('ir.actions.report.xml').read(cr, uid, template.report_template.id, ['report_name'], context)['report_name']
                 data = {}
                 data['model'] = self.pool.get('ir.model').browse(cr, uid, screen_vals['rel_model'], context).model
 
-                # Ensure report is rendered using template's language. If not found, user's launguage is used.
-                ctx = context.copy()
-                if template.lang:
-                    ctx['lang'] = self.get_value(cr, uid, template, template.lang, context, id)
-                    lang = self.get_value(cr, uid, template, template.lang, context, id)
-                    if len(self.pool.get('res.lang').search(cr, uid, [('name','=',lang)], context = context)):
-                        ctx['lang'] = lang
-                if not ctx.get('lang', False) or ctx['lang'] == 'False':
-                    ctx['lang'] = self.pool.get('res.users').read(cr, uid, uid, ['context_lang'], context)['context_lang']
                 service = netsvc.LocalService(reportname)
                 if screen_vals['single_email'] and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
@@ -305,6 +308,35 @@ class poweremail_send_wizard(osv.osv_memory):
                     'datas': base64.b64encode(result),
                     'datas_fname': tools.ustr(get_end_value(id, screen_vals['report']) or _('Report')) + "." + format,
                     'description': vals['pem_body_text'] or _("No Description"),
+                    'res_model': 'poweremail.mailbox',
+                    'res_id': mail_id
+                }, context)
+                attachment_ids.append( attachment_id )
+
+            # For each extra attachment in template
+            for tmpl_attach in template.tmpl_attachment_ids:
+                report = tmpl_attach.report_id
+                reportname = 'report.%s' % report.report_name
+                data = {}
+                data['model'] = report.model
+                model_obj = self.pool.get(report.model)
+                #Parse search params
+                search_params = eval(self.get_value(cr, uid, template,
+                                               tmpl_attach.search_params,
+                                               context, id))
+                report_model_ids = model_obj.search(cr, uid, search_params)
+                file_name = self.get_value(cr, uid, template,
+                                           tmpl_attach.file_name,
+                                           context, id)
+                if not report_model_ids:
+                    continue
+                service = netsvc.LocalService(reportname)
+                (result, format) = service.create(cr, uid, report_model_ids, data, ctx)
+                attachment_id = self.pool.get('ir.attachment').create(cr, uid, {
+                    'name': file_name,
+                    'datas': base64.b64encode(result),
+                    'datas_fname': file_name,
+                    'description': _("No Description"),
                     'res_model': 'poweremail.mailbox',
                     'res_id': mail_id
                 }, context)
