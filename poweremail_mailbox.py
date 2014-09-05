@@ -184,6 +184,39 @@ class PoweremailMailbox(osv.osv):
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
 
+    def send_mail_generic(self, cr, uid, email_from, subject, body,
+                          email_to=None, context=None):
+        """ Send an email, if no email_to specified send it to the
+        " user that called the function or the email_from if user
+        " has no email.
+        """
+
+        acc_obj = self.pool.get('poweremail.core_accounts')
+        user_obj = self.pool.get('res.users')
+
+        search_params = [('email_id', '=', email_from)]
+        acc_id = acc_obj.search(cr, uid, search_params)
+        if not acc_id:
+            raise osv.except_osv('Error',
+                                 _('%s account not found') % email_from)
+        else:
+            acc_id = acc_id[0]
+
+        user = user_obj.browse(cr, uid, uid)
+        email_to = user.address_id.email
+        if not email_to:
+            email_to = email_from
+
+        vals = {
+            'pem_from': email_from,
+            'pem_to': email_to,
+            'pem_subject': subject,
+            'pem_body_text': body,
+            'pem_account_id': acc_id,
+        }
+        mail_id = self.create(cr, uid, vals, context)
+        return self.send_this_mail(cr, uid, [mail_id], context)
+
     def historise(self, cr, uid, ids, message='', context=None, error=False):
 
         user_obj = self.pool.get('res.users')
