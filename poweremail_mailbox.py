@@ -205,7 +205,6 @@ class PoweremailMailbox(osv.osv):
         user = user_obj.browse(cr, uid, uid)
         if not email_to:
             email_to = user.address_id.email
-
         if not email_to:
             email_to = email_from
 
