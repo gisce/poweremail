@@ -185,7 +185,7 @@ class PoweremailMailbox(osv.osv):
         return True
 
     def send_mail_generic(self, cr, uid, email_from, subject, body,
-                          email_to=None, context=None):
+                          email_to=None, email_cc=None, context=None):
         """ Send an email, if no email_to specified send it to the
         " user that called the function or the email_from if user
         " has no email.
@@ -203,7 +203,9 @@ class PoweremailMailbox(osv.osv):
             acc_id = acc_id[0]
 
         user = user_obj.browse(cr, uid, uid)
-        email_to = user.address_id.email
+        if not email_to:
+            email_to = user.address_id.email
+
         if not email_to:
             email_to = email_from
 
@@ -214,6 +216,9 @@ class PoweremailMailbox(osv.osv):
             'pem_body_text': body,
             'pem_account_id': acc_id,
         }
+        if email_cc:
+            vals['pem_cc'] = email_cc
+
         mail_id = self.create(cr, uid, vals, context)
         return self.send_this_mail(cr, uid, [mail_id], context)
 
