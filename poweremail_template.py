@@ -192,20 +192,6 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
     else:
         return message
 
-class poweremail_template_attachment(osv.osv):
-
-    _name = 'poweremail.template.attachment'
-
-    _columns = {
-        'report_id': fields.many2one('ir.actions.report.xml',
-                                    'Report to send', required=True),
-        'file_name': fields.char('File name', size=250, required=True),
-        'search_params': fields.char('Search params', size=250,
-                                     required=True),
-        'template_id': fields.many2one('poweremail.templates', 'Template')
-    }
-
-poweremail_template_attachment()
 
 class poweremail_templates(osv.osv):
     "Templates for sending Email"
@@ -1050,6 +1036,23 @@ class poweremail_templates(osv.osv):
         return True
 
 poweremail_templates()
+
+
+class poweremail_template_attachment(osv.osv):
+
+    _name = 'poweremail.template.attachment'
+
+    _columns = {
+        'report_id': fields.many2one('ir.actions.report.xml',
+                                    'Report to send', required=True),
+        'file_name': fields.char('File name', size=250, required=True),
+        'search_params': fields.char('Search params', size=250,
+                                     required=True),
+        'template_id': fields.many2one('poweremail.templates', 'Template')
+    }
+
+poweremail_template_attachment()
+
 
 class poweremail_preview(osv.osv_memory):
     _name = "poweremail.preview"
