@@ -170,7 +170,12 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
     if message:
         try:
             message = tools.ustr(message)
-            object = pool.get(template.model_int_name).browse(cursor, user, recid, context)
+            if not context:
+                context = {}
+            ctx = context.copy()
+            ctx.update({'browse_reference': True})
+            object = pool.get(template.model_int_name).browse(cursor, user,
+                                                              recid, ctx)
             env = {
                 'user':pool.get('res.users').browse(cursor, user, user, context),
                 'db':cursor.dbname
