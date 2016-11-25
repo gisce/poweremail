@@ -188,6 +188,8 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 reply = templ.render(Context(env))
             return reply or False
         except Exception:
+            import traceback
+            traceback.print_exc()
             return u""
     else:
         return message
