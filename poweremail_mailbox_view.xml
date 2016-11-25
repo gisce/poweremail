@@ -82,6 +82,9 @@
 								<field name="history" nolabel="1" colspan="4"/>
 							</group>
 						</page>
+                        <page string="Raw content">
+                            <field name="pem_mail_orig" nolabel="1" readonly="1" height="400" colspan="4"/>
+                        </page>
 					</notebook>
 					<separator colspan="4" string="" />
 					<group col="4" colspan="4">
