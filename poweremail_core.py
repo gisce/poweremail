@@ -257,8 +257,8 @@ class poweremail_core_accounts(osv.osv):
                         serv = smtplib.SMTP_SSL(this_object.smtpserver, this_object.smtpport)
                     else:
                         serv = smtplib.SMTP(this_object.smtpserver, this_object.smtpport)
+                    serv.ehlo()
                     if this_object.smtptls:
-                        serv.ehlo()
                         serv.starttls()
                         serv.ehlo()
                 except Exception, error:
