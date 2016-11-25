@@ -816,33 +816,31 @@ class poweremail_core_accounts(osv.osv):
                         logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("IMAP Folder Statistics for Account: %s: %s") % (id, serv.status('"%s"' % rec.isfolder, '(MESSAGES RECENT UIDNEXT UIDVALIDITY UNSEEN)')[1][0]))
                         #If there are newer mails than the ones in mailbox
                         #print int(msg_count[0]),rec.last_mail_id
-                        if rec.last_mail_id < int(msg_count[0]):
-                            if rec.rec_headers_den_mail:
-                                #Download Headers Only
-                                for i in range(rec.last_mail_id + 1, int(msg_count[0]) + 1):
-                                    typ, msg = serv.fetch(str(i), '(FLAGS BODY.PEEK[HEADER])')
-                                    for mails in msg:
-                                        if type(mails) == type(('tuple', 'type')):
-                                            mail = email.message_from_string(mails[1])
-                                            ctx = context.copy()
-                                            if '\Seen' in mails[0]:
-                                                ctx['state'] = 'read'
-                                            if self.save_header(cr, uid, mail, id, mails[0].split()[0], ctx):#If saved succedfully then increment last mail recd
-                                                self.write(cr, uid, id, {'last_mail_id':mails[0].split()[0]}, context)
-                            else:#Receive Full Mail first time itself
-                                #Download Full RF822 Mails
-                                for i in range(rec.last_mail_id + 1, int(msg_count[0]) + 1):
-                                    typ, msg = serv.fetch(str(i), '(FLAGS RFC822)')
-                                    for j in range(0, len(msg) / 2):
-                                        mails = msg[j * 2]
-                                        flags = msg[(j * 2) + 1]
-                                        if type(mails) == type(('tuple', 'type')):
-                                            ctx = context.copy()
-                                            if '\Seen' in flags:
-                                                ctx['state'] = 'read'
-                                            mail = email.message_from_string(mails[1])
-                                            if self.save_fullmail(cr, uid, mail, id, mails[0].split()[0], ctx):#If saved succedfully then increment last mail recd
-                                                self.write(cr, uid, id, {'last_mail_id':mails[0].split()[0]}, context)
+
+                        msg_count = int(msg_count[0])
+
+                        if rec.last_mail_id < msg_count:
+                            for i in range(msg_count, rec.last_mail_id, -1):
+                                if rec.rec_headers_den_mail:
+                                    message_parts = '(FLAGS BODY[HEADER])'
+                                    method = getattr(self, 'save_header')
+                                else:
+                                    message_parts = '(FLAGS BODY[])'
+                                    method = getattr(self, 'save_fullmail')
+                                typ, msg = serv.fetch(str(i), message_parts)
+
+                                content = msg[0][1]
+                                response = msg[0][0]
+                                seq_id = response.split()[0]
+                                mail = email.message_from_string(content)
+                                ctx = context.copy()
+                                if '\Seen' in response:
+                                    ctx['state'] = 'read'
+                                method(cr, uid, mail, id, seq_id, ctx)
+                            # Always write downloaded messages
+                            self.write(cr, uid, id, {
+                                'last_mail_id': msg_count
+                            }, context)
                         serv.close()
                         serv.logout()
                     elif rec.iserver_type == 'pop3':
