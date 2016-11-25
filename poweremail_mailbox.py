@@ -445,8 +445,11 @@ PoweremailConversation()
 class PoweremailMailboxConversation(osv.osv):
     _inherit = "poweremail.mailbox"
     _columns = {
-        'conversation_id': fields.many2one('poweremail.conversation',
-                                           'Conversation')
+        'conversation_id': fields.many2one(
+            'poweremail.conversation',
+            'Conversation',
+            ondelete='cascade'
+        )
     }
 
     def find_conversation(self, cursor, uid, raw_email, context=None):
