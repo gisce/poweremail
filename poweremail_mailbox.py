@@ -37,6 +37,7 @@ import re
 import os
 import email
 from email.utils import make_msgid
+import qreu
 
 LOGGER = netsvc.Logger()
 
@@ -251,6 +252,8 @@ class PoweremailMailbox(osv.osv):
             self.write(cr, uid, id, {'history': (history or '') + "\n" + time.strftime("%Y-%m-%d %H:%M:%S") + ": " + tools.ustr(message)}, context)
 
     def complete_mail(self, cr, uid, ids, context=None):
+        if context is None:
+            context = {}
         #8888888888888 COMPLETE PARTIALLY DOWNLOADED MAILS 8888888888888888888#
         #FUNCTION get_fullmail(self,cr,uid,mailid) in core is used where mailid=id of current email,
         for id in ids:
@@ -279,6 +282,8 @@ class PoweremailMailbox(osv.osv):
         return True
 
     def create(self, cursor, user, vals, context=None):
+        mail = qreu.Email(vals['pem_mail_orig'])
+        vals['pem_subject'] = mail.subject
         for field in ('pem_to', 'pem_cc', 'pem_bcc'):
             if field in vals:
                 vals[field] = filter_send_emails(vals[field])
@@ -440,32 +445,62 @@ PoweremailConversation()
 class PoweremailMailboxConversation(osv.osv):
     _inherit = "poweremail.mailbox"
     _columns = {
-        'conversation_id': fields.many2one('poweremail.conversation',
-                                           'Conversation')
+        'conversation_id': fields.many2one(
+            'poweremail.conversation',
+            'Conversation',
+            ondelete='cascade'
+        )
     }
 
+    def find_conversation(self, cursor, uid, raw_email, context=None):
+        """
+        Try to find the conversation
+
+        If a mail is a reply. Try to find the conversation to attach. Uses three
+        different aproaches:
+        1. Search the conversation of mail.parent
+        2. Search one email in the "References" Header
+        3. Search one email with the same subject (cleaned) and wichi to or from
+           contains the email from
+        :return: conversation_id
+        """
+
+        mail = qreu.Email(raw_email)
+        if not mail:
+            return False
+
+        if mail.is_reply:
+            search_params_rec = []
+            if mail.parent:
+                search_params_rec.append([
+                    ('pem_message_id', '=', mail.parent)
+                ])
+            if mail.references:
+                search_params_rec.append([
+                    ('pem_message_id', 'in', mail.references)
+                ])
+            search_params_rec.append([
+                ('pem_subject', '=', mail.subject),
+                '|',
+                    ('pem_from', 'ilike', mail.from_.address),
+                    ('pem_to', 'ilike', mail.from_.address)
+            ])
+            for search_params in search_params_rec:
+                msg_id = self.search(cursor, uid, search_params)
+                if msg_id:
+                    conv = self.browse(cursor, uid, msg_id[0]).conversation_id
+                    conv_id = conv and conv.id or False
+                    return conv_id
+        return False
+
     def create(self, cursor, uid, vals, context=None):
-        mail_orig = vals.get('pem_mail_orig', '')
+        if context is None:
+            context = {}
         conv_obj = self.pool.get('poweremail.conversation')
         if not vals.get('conversation_id', False):
-            vals['conversation_id'] = False
-            if mail_orig:
-                mail = email.message_from_string(mail_orig)
-                if mail.get('In-Reply-To', ''):
-                    search_params = [('pem_message_id', '=', mail['In-Reply-To'])]
-                    msg_id = self.search(cursor, uid, search_params)
-                    if msg_id:
-                        conv = self.browse(cursor, uid,
-                                           msg_id[0]).conversation_id
-                        vals['conversation_id'] = conv and conv.id or False
-                    elif mail.get('References', ''):
-                        refs = re.findall('(<.*>)', mail['References'])
-                        search_params = [('pem_message_id', 'in', refs)]
-                        msg_id = self.search(cursor, uid, search_params)
-                        if msg_id:
-                            conv = self.browse(cursor, uid,
-                                               msg_id[0]).conversation_id
-                            vals['conversation_id'] = conv and conv.id or False
+            vals['conversation_id'] = self.find_conversation(
+                cursor, uid, vals.get('pem_mail_orig', ''), context
+            )
             if not vals['conversation_id']:
                 conv_id = conv_obj.create(cursor, uid,
                                           {'name': vals['pem_subject']})
