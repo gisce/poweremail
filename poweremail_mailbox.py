@@ -282,8 +282,11 @@ class PoweremailMailbox(osv.osv):
         return True
 
     def create(self, cursor, user, vals, context=None):
-        mail = qreu.Email(vals['pem_mail_orig'])
-        vals['pem_subject'] = mail.subject
+        mail = qreu.Email(vals.get('pem_mail_orig', False))
+        if mail and mail.subject:
+            vals['pem_subject'] = mail.subject
+        else:
+            vals['pem_subject'] = vals.get('pem_subject', '')
         for field in ('pem_to', 'pem_cc', 'pem_bcc'):
             if field in vals:
                 vals[field] = filter_send_emails(vals[field])
