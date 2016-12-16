@@ -194,23 +194,16 @@ class poweremail_send_wizard(osv.osv_memory):
         mailbox_obj = self.pool.get('poweremail.mailbox')
         folder = context.get('folder', 'outbox')
         values = {'folder': folder}
-        check_email = True
 
-        mailid = self.save_to_mailbox(cr, uid, ids, context)
+        mail_ids = self.save_to_mailbox(cr, uid, ids, context)
 
-        if len(mailid)>0:
-            mail = mailbox_obj.browse(cr, uid, mailid[0], context)
-            check_email = mail.pem_to and mailbox_obj.check_email_valid(mail.pem_to) or False
-            if mail.pem_cc:
-                check_email = check_email and mailbox_obj.check_email_valid(mail.pem_cc)
-            if mail.pem_bcc:
-                check_email = check_email and mailbox_obj.check_email_valid(mail.pem_bcc)
+        if mail_ids:
+            for mail_id in mail_ids:
+                if not mailbox_obj.is_valid(cr, uid, mail_id):
+                    values['folder'] = 'draft'
+                mailbox_obj.write(cr, uid, [mail_id], values, context)
 
-        if not check_email:
-            values = {'folder':'drafts'}
-
-        if mailbox_obj.write(cr, uid, mailid, values, context):
-            return {'type':'ir.actions.act_window_close' }
+        return {'type': 'ir.actions.act_window_close'}
 
     def get_generated(self, cr, uid, ids=None, context=None):
         if ids is None:
