@@ -263,14 +263,10 @@ class PoweremailMailbox(osv.osv):
     def is_valid(self, cursor, uid, mail_id, context=None):
         fields_to_read = ['pem_to', 'pem_cc', 'pem_bcc']
         mail = self.read(cursor, uid, mail_id, fields_to_read, context)
-        check_email = self.check_email_valid(mail['pem_to'])
-        if mail['pem_cc']:
-            check_email = check_email and self.check_email_valid(mail['pem_cc'])
-        if mail['pem_bcc']:
-            check_email = check_email and self.check_email_valid(
-                mail['pem_bcc'])
-        return check_email
-
+        for field in fields_to_read:
+            if mail[field] and not self.check_email_valid(mail[field]):
+                return False
+        return True
 
     def check_email_valid(self, email):
         """Check if email is valid. Check @ and .
