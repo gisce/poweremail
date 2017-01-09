@@ -260,6 +260,14 @@ class PoweremailMailbox(osv.osv):
             self.pool.get('poweremail.core_accounts').get_fullmail(cr, uid, id, context)
             self.historise(cr, uid, [id], "Full email downloaded", context)
 
+    def is_valid(self, cursor, uid, mail_id, context=None):
+        fields_to_read = ['pem_to', 'pem_cc', 'pem_bcc']
+        mail = self.read(cursor, uid, mail_id, fields_to_read, context)
+        for field in fields_to_read:
+            if mail[field] and not self.check_email_valid(mail[field]):
+                return False
+        return True
+
     def check_email_valid(self, email):
         """Check if email is valid. Check @ and .
         :email str
