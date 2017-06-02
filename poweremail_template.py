@@ -464,38 +464,15 @@ class poweremail_templates(osv.osv):
                 obj.template_hooks['sow'] += [template.id]
 
     def create(self, cr, uid, vals, context=None):
-        id = super(poweremail_templates, self).create(cr, uid, vals, context)
-        src_obj = self.pool.get('ir.model').read(cr, uid, vals['object_name'], ['model'], context)['model']
-        vals['ref_ir_act_window'] = self.pool.get('ir.actions.act_window').create(cr, uid, {
-             'name': _("%s Mail Form") % vals['name'],
-             'type': 'ir.actions.act_window',
-             'res_model': 'poweremail.send.wizard',
-             'src_model': src_obj,
-             'view_type': 'form',
-             'context': "{'src_model':'%s','template_id':'%d','src_rec_id':active_id,'src_rec_ids':active_ids}" % (src_obj, id),
-             'view_mode':'form,tree',
-             'view_id': self.pool.get('ir.ui.view').search(cr, uid, [('name', '=', 'poweremail.send.wizard.form')], context=context)[0],
-             'target': 'new',
-             'auto_refresh':1
-        }, context)
-        vals['ref_ir_value'] = self.pool.get('ir.values').create(cr, uid, {
-             'name': _('Send Mail (%s)') % vals['name'],
-             'model': src_obj,
-             'key2': 'client_action_multi',
-             'value': "ir.actions.act_window," + str(vals['ref_ir_act_window']),
-             'object': True,
-         }, context)
-        self.write(cr, uid, id, {
-            'ref_ir_act_window': vals['ref_ir_act_window'],
-            'ref_ir_value': vals['ref_ir_value'],
-        }, context)
+        this_id = super(poweremail_templates, self).create(cr, uid, vals, context)
+
         if vals.get('auto_email'):
-            self.update_auto_email(cr, uid, [id], context)
+            self.update_auto_email(cr, uid, [this_id], context)
         if vals.get('send_on_create') or vals.get('send_on_write'):
-            self.update_send_on_store(cr, uid, [id], context)
+            self.update_send_on_store(cr, uid, [this_id], context)
         #if vals.get('partner_event'):
-        #    self.update_partner_event(cr, uid, [id], context)
-        return id
+        #    self.update_partner_event(cr, uid, [this_id], context)
+        return this_id
 
     def write(self, cr, uid, ids, vals, context=None):
         result = super(poweremail_templates, self).write(cr, uid, ids, vals, context)
