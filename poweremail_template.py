@@ -1022,45 +1022,72 @@ class poweremail_templates(osv.osv):
 
     def create_action_reference(self, cursor, uid, ids, context):
         template = self.pool.get('poweremail.templates').browse(
-            cursor, uid, ids
+            cursor, uid, ids[0]
         )
-        src_obj = self.pool.get('ir.model').read(
-            cursor, uid, template.object_name, ['model'], context
-        )['model']
-        ref_ir_act_window = self.pool.get(
-            'ir.actions.act_window'
-        ).create(
-            cursor, uid, {
-                'name': _("%s Mail Form") % template.name,
-                'type': 'ir.actions.act_window',
-                'res_model': 'poweremail.send.wizard',
-                'src_model': src_obj,
-                'view_type': 'form',
-                'context': (
-                    "{'src_model':'%s','template_id':'%d',"
-                    "'src_rec_id':active_id,'src_rec_ids':active_ids}"
-                ).format(src_obj, ids),
-                'view_mode': 'form,tree',
-                'view_id': self.pool.get('ir.ui.view').search(cursor, uid, [
-                    ('name', '=', 'poweremail.send.wizard.form')], context=context)[
-                    0],
-                'target': 'new',
-                'auto_refresh': 1
-            }, context
-        )
-        ref_ir_value = self.pool.get('ir.values').create(
-            cursor, uid, {
-                'name': _('Send Mail (%s)') % template.name,
-                'model': src_obj,
-                'key2': 'client_action_multi',
-                'value': "ir.actions.act_window," + str(ref_ir_act_window),
-                'object': True,
-            }, context
-        )
-        self.write(cursor, uid, ids, {
-            'ref_ir_act_window': ref_ir_act_window,
-            'ref_ir_value': ref_ir_value,
-        }, context)
+        src_obj = template.object_name.name
+        values_obj = self.pool.get('ir.values')
+        action_obj = self.pool.get('ir.actions.act_window')
+        if template.ref_ir_act_window:
+            if template.ref_ir_value:
+                return
+        if not template.ref_ir_act_window:
+            ctx = "{}{}{}".format(
+                '{', (
+                    '"src_model": {}, "template_id": {}, "src_rec_id": {}, '
+                    '"src_rec_ids": {}'
+                ).format(
+                    src_obj, template.id, context.get('active_id', False),
+                    context.get('active_ids', [])
+                ), '}'
+            )
+            ref_ir_act_window = action_obj.create(
+                cursor, uid, {
+                    'name': _("%s Mail Form") % template.name,
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'poweremail.send.wizard',
+                    'src_model': src_obj,
+                    'view_type': 'form',
+                    'context': ctx,
+                    'view_mode': 'form,tree',
+                    'view_id': self.pool.get('ir.ui.view').search(
+                        cursor, uid, [
+                            ('name', '=', 'poweremail.send.wizard.form')
+                        ],
+                        context=context
+                    )[0],
+                    'target': 'new',
+                    'auto_refresh': 1
+                }, context
+            )
+            if template.ref_ir_value:
+                values_obj.unlink(cursor, uid, template.ref_ir_value.id)
+            ref_ir_value = values_obj.create(
+                cursor, uid, {
+                    'name': _('Send Mail (%s)') % template.name,
+                    'model': src_obj,
+                    'key2': 'client_action_multi',
+                    'value': "ir.actions.act_window," + str(ref_ir_act_window),
+                    'object': True,
+                }, context
+            )
+            self.write(cursor, uid, ids, {
+                'ref_ir_act_window': ref_ir_act_window,
+                'ref_ir_value': ref_ir_value,
+            })
+        else:
+            ref_ir_value = values_obj.create(
+                cursor, uid, {
+                    'name': _('Send Mail (%s)') % template.name,
+                    'model': src_obj,
+                    'key2': 'client_action_multi',
+                    'value': "ir.actions.act_window," + str(
+                        template.ref_ir_act_window),
+                    'object': True,
+                }, context
+            )
+            self.write(cursor, uid, ids, {
+                'ref_ir_value': ref_ir_value,
+            }, context)
 
 poweremail_templates()
 
