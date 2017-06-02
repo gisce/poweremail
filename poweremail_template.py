@@ -408,7 +408,8 @@ class poweremail_templates(osv.osv):
     }
 
     _defaults = {
-
+        'ref_ir_act_window': False,
+        'ref_ir_value': False
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
