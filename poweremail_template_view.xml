@@ -230,7 +230,11 @@
                                 colspan="4" />
                             <group colspan="4" col="6">
                                 <field name="ref_ir_act_window" colspan="2"/>
-                                <button string="Create action and value" colspan="1" name="create_action_reference" type="object"/>
+                                <button
+                                        string="Create action and value"
+                                        colspan="1" name="create_action_reference"
+                                        type="object"
+                                        attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"/>
                                 <field name="ref_ir_value" colspan="2"/>
                             </group>
                             <field name="server_action" readonly="1" />
