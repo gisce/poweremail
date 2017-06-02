@@ -1074,7 +1074,7 @@ class poweremail_templates(osv.osv):
                 'ref_ir_act_window': ref_ir_act_window,
                 'ref_ir_value': ref_ir_value,
             })
-        else:
+        elif not template.ref_ir_value:
             ref_ir_value = values_obj.create(
                 cursor, uid, {
                     'name': _('Send Mail (%s)') % template.name,
