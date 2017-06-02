@@ -228,9 +228,12 @@
                             </group>
                             <separator string="Email action and wizard"
                                 colspan="4" />
+                            <group colspan="4" col="6">
+                                <field name="ref_ir_act_window" colspan="2"/>
+                                <button string="Create action and value" colspan="1" name="create_action_reference" type="object"/>
+                                <field name="ref_ir_value" colspan="2"/>
+                            </group>
                             <field name="server_action" readonly="1" />
-                            <field name="ref_ir_act_window" />
-                            <field name="ref_ir_value" />
                             <separator string="Attachments (Report to attach)"
                                 colspan="4" />
                             <field name="file_name" colspan="2" />
