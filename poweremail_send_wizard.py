@@ -200,7 +200,7 @@ class poweremail_send_wizard(osv.osv_memory):
         if mail_ids:
             for mail_id in mail_ids:
                 if not mailbox_obj.is_valid(cr, uid, mail_id):
-                    values['folder'] = 'draft'
+                    values['folder'] = 'drafts'
                 mailbox_obj.write(cr, uid, [mail_id], values, context)
 
         return {'type': 'ir.actions.act_window_close'}
