@@ -1024,7 +1024,7 @@ class poweremail_templates(osv.osv):
         template = self.pool.get('poweremail.templates').browse(
             cursor, uid, ids[0]
         )
-        src_obj = template.object_name.name
+        src_obj = template.object_name.model
         values_obj = self.pool.get('ir.values')
         action_obj = self.pool.get('ir.actions.act_window')
         if template.ref_ir_act_window:
