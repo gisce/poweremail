@@ -1033,11 +1033,10 @@ class poweremail_templates(osv.osv):
         if not template.ref_ir_act_window:
             ctx = "{}{}{}".format(
                 '{', (
-                    '"src_model": {}, "template_id": {}, "src_rec_id": {}, '
-                    '"src_rec_ids": {}'
+                    "'src_model': '{}', 'template_id': '{}',"
+                    "'src_rec_id':active_id, 'src_rec_ids':active_ids"
                 ).format(
-                    src_obj, template.id, context.get('active_id', False),
-                    context.get('active_ids', [])
+                    src_obj, template.id
                 ), '}'
             )
             ref_ir_act_window = action_obj.create(
