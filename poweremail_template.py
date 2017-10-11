@@ -206,21 +206,29 @@ class poweremail_templates(osv.osv):
     _name = "poweremail.templates"
     _description = 'Power Email Templates for Models'
 
-    def change_model(self, cursor, user, template_id, model_id, context=None):
-        if model_id:
+    def _get_model_name(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        res = {}
+        pwm_templ_obj = self.pool.get('poweremail.templates')
+        for template_id in template_ids:
+            model_id = pwm_templ_obj.read(
+                cursor, uid, template_id, ['object_name'])['object_name']
+            if not model_id:
+                res[template_id] = False
+                continue
             mod_name = self.pool.get('ir.model').read(
-                cursor, user, model_id, ['model'], context
+                cursor, uid, model_id[0], ['model'], context
             )['model']
-        else:
-            mod_name = False
-        val = {'model_int_name': mod_name}
-        self.pool.get('poweremail.templates').write(
-            cursor, user, template_id, val)
+            res[template_id] = mod_name
+        return res
 
     _columns = {
-        'name' : fields.char('Name of Template', size=100, required=True),
-        'object_name':fields.many2one('ir.model', 'Model'),
-        'model_int_name':fields.char('Model Internal Name', size=200,),
+        'name': fields.char('Name of Template', size=100, required=True),
+        'object_name': fields.many2one('ir.model', 'Model'),
+        'model_int_name': fields.function(
+            _get_model_name, string='Model Internal Name',
+            type='char', size=250, method=True
+        ),
         'def_to':fields.char(
                 'Recepient (To)',
                 size=250,
