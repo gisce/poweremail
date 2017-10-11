@@ -174,18 +174,18 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 context = {}
             ctx = context.copy()
             ctx.update({'browse_reference': True})
-            object = pool.get(template.model_int_name).browse(cursor, user,
-                                                              recid, ctx)
+            object = pool.get(template.object_name.model).browse(cursor, user, recid, ctx)
             env = {
-                'user':pool.get('res.users').browse(cursor, user, user, context),
-                'db':cursor.dbname
-                   }
+                'user': pool.get('res.users').browse(
+                    cursor, user, user, context),
+                'db': cursor.dbname
+            }
             if template.template_language == 'mako':
                 templ = MakoTemplate(message, input_encoding='utf-8')
-                reply = MakoTemplate(message).render_unicode(object=object,
-                                                             peobject=object,
-                                                             env=env,
-                                                             format_exceptions=True)
+                reply = templ.render_unicode(
+                    object=object, peobject=object,
+                    env=env, format_exceptions=True
+                )
             elif template.template_language == 'django':
                 templ = DjangoTemplate(message)
                 env['object'] = object
@@ -206,23 +206,29 @@ class poweremail_templates(osv.osv):
     _name = "poweremail.templates"
     _description = 'Power Email Templates for Models'
 
-    def change_model(self, cursor, user, ids, object_name, context=None):
-        if object_name:
+    def _get_model_name(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        res = {}
+        pwm_templ_obj = self.pool.get('poweremail.templates')
+        for template_id in template_ids:
+            model_id = pwm_templ_obj.read(
+                cursor, uid, template_id, ['object_name'])['object_name']
+            if not model_id:
+                res[template_id] = False
+                continue
             mod_name = self.pool.get('ir.model').read(
-                                              cursor,
-                                              user,
-                                              object_name,
-                                              ['model'], context)['model']
-        else:
-            mod_name = False
-        return {
-                'value':{'model_int_name':mod_name}
-                }
+                cursor, uid, model_id[0], ['model'], context
+            )['model']
+            res[template_id] = mod_name
+        return res
 
     _columns = {
-        'name' : fields.char('Name of Template', size=100, required=True),
-        'object_name':fields.many2one('ir.model', 'Model'),
-        'model_int_name':fields.char('Model Internal Name', size=200,),
+        'name': fields.char('Name of Template', size=100, required=True),
+        'object_name': fields.many2one('ir.model', 'Model'),
+        'model_int_name': fields.function(
+            _get_model_name, string='Model Internal Name',
+            type='char', size=250, method=True
+        ),
         'def_to':fields.char(
                 'Recepient (To)',
                 size=250,
