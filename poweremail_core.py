@@ -487,7 +487,7 @@ class poweremail_core_accounts(osv.osv):
                         msg.attach(MIMEText(body_text.encode("utf-8"), _charset='UTF-8'))
                     if core_obj.send_pref == 'html' or core_obj.send_pref == 'both':
                         html_body = body.get('html', u'')
-                        if core_obj.send_pref == 'html' and (len(html_body) == 0 or html_body == u''):
+                        if len(html_body) == 0 or html_body == u'':
                             html_body = body.get('text', u'<p>No Mail Message</p>').replace('\n', '<br/>').replace('\r', '<br/>')
                         html_body = tools.ustr(html_body)
                         msg.attach(MIMEText(html_body.encode("utf-8"), _subtype='html', _charset='UTF-8'))
