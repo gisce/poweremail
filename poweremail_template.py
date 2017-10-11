@@ -206,18 +206,16 @@ class poweremail_templates(osv.osv):
     _name = "poweremail.templates"
     _description = 'Power Email Templates for Models'
 
-    def change_model(self, cursor, user, ids, object_name, context=None):
-        if object_name:
+    def change_model(self, cursor, user, template_id, model_id, context=None):
+        if model_id:
             mod_name = self.pool.get('ir.model').read(
-                                              cursor,
-                                              user,
-                                              object_name,
-                                              ['model'], context)['model']
+                cursor, user, model_id, ['model'], context
+            )['model']
         else:
             mod_name = False
-        return {
-                'value':{'model_int_name':mod_name}
-                }
+        val = {'model_int_name': mod_name}
+        self.pool.get('poweremail.templates').write(
+            cursor, user, template_id, val)
 
     _columns = {
         'name' : fields.char('Name of Template', size=100, required=True),
