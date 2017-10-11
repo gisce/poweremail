@@ -174,18 +174,18 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 context = {}
             ctx = context.copy()
             ctx.update({'browse_reference': True})
-            object = pool.get(template.model_int_name).browse(cursor, user,
-                                                              recid, ctx)
+            object = pool.get(template.object_name.model).browse(cursor, user, recid, ctx)
             env = {
-                'user':pool.get('res.users').browse(cursor, user, user, context),
-                'db':cursor.dbname
-                   }
+                'user': pool.get('res.users').browse(
+                    cursor, user, user, context),
+                'db': cursor.dbname
+            }
             if template.template_language == 'mako':
                 templ = MakoTemplate(message, input_encoding='utf-8')
-                reply = MakoTemplate(message).render_unicode(object=object,
-                                                             peobject=object,
-                                                             env=env,
-                                                             format_exceptions=True)
+                reply = templ.render_unicode(
+                    object=object, peobject=object,
+                    env=env, format_exceptions=True
+                )
             elif template.template_language == 'django':
                 templ = DjangoTemplate(message)
                 env['object'] = object
