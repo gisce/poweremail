@@ -153,6 +153,8 @@ class poweremail_send_wizard(osv.osv_memory):
 
 
     def fields_get(self, cr, uid, fields=None, context=None, read_access=True):
+        if context is None:
+            context = {}
         result = super(poweremail_send_wizard, self).fields_get(cr, uid, fields, context, read_access)
         if 'attachment_ids' in result and 'src_model' in context:
             result['attachment_ids']['domain'] = [('res_model','=',context['src_model']),('res_id','=',context['active_id'])]
