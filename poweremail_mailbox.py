@@ -252,8 +252,17 @@ class PoweremailMailbox(osv.osv):
                 # If bounce mail cannot be sent, unlink it
                 if bounce_mail.folder != 'sent':
                     bounce_mail.unlink()
-            history = self.read(cr, uid, id, ['history'], context).get('history', '')
-            self.write(cr, uid, id, {'history': (history or '') + "\n" + time.strftime("%Y-%m-%d %H:%M:%S") + ": " + tools.ustr(message)}, context)
+            history = self.read(
+                cr, uid, pmail_id, ['history'], context).get('history', '')
+            # Limit history to X lines, then rotate
+            if len(history.split('\n')) > 10:
+                history = '\n'.join(history.split('\n')[1:])
+            history_newline = "\n{}: {}".format(
+                time.strftime("%Y-%m-%d %H:%M:%S"), tools.ustr(message)
+            )
+            self.write(
+                cr, uid, pmail_id, {
+                    'history': (history or '') + history_newline}, context)
 
     def complete_mail(self, cr, uid, ids, context=None):
         if context is None:
