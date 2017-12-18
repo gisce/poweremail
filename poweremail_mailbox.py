@@ -30,6 +30,7 @@ import poweremail_engines
 from poweremail_core import filter_send_emails, _priority_selection
 import netsvc
 from tools.translate import _
+from tools.config import config
 import tools
 import pooler
 
@@ -254,8 +255,9 @@ class PoweremailMailbox(osv.osv):
                     bounce_mail.unlink()
             history = self.read(
                 cr, uid, pmail_id, ['history'], context).get('history', '')
+            history_limit = config.get('pmail_history_limit', 10)
             # Limit history to X lines, then rotate
-            if len(history.split('\n')) > 10:
+            if len(history.split('\n')) > history_limit:
                 history = '\n'.join(history.split('\n')[1:])
             history_newline = "\n{}: {}".format(
                 time.strftime("%Y-%m-%d %H:%M:%S"), tools.ustr(message)
