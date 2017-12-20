@@ -69,7 +69,7 @@
 						<page string="Attachments">
 							<group col="4">
 								<separator colspan="4" string="Attachments" />
-								<field name="pem_attachments_ids" colspan="4" nolabel="1" />
+								<field name="pem_attachments_ids" colspan="4" nolabel="1" height="400"/>
 							</group>
 						</page>
 						<page string="Advanced">
