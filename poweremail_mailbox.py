@@ -30,6 +30,7 @@ import poweremail_engines
 from poweremail_core import filter_send_emails, _priority_selection
 import netsvc
 from tools.translate import _
+from tools.config import config
 import tools
 import pooler
 
@@ -230,26 +231,40 @@ class PoweremailMailbox(osv.osv):
         user = user_obj.browse(cr, uid, uid)
         if 'lang' not in context:
             context.update({'lang': user.context_lang})
-        for id in ids:
-            #Notify the sender errors
-            if (context.get('notify_errors', False)
-                and error
-                and not context.get('bounce', False)):
-                mail = self.browse(cr, uid, id)
-                vals = {'folder': 'outbox',
-                        'history': '',
-                        'pem_to': mail.pem_account_id.email_id,
-                        'pem_subject': _(u"Error sending email: %s") % mail.pem_subject}
-                bounce_mail_id = self.copy(cr, uid, id, vals)
+        for pmail_id in ids:
+            # Notify the sender errors
+            if context.get('notify_errors', False) \
+                    and not context.get('bounce', False) \
+                    and error:
+                mail = self.browse(cr, uid, pmail_id)
+                vals = {
+                    'folder': 'outbox',
+                    'history': '',
+                    'pem_to': mail.pem_account_id.email_id,
+                    'pem_subject': _(
+                        u"Error sending email: %s"
+                    ) % mail.pem_subject
+                }
+                bounce_mail_id = self.copy(cr, uid, pmail_id, vals)
                 ctx = context.copy()
                 ctx.update({'bounce': True})
                 self.send_this_mail(cr, uid, [bounce_mail_id], ctx)
                 bounce_mail = self.browse(cr, uid, bounce_mail_id)
-                #If bounce mail cannot be sent, unlink it
+                # If bounce mail cannot be sent, unlink it
                 if bounce_mail.folder != 'sent':
                     bounce_mail.unlink()
-            history = self.read(cr, uid, id, ['history'], context).get('history', '')
-            self.write(cr, uid, id, {'history': (history or '') + "\n" + time.strftime("%Y-%m-%d %H:%M:%S") + ": " + tools.ustr(message)}, context)
+            history = self.read(
+                cr, uid, pmail_id, ['history'], context).get('history', '')
+            history_limit = config.get('pmail_history_limit', 10)
+            # Limit history to X lines, then rotate
+            if len(history.split('\n')) > history_limit:
+                history = '\n'.join(history.split('\n')[1:])
+            history_newline = "\n{}: {}".format(
+                time.strftime("%Y-%m-%d %H:%M:%S"), tools.ustr(message)
+            )
+            self.write(
+                cr, uid, pmail_id, {
+                    'history': (history or '') + history_newline}, context)
 
     def complete_mail(self, cr, uid, ids, context=None):
         if context is None:
