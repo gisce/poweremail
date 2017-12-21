@@ -254,7 +254,7 @@ class PoweremailMailbox(osv.osv):
                 if bounce_mail.folder != 'sent':
                     bounce_mail.unlink()
             history = self.read(
-                cr, uid, pmail_id, ['history'], context).get('history', '')
+                cr, uid, pmail_id, ['history'], context).get('history', '') or ''
             history_limit = config.get('pmail_history_limit', 10)
             # Limit history to X lines, then rotate
             if len(history.split('\n')) > history_limit:
