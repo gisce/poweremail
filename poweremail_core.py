@@ -457,7 +457,7 @@ class poweremail_core_accounts(osv.osv):
             serv = self.smtp_connection(cr, uid, id)
             if serv:
                 try:
-                    msg = MIMEMultipart(_subtype='alternative')
+                    msg = MIMEMultipart()
                     for header, value in context.get('headers', {}).items():
                         msg.add_header(header, value)
                     if subject:
