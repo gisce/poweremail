@@ -457,7 +457,24 @@ class poweremail_core_accounts(osv.osv):
             serv = self.smtp_connection(cr, uid, id)
             if serv:
                 try:
-                    msg = MIMEMultipart()
+                    msgtype = context.get('MIME_type', False)
+                    if msgtype:
+                        mime_type, mime_subtype = msgtype.split('/')
+                        if mime_type == 'multipart' and mime_subtype in [
+                            'mixed', 'alternative', 'related'
+                        ]:
+                            msg = MIMEMultipart(_subtype=mime_subtype)
+                        elif mime_type == 'text' and mime_subtype in [
+                            'plain', 'html'
+                        ]:
+                            msg = MIMEText(_subtype=mime_subtype)
+                        else:
+                            raise Exception(_(
+                                'Msg Type "{}" not Allowed'.format(
+                                    msgtype
+                                )))
+                    else:
+                        msg = MIMEMultipart()
                     for header, value in context.get('headers', {}).items():
                         msg.add_header(header, value)
                     if subject:
