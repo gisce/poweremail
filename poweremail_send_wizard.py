@@ -262,8 +262,8 @@ class poweremail_send_wizard(osv.osv_memory):
                 'pem_body_html': get_end_value(id, screen_vals['body_html']),
                 'pem_account_id': screen_vals['from'],
                 'priority': screen_vals['priority'],
-                'state':'na',
-                'mail_type':'multipart/alternative' #Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
+                'state': 'na',
+                'mail_type': 'multipart/mixed'
             }
             if screen_vals['signature']:
                 signature = self.pool.get('res.users').read(cr, uid, uid, ['signature'], context)['signature']
