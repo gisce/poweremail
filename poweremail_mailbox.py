@@ -168,12 +168,14 @@ class PoweremailMailbox(osv.osv):
                     ])
                     if not headers.get('In-Reply-To', ''):
                         headers['In-Reply-To'] = mails[-1].pem_message_id
+                ctx = context.copy()
+                ctx.update({'MIME_subtype': values['mail_type'] or False})
                 result = core_obj.send_mail(cr, uid,
                                   [values['pem_account_id'][0]],
                                   {'To':values.get('pem_to', u'') or u'', 'CC':values.get('pem_cc', u'') or u'', 'BCC':values.get('pem_bcc', u'') or u''},
                                   values['pem_subject'] or u'',
                                   {'text':values.get('pem_body_text', u'') or u'', 'html':values.get('pem_body_html', u'') or u''},
-                                  payload=payload, context=context)
+                                  payload=payload, context=ctx)
                 if result == True:
                     self.write(cr, uid, id, {'folder':'sent', 'state':'na', 'date_mail':time.strftime("%Y-%m-%d %H:%M:%S")}, context)
                     self.historise(cr, uid, [id], "Email sent successfully", context)
