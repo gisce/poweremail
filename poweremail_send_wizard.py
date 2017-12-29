@@ -31,6 +31,7 @@ import time
 import re
 from tools.translate import _
 import tools
+from qreu.address import Address
 from poweremail_template import get_value
 from poweremail_core import filter_send_emails, _priority_selection
 
@@ -251,9 +252,14 @@ class poweremail_send_wizard(osv.osv_memory):
             context['src_rec_ids'] = context['src_rec_ids'][:1]
 
         for id in context['src_rec_ids']:
-            accounts = self.pool.get('poweremail.core_accounts').read(cr, uid, screen_vals['from'], context=context)
+            pem_account_obj = self.pool.get('poweremail.core_accounts')
+            accounts = pem_account_obj.read(
+                cr, uid, screen_vals['from'], context=context)
+            account = Address(accounts['name'], accounts['email_id'])
             vals = {
-                'pem_from': tools.ustr(accounts['name']) + "<" + tools.ustr(accounts['email_id']) + ">",
+                'pem_from': '{} <{}>'.format(
+                    account.display_name, account.address
+                ),
                 'pem_to': get_end_value(id, screen_vals['to']),
                 'pem_cc': get_end_value(id, screen_vals['cc']),
                 'pem_bcc': get_end_value(id, screen_vals['bcc']),
@@ -262,8 +268,8 @@ class poweremail_send_wizard(osv.osv_memory):
                 'pem_body_html': get_end_value(id, screen_vals['body_html']),
                 'pem_account_id': screen_vals['from'],
                 'priority': screen_vals['priority'],
-                'state':'na',
-                'mail_type':'multipart/alternative' #Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
+                'state': 'na',
+                'mail_type': 'multipart/mixed'
             }
             if screen_vals['signature']:
                 signature = self.pool.get('res.users').read(cr, uid, uid, ['signature'], context)['signature']
