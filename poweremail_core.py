@@ -45,6 +45,8 @@ import poweremail_engines
 from tools.translate import _
 import tools
 
+from qreu import Email
+
 
 def filter_send_emails(emails_str):
     if not emails_str:
@@ -443,8 +445,8 @@ class poweremail_core_accounts(osv.osv):
             result['all'].extend(ids_as_list)
         return result
 
-    def send_mail(self, cr, uid, ids, addresses, subject='', body=None, payload=None, context=None):
-        #TODO: Replace all this crap with a single email object
+    def send_mail(self, cr, uid, ids,
+                  addresses, subject='', body=None, payload=None, context=None):
         if body is None:
             body = {}
         if payload is None:
@@ -452,84 +454,85 @@ class poweremail_core_accounts(osv.osv):
         if context is None:
             context = {}
         logger = netsvc.Logger()
-        for id in ids:
-            core_obj = self.browse(cr, uid, id, context)
-            serv = self.smtp_connection(cr, uid, id)
+        try:
+            addresses_list = self.get_ids_from_dict(addresses)
+        except Exception as error:
+            logger.notifyChannel(
+                _("Power Email"), netsvc.LOG_ERROR,
+                _("Cannot send mails of accounts {} "
+                  "when the addresses list is empty").format(ids)
+            )
+            return error
+        # Try to send the e-mail from each allowed account
+        # Only one mail is sent
+        for account_id in ids:
+            account = self.browse(cr, uid, account_id, context)
+            serv = self.smtp_connection(cr, uid, account_id)
             if serv:
                 try:
-                    msgtype = context.get('MIME_type', False)
-                    if msgtype:
-                        mime_type, mime_subtype = msgtype.split('/')
-                        if mime_type == 'multipart' and mime_subtype in [
-                            'mixed', 'alternative', 'related'
-                        ]:
-                            msg = MIMEMultipart(_subtype=mime_subtype)
-                        elif mime_type == 'text' and mime_subtype in [
-                            'plain', 'html'
-                        ]:
-                            msg = MIMEText(_subtype=mime_subtype)
-                        else:
-                            raise Exception(_(
-                                'Msg Type "{}" not Allowed'.format(
-                                    msgtype
-                                )))
-                    else:
-                        msg = MIMEMultipart()
+                    sender_name = Header(account.name, 'utf-8').encode()
+                    mail = Email(**{
+                        'subject': subject or context.get('subject', ''),
+                        'from': sender_name + " <" + account.email_id + ">",
+                        'to': addresses_list.get('To', []),
+                        'cc': addresses_list.get('CC', []),
+                        'bcc': addresses_list.get('BCC', []),
+                        'body_text': tools.ustr(
+                            body.get('text', 'No Mail Message')),
+                        'body_html': tools.ustr(
+                            body.get('html', 'No Mail Message')),
+
+                    })
                     for header, value in context.get('headers', {}).items():
-                        msg.add_header(header, value)
-                    if subject:
-                        msg['Subject'] = subject
-                    sender_name = Header(core_obj.name, 'utf-8').encode()
-                    msg['From'] = sender_name + " <" + core_obj.email_id + ">"
-                    msg['Organization'] = tools.ustr(core_obj.user.company_id.name)
-                    msg['Date'] = formatdate()
-                    addresses_l = self.get_ids_from_dict(addresses)
-                    if addresses_l['To']:
-                        msg['To'] = u','.join(addresses_l['To'])
-                    if addresses_l['CC']:
-                        msg['CC'] = u','.join(addresses_l['CC'])
-#                    if addresses_l['BCC']:
-#                        msg['BCC'] = u','.join(addresses_l['BCC'])
-                    if body.get('text', False):
-                        temp_body_text = body.get('text', '')
-                        l = len(temp_body_text.replace(' ', '').replace('\r', '').replace('\n', ''))
-                        if l == 0:
-                            body['text'] = u'No Mail Message'
-                    # Attach parts into message container.
-                    # According to RFC 2046, the last part of a multipart message, in this case
-                    # the HTML message, is best and preferred.
-                    if core_obj.send_pref == 'text' or core_obj.send_pref == 'both':
-                        body_text = body.get('text', u'No Mail Message')
-                        body_text = tools.ustr(body_text)
-                        msg.attach(MIMEText(body_text.encode("utf-8"), _charset='UTF-8'))
-                    if core_obj.send_pref == 'html' or core_obj.send_pref == 'both':
-                        html_body = body.get('html', u'')
-                        if len(html_body) == 0 or html_body == u'':
-                            html_body = body.get('text', u'<p>No Mail Message</p>').replace('\n', '<br/>').replace('\r', '<br/>')
-                        html_body = tools.ustr(html_body)
-                        msg.attach(MIMEText(html_body.encode("utf-8"), _subtype='html', _charset='UTF-8'))
-                    #Now add attachments if any
-                    for file in payload.keys():
-                        part = MIMEBase('application', "octet-stream")
-                        part.set_payload(base64.decodestring(payload[file]))
-                        part.add_header('Content-Disposition', 'attachment; filename="%s"' % file)
-                        Encoders.encode_base64(part)
-                        msg.attach(part)
-                except Exception, error:
-                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: MIME Error\nDescription: %s") % (id, error))
+                        mail.add_header(header, value)
+                    mail.add_header(
+                        'Organization', Header(account.user.company_id.name)
+                    )
+                    mail.add_header(
+                        'Date', Header(formatdate())
+                    )
+                    # Add all attachments (if any)
+                    for file_name in payload.keys():
+                        mail.add_attachment(
+                            input_b64=payload[file_name],
+                            attname=file_name
+                        )
+                except Exception as error:
+                    logger.notifyChannel(
+                        _("Power Email"), netsvc.LOG_ERROR,
+                        _("Could not create mail from Account {}.\n"
+                          "Description: {}").format(account_id, error)
+                    )
                     return error
                 try:
-                    #print msg['From'],toadds
-                    serv.sendmail(msg['From'], addresses_l['all'], msg.as_string())
-                except Exception, error:
-                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: Server Send Error\nDescription: %s") % (id, error))
-                    return error
-                #The mail sending is complete
+                    send_list = u','.join(
+                        addresses_list.get('To', []) +
+                        addresses_list.get('CC', []) +
+                        addresses_list.get('BCC', [])
+                    )
+                    serv.sendmail(mail.from_, send_list, mail.mime_string)
+                except Exception as error:
+                    logger.notifyChannel(
+                        _("Power Email"), netsvc.LOG_ERROR,
+                        _("Sending mail from Account {} failed.\n"
+                          "Description: {}").format(account_id, error)
+                    )
+                    # If error sending,
+                    #  retry with another account if there is any
+                    continue
+                # If sent successfully,
+                #  close the connection and notify
                 serv.close()
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Mail from Account %s successfully Sent.") % (id))
+                logger.notifyChannel(
+                    _("Power Email"), netsvc.LOG_INFO,
+                    _("Mail from Account %s successfully Sent.") % account_id
+                )
                 return True
             else:
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: Account not approved") % id)
+                logger.notifyChannel(
+                    _("Power Email"), netsvc.LOG_ERROR,
+                    _("Mail from Account %s failed. "
+                      "Probable Reason: Account not approved") % account_id)
 
     def extracttime(self, time_as_string):
         """
