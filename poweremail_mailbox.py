@@ -308,7 +308,8 @@ class PoweremailMailbox(osv.osv):
 
     def create(self, cursor, user, vals, context=None):
         if vals.get('pem_mail_orig', False):
-            vals['pem_subject'] = qreu.Email(vals['pem_mail_orig']).subject
+            mail = qreu.Email.parse(vals['pem_mail_orig'])
+            vals['pem_subject'] = mail.subject
         for field in ('pem_to', 'pem_cc', 'pem_bcc'):
             if field in vals:
                 vals[field] = filter_send_emails(vals[field])
@@ -490,7 +491,7 @@ class PoweremailMailboxConversation(osv.osv):
         :return: conversation_id
         """
 
-        mail = qreu.Email(raw_email)
+        mail = qreu.Email.parse(raw_email)
         if not mail:
             return False
 

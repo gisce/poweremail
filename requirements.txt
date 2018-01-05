@@ -1,2 +1,2 @@
 mako
-qreu
+qreu>=0.4.0
