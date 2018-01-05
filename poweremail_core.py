@@ -463,33 +463,38 @@ class poweremail_core_accounts(osv.osv):
                   "when the addresses list is empty").format(ids)
             )
             return error
+        subject = subject or context.get('subject', '') or ''
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
             serv = self.smtp_connection(cr, uid, account_id)
             if serv:
+                mail = Email()
                 try:
-                    sender_name = Header(account.name, 'utf-8').encode()
+                    sender_name = account.name + " <" + account.email_id + ">"
+                    body_html = (
+                        tools.ustr(body.get('html', '')) or
+                        tools.ustr(body.get('text', ''))
+                    )
+                    if "<br/>" not in body_html:
+                        body_html.replace('\n', '<br/>')
                     mail = Email(**{
-                        'subject': subject or context.get('subject', ''),
-                        'from': sender_name + " <" + account.email_id + ">",
+                        'subject': subject,
+                        'from': sender_name,
                         'to': addresses_list.get('To', []),
                         'cc': addresses_list.get('CC', []),
                         'bcc': addresses_list.get('BCC', []),
-                        'body_text': tools.ustr(
-                            body.get('text', 'No Mail Message')),
-                        'body_html': tools.ustr(
-                            body.get('html', 'No Mail Message')),
-
+                        'body_text': tools.ustr(body.get('text', '')),
+                        'body_html': body_html
                     })
                     for header, value in context.get('headers', {}).items():
                         mail.add_header(header, value)
                     mail.add_header(
-                        'Organization', Header(account.user.company_id.name)
+                        'Organization', account.user.company_id.name
                     )
                     mail.add_header(
-                        'Date', Header(formatdate())
+                        'Date', formatdate()
                     )
                     # Add all attachments (if any)
                     for file_name in payload.keys():
@@ -500,8 +505,9 @@ class poweremail_core_accounts(osv.osv):
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
-                        _("Could not create mail from Account {}.\n"
-                          "Description: {}").format(account_id, error)
+                        _("Could not create mail \"{subject}\" "
+                          "from Account \"{account.name}\".\n"
+                          "Description: {error}").format(**locals())
                     )
                     return error
                 try:
@@ -510,7 +516,7 @@ class poweremail_core_accounts(osv.osv):
                         addresses_list.get('CC', []) +
                         addresses_list.get('BCC', [])
                     )
-                    serv.sendmail(mail.from_, send_list, mail.mime_string)
+                    serv.sendmail(sender_name, send_list, mail.mime_string)
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
