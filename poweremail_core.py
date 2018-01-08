@@ -676,6 +676,18 @@ class poweremail_core_accounts(osv.osv):
         #coreaccounti: ID of poeremail core account
         logger = netsvc.Logger()
         mail_obj = self.pool.get('poweremail.mailbox')
+        # Check for existing mails
+        existing_mails = mail_obj.search(
+            cr, uid, [
+                ('pem_account_id', '=', coreaccountid),
+                ('pem_message_id', '=', mail['Message-Id'])
+            ]
+        )
+        if existing_mails:
+            last_mail_id = self.read(
+                cr, uid, coreaccountid, ['last_mail_id'])['last_mail_id']
+            self.write(cr, uid, coreaccountid, {'last_mail_id': last_mail_id+1})
+            return False
         #TODO:If multipart save attachments and save ids
         vals = {
             'pem_from':self.decode_header_text(mail['From']),
@@ -695,15 +707,7 @@ class poweremail_core_accounts(osv.osv):
             'pem_account_id':coreaccountid,
             'pem_message_id': mail['Message-Id'],
             'pem_mail_orig': str(mail)
-            }
-        existing_mails = mail_obj.search(
-            cr, uid, [(key, '=', value) for key, value in vals.items()]
-        )
-        if existing_mails:
-            last_mail_id = self.read(
-                cr, uid, coreaccountid, ['last_mail_id'])['last_mail_id']
-            self.write(cr, uid, coreaccountid, {'last_mail_id': last_mail_id+1})
-            return False
+        }
         parsed_mail = self.get_payloads(mail)
         vals['pem_body_text'] = parsed_mail['text']
         vals['pem_body_html'] = parsed_mail['html']
