@@ -696,6 +696,14 @@ class poweremail_core_accounts(osv.osv):
             'pem_message_id': mail['Message-Id'],
             'pem_mail_orig': str(mail)
             }
+        existing_mails = mail_obj.search(
+            cr, uid, [(key, '=', value) for key, value in vals.items()]
+        )
+        if existing_mails:
+            last_mail_id = self.read(
+                cr, uid, coreaccountid, ['last_mail_id'])['last_mail_id']
+            self.write(cr, uid, coreaccountid, {'last_mail_id': last_mail_id+1})
+            return False
         parsed_mail = self.get_payloads(mail)
         vals['pem_body_text'] = parsed_mail['text']
         vals['pem_body_html'] = parsed_mail['html']
