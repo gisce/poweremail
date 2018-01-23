@@ -79,7 +79,7 @@
 								<field name="mail_type" colspan="2" />
 								<field name="folder" colspan="2" select="2"/>
 								<separator string="History" colspan="4" />
-								<field name="history" nolabel="1" colspan="4"/>
+								<field name="history" nolabel="1" colspan="4" height="400"/>
 							</group>
 						</page>
                         <page string="Raw content">
