@@ -46,6 +46,7 @@ from tools.translate import _
 import tools
 
 from qreu import Email
+from qreu.sendercontext import Sender, SMTPSender
 
 
 def filter_send_emails(emails_str):
@@ -468,8 +469,13 @@ class poweremail_core_accounts(osv.osv):
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
-            serv = self.smtp_connection(cr, uid, account_id)
-            if serv:
+            sender = SMTPSender if context.get('debug', False) else Sender
+            with sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass
+            ):
                 mail = Email()
                 try:
                     sender_name = account.name + " <" + account.email_id + ">"
@@ -511,12 +517,7 @@ class poweremail_core_accounts(osv.osv):
                     )
                     return error
                 try:
-                    send_list = u','.join(
-                        addresses_list.get('To', []) +
-                        addresses_list.get('CC', []) +
-                        addresses_list.get('BCC', [])
-                    )
-                    serv.sendmail(sender_name, send_list, mail.mime_string)
+                    return mail.send()
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
@@ -526,19 +527,6 @@ class poweremail_core_accounts(osv.osv):
                     # If error sending,
                     #  retry with another account if there is any
                     continue
-                # If sent successfully,
-                #  close the connection and notify
-                serv.close()
-                logger.notifyChannel(
-                    _("Power Email"), netsvc.LOG_INFO,
-                    _("Mail from Account %s successfully Sent.") % account_id
-                )
-                return True
-            else:
-                logger.notifyChannel(
-                    _("Power Email"), netsvc.LOG_ERROR,
-                    _("Mail from Account %s failed. "
-                      "Probable Reason: Account not approved") % account_id)
 
     def extracttime(self, time_as_string):
         """
