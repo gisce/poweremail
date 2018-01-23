@@ -463,8 +463,8 @@ class poweremail_core_accounts(osv.osv):
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
-            sender = (Sender if config.get('poweremail_debuging', False)
-                      else SMTPSender)
+            # Use sender if debug is set
+            sender = (Sender if config.get('debug_mode', False) else SMTPSender)
             with sender(
                 host=account.smtpserver,
                 port=account.smtpport,
