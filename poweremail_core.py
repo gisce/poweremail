@@ -41,12 +41,11 @@ import imaplib
 import string
 import email
 import time, datetime
-import poweremail_engines
 from tools.translate import _
 import tools
 
 from qreu import Email
-from qreu.sendercontext import Sender, SMTPSender
+from qreu.sendcontext import Sender, SMTPSender
 
 
 def filter_send_emails(emails_str):
@@ -469,12 +468,13 @@ class poweremail_core_accounts(osv.osv):
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
-            sender = SMTPSender if context.get('debug', False) else Sender
+            sender = Sender if context.get('debug', False) else SMTPSender
             with sender(
                 host=account.smtpserver,
                 port=account.smtpport,
                 user=account.smtpuname,
-                passwd=account.smtppass
+                passwd=account.smtppass,
+                tls=account.smtptls
             ):
                 mail = Email()
                 try:
