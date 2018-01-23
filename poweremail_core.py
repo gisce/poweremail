@@ -36,6 +36,7 @@ import string
 import email
 import time, datetime
 from tools.translate import _
+from tools import config
 import tools
 
 from qreu import Email
@@ -462,7 +463,8 @@ class poweremail_core_accounts(osv.osv):
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
-            sender = Sender if context.get('debug', False) else SMTPSender
+            sender = (Sender if config.get('poweremail_debuging', False)
+                      else SMTPSender)
             with sender(
                 host=account.smtpserver,
                 port=account.smtpport,
