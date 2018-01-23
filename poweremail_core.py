@@ -24,15 +24,9 @@
 #########################################################################
 
 from osv import osv, fields
-from html2text import html2text
-import re
 import smtplib
 import base64
-from email import Encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.header import decode_header, Header
+from email.header import decode_header
 from email.utils import formatdate
 import re
 import netsvc
