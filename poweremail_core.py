@@ -24,15 +24,9 @@
 #########################################################################
 
 from osv import osv, fields
-from html2text import html2text
-import re
 import smtplib
 import base64
-from email import Encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.header import decode_header, Header
+from email.header import decode_header
 from email.utils import formatdate
 import re
 import netsvc
@@ -41,11 +35,12 @@ import imaplib
 import string
 import email
 import time, datetime
-import poweremail_engines
 from tools.translate import _
+from tools import config
 import tools
 
 from qreu import Email
+from qreu.sendcontext import Sender, SMTPSender
 
 
 def filter_send_emails(emails_str):
@@ -468,8 +463,15 @@ class poweremail_core_accounts(osv.osv):
         # Only one mail is sent
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
-            serv = self.smtp_connection(cr, uid, account_id)
-            if serv:
+            # Use sender if debug is set
+            sender = (Sender if config.get('debug_mode', False) else SMTPSender)
+            with sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass,
+                tls=account.smtptls
+            ):
                 mail = Email()
                 try:
                     sender_name = account.name + " <" + account.email_id + ">"
@@ -511,12 +513,7 @@ class poweremail_core_accounts(osv.osv):
                     )
                     return error
                 try:
-                    send_list = u','.join(
-                        addresses_list.get('To', []) +
-                        addresses_list.get('CC', []) +
-                        addresses_list.get('BCC', [])
-                    )
-                    serv.sendmail(sender_name, send_list, mail.mime_string)
+                    return mail.send()
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
@@ -526,19 +523,6 @@ class poweremail_core_accounts(osv.osv):
                     # If error sending,
                     #  retry with another account if there is any
                     continue
-                # If sent successfully,
-                #  close the connection and notify
-                serv.close()
-                logger.notifyChannel(
-                    _("Power Email"), netsvc.LOG_INFO,
-                    _("Mail from Account %s successfully Sent.") % account_id
-                )
-                return True
-            else:
-                logger.notifyChannel(
-                    _("Power Email"), netsvc.LOG_ERROR,
-                    _("Mail from Account %s failed. "
-                      "Probable Reason: Account not approved") % account_id)
 
     def extracttime(self, time_as_string):
         """
