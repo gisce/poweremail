@@ -421,9 +421,11 @@ class poweremail_core_accounts(osv.osv):
         "a@b.com,c@bcom; d@b.com;e@b.com->['a@b.com',...]"
         """
         email_sep_by_commas = ids_as_str \
-                                    .replace('; ', ',') \
-                                    .replace(';', ',') \
-                                    .replace(', ', ',')
+            .replace('; ', ',') \
+            .replace(';', ',')  \
+            .replace(', ', ',') \
+            .replace('"', '')   \
+            .replace("'", "")
         return email_sep_by_commas.split(',')
 
     def get_ids_from_dict(self, addresses={}):
