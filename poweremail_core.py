@@ -442,6 +442,25 @@ class poweremail_core_accounts(osv.osv):
 
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
+        def create_qreu(headers, payload, **kwargs):
+            mail = Email(**{
+                'subject': kwargs.get('subject'),
+                'from': kwargs.get('from'),
+                'to': kwargs.get('to'),
+                'cc': kwargs.get('cc'),
+                'body_text': kwargs.get('body_text'),
+                'body_html': kwargs.get('body_html')
+            })
+            for header, value in headers.items():
+                mail.add_header(header, value)
+            # Add all attachments (if any)
+            for file_name in payload.keys():
+                mail.add_attachment(
+                    input_b64=payload[file_name],
+                    attname=file_name
+                )
+            return mail
+
         if body is None:
             body = {}
         if payload is None:
@@ -461,8 +480,21 @@ class poweremail_core_accounts(osv.osv):
         subject = subject or context.get('subject', '') or ''
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
+        result = []
+        body_html = (
+            tools.ustr(body.get('html', '')) or
+            tools.ustr(body.get('text', ''))
+        )
+        if "<br/>" not in body_html and "<br>" not in body_html:
+            body_html = body_html.replace('\n', '<br/>')
+        extra_headers = context.get('headers', {})
+        sent_addr = []
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
+            sender_name = account.name + " <" + account.email_id + ">"
+            extra_headers.update({
+                'Organitzation': account.company_id.name
+            })
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
             with sender(
@@ -474,35 +506,18 @@ class poweremail_core_accounts(osv.osv):
             ):
                 mail = Email()
                 try:
-                    sender_name = account.name + " <" + account.email_id + ">"
-                    body_html = (
-                        tools.ustr(body.get('html', '')) or
-                        tools.ustr(body.get('text', ''))
+                    mail = create_qreu(
+                        headers=extra_headers, payload=payload,
+                        **{
+                            'subject': subject,
+                            'from': sender_name,
+                            'to': addresses_list.get('To', []),
+                            'cc': addresses_list.get('CC', []),
+                            'body_text': tools.ustr(body.get('text', '')),
+                            'body_html': body_html
+                        }
                     )
-                    if "<br/>" not in body_html and "<br>" not in body_html:
-                        body_html = body_html.replace('\n', '<br/>')
-                    mail = Email(**{
-                        'subject': subject,
-                        'from': sender_name,
-                        'to': addresses_list.get('To', []),
-                        'cc': addresses_list.get('CC', []),
-                        'bcc': addresses_list.get('BCC', []),
-                        'body_text': tools.ustr(body.get('text', '')),
-                        'body_html': body_html
-                    })
-                    for header, value in context.get('headers', {}).items():
-                        mail.add_header(header, value)
-                    mail.add_header(
-                        'Organization', account.user.company_id.name
                     )
-                    mail.add_header(
-                        'Date', formatdate()
-                    )
-                    # Add all attachments (if any)
-                    for file_name in payload.keys():
-                        mail.add_attachment(
-                            input_b64=payload[file_name],
-                            attname=file_name
                         )
                 except Exception as error:
                     logger.notifyChannel(
