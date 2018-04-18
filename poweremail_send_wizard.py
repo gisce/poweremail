@@ -59,6 +59,17 @@ class poweremail_send_wizard(osv.osv_memory):
 
         if template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
+        elif (context.get('from', False) and
+              isinstance(context.get('from'), int)):
+            # If account provided from context, check availability
+            account = accounts_obj.browse(cr, uid, context.get('from'), context)
+            if ((account.user.id == uid or (
+                account.company == 'yes' and
+                account.user.id in company_users
+            )) and account.state == 'approved'):
+                return [(
+                    account.id, "{} ({})".format(account.name, account.email_id)
+                )]
         else:
             # Check for user's accounts available
             search_params = [
