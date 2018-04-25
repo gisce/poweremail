@@ -185,9 +185,10 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
             })
             if template.template_language == 'mako':
                 templ = MakoTemplate(message, input_encoding='utf-8')
+                extra_render_values = env.get('extra_render_values', {}) or {}
                 reply = templ.render_unicode(
                     object=object, peobject=object,
-                    env=env, format_exceptions=True
+                    env=env, format_exceptions=True, **extra_render_values
                 )
             elif template.template_language == 'django':
                 templ = DjangoTemplate(message)
