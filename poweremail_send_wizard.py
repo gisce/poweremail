@@ -43,20 +43,58 @@ class poweremail_send_wizard(osv.osv_memory):
     def _get_accounts(self, cr, uid, context=None):
         if context is None:
             context = {}
-
+        users_obj = self.pool.get('res.users')
+        accounts_obj = self.pool.get('poweremail.core_accounts')
         template = self._get_template(cr, uid, context)
         if not template:
             return []
-
+        user_company = users_obj.read(
+            cr, uid, uid, ['company_id'])['company_id'][0]
+        company_users = users_obj.search(
+            cr, uid, [
+                ('company_id', '=', user_company)
+            ]
+        )
         logger = netsvc.Logger()
 
         if template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
+        elif (context.get('from', False) and
+              isinstance(context.get('from'), int)):
+            # If account provided from context, check availability
+            account = accounts_obj.browse(cr, uid, context.get('from'), context)
+            if ((account.user.id == uid or (
+                account.company == 'yes' and
+                account.user.id in company_users
+            )) and account.state == 'approved'):
+                return [(
+                    account.id, "{} ({})".format(account.name, account.email_id)
+                )]
         else:
-            accounts_id = self.pool.get('poweremail.core_accounts').search(cr,uid,[('company','=','no'),('user','=',uid)], context=context)
+            # Check for user's accounts available
+            search_params = [
+                ('company', '=', 'no'),
+                ('user', '=', uid)
+            ]
+            accounts_id = accounts_obj.search(
+                cr, uid, search_params, context=context)
+            search_params = [
+                ('company', '=', 'yes'),
+                ('user', 'in', company_users)
+            ]
+            company_accounts_ids = accounts_obj.search(
+                cr, uid, search_params, context=context)
             if accounts_id:
-                accounts = self.pool.get('poweremail.core_accounts').browse(cr,uid,accounts_id, context)
-                return [(r.id,r.name + " (" + r.email_id + ")") for r in accounts]
+                return [
+                    (r.id, r.name + " (" + r.email_id + ")")
+                    for r in accounts_obj.browse(cr, uid, accounts_id, context)
+                ]
+            elif company_accounts_ids:
+                return [
+                    (r.id, r.name + " (" + r.email_id + ")")
+                    for r in accounts_obj.browse(
+                        cr, uid, company_accounts_ids, context)
+                ]
             else:
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
                 raise osv.except_osv(_("Power Email"),_("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
