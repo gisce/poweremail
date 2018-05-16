@@ -244,8 +244,8 @@ class PoweremailMailbox(osv.osv):
                     'history': '',
                     'pem_to': mail.pem_account_id.email_id,
                     'pem_subject': _(
-                        u"Error sending email: {}, id: {}"
-                    ).format(mail.pem_subject, mail.id)
+                        u"Error sending email with id {}: {}"
+                    ).format(mail.id, mail.pem_subject)
                 }
                 bounce_mail_id = self.copy(cr, uid, pmail_id, vals)
                 ctx = context.copy()
