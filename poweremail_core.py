@@ -481,7 +481,11 @@ class poweremail_core_accounts(osv.osv):
                         tools.ustr(body.get('html', '')) or
                         tools.ustr(body.get('text', ''))
                     )
-                    if "<br/>" not in body_html and "<br>" not in body_html:
+                    if (
+                        body_html.strip()[0] != '<' and
+                        "<br/>" not in body_html and
+                        "<br>" not in body_html
+                    ):
                         body_html = body_html.replace('\n', '<br/>')
                     mail = Email(**{
                         'subject': subject,
