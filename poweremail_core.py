@@ -439,7 +439,10 @@ class poweremail_core_accounts(osv.osv):
             ids_as_list = self.split_to_ids(addresses.get(each, u''))
             while u'' in ids_as_list:
                 ids_as_list.remove(u'')
-            result[each] = ids_as_list
+            if each == 'FROM':
+                result[each] = ids_as_list[0]
+            else:
+                result[each] = ids_as_list
             result['all'].extend(ids_as_list)
         return result
 
@@ -454,11 +457,14 @@ class poweremail_core_accounts(osv.osv):
         logger = netsvc.Logger()
         try:
             addresses_list = self.get_ids_from_dict(addresses)
-            sender_address = Address(addresses_list.get('FROM' or False))
-            sender_str = u'{} <{}>'.format(
-                sender_address.display_name,
-                sender_address.address
-            )
+            sender_address = addresses_list.get('FROM', False)
+            if sender_address:
+                sender_address = parseaddr(sender_address)
+                sender_address = Address(sender_address[0], sender_address[1])
+                sender_str = u'{} <{}>'.format(
+                    sender_address.display_name,
+                    sender_address.address
+                ).strip()
         except Exception as error:
             logger.notifyChannel(
                 _("Power Email"), netsvc.LOG_ERROR,
@@ -489,6 +495,7 @@ class poweremail_core_accounts(osv.osv):
                         sender_str not in sender_name
                     ):
                         sender_name = parseaddr(sender_name)
+                        sender_name = Address(sender_name[0], sender_name[1])
                         sender_name = u'{} <{}>'.format(
                             (
                                 sender_address.display_name
