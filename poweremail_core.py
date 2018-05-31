@@ -455,6 +455,10 @@ class poweremail_core_accounts(osv.osv):
         try:
             addresses_list = self.get_ids_from_dict(addresses)
             sender_address = Address(addresses_list.get('FROM' or False))
+            sender_str = u'{} <{}>'.format(
+                sender_address.display_name,
+                sender_address.address
+            )
         except Exception as error:
             logger.notifyChannel(
                 _("Power Email"), netsvc.LOG_ERROR,
@@ -480,27 +484,22 @@ class poweremail_core_accounts(osv.osv):
                 try:
                     sender_name = account.name + " <" + account.email_id + ">"
                     if (
-                        sender_address and
-                        sender_name != sender_address and
-                        sender_address not in sender_name
+                        sender_address and sender_str and
+                        sender_name != sender_str and
+                        sender_str not in sender_name
                     ):
                         sender_name = parseaddr(sender_name)
                         sender_name = u'{} <{}>'.format(
-                            sender_address.display_name,
-                            sender_name.address
+                            (
+                                sender_address.display_name
+                                if sender_address.display_name
+                                else sender_name.display_name
+                            ), sender_name.address
                         )
                         if addresses_list.get('BCC', False):
-                            addresses_list['BCC'].append(u'{} <{}>'.format(
-                                sender_address.display_name,
-                                sender_address.address
-                            ))
+                            addresses_list['BCC'].append(sender_str)
                         else:
-                            addresses_list['BCC'] = [
-                                u'{} <{}>'.format(
-                                    sender_address.display_name,
-                                    sender_address.address
-                                )
-                            ]
+                            addresses_list['BCC'] = [sender_str]
                         addresses_list['BCC'] = list(set(addresses_list['BCC']))
                     body_html = (
                         tools.ustr(body.get('html', '')) or
