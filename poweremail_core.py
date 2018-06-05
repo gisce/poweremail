@@ -40,6 +40,7 @@ from tools import config
 import tools
 
 from qreu import Email
+from qreu.address import Address, parseaddr
 from qreu.sendcontext import Sender, SMTPSender
 
 
@@ -433,12 +434,15 @@ class poweremail_core_accounts(osv.osv):
         TODO: Doc this
         """
         result = {'all':[]}
-        keys = ['To', 'CC', 'BCC']
+        keys = ['To', 'CC', 'BCC', 'FROM']
         for each in keys:
             ids_as_list = self.split_to_ids(addresses.get(each, u''))
             while u'' in ids_as_list:
                 ids_as_list.remove(u'')
-            result[each] = ids_as_list
+            if each == 'FROM':
+                result[each] = ids_as_list[0]
+            else:
+                result[each] = ids_as_list
             result['all'].extend(ids_as_list)
         return result
 
@@ -463,6 +467,36 @@ class poweremail_core_accounts(osv.osv):
                 )
             return mail
 
+        def parse_body_html(pem_body_html, pem_body_text):
+            html = pem_body_text if not pem_body_html else pem_body_html
+            if (
+                html.strip()[0] != '<' and
+                "<br/>" not in html and
+                "<br>" not in html
+            ):
+                html = html.replace('\n', '<br/>')
+            return html
+
+        def parse_sender(pem_account, pem_addresses):
+            from_addr = pem_addresses.get('FROM', False)
+            sender_addr = pem_account
+            if from_addr:
+                # If custom from address
+                from_addr = Address(*parseaddr(from_addr))
+                account_addr = Address(*parseaddr(pem_account))
+                if from_addr.display_name:
+                    # If from address has display name, use it with account addr
+                    sender_addr = u'{} <{}>'.format(
+                        from_addr.display_name,
+                        account_addr.address
+                    ).strip()
+                # ADD the custom from address to BCC
+                if not pem_addresses.get('BCC', False):
+                    pem_addresses['BCC'] = []
+                pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
+                pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
+            return sender_addr
+
         if body is None:
             body = {}
         if payload is None:
@@ -470,6 +504,8 @@ class poweremail_core_accounts(osv.osv):
         if context is None:
             context = {}
         logger = netsvc.Logger()
+        # Get Addresses to send the email
+        sender_str = ''
         try:
             addresses_list = self.get_ids_from_dict(addresses)
         except Exception as error:
@@ -479,24 +515,30 @@ class poweremail_core_accounts(osv.osv):
                   "when the addresses list is empty").format(ids)
             )
             return error
+        # Get email Data
         subject = subject or context.get('subject', '') or ''
+        body_html = parse_body_html(
+            pem_body_html=tools.ustr(body.get('html', '')),
+            pem_body_text=tools.ustr(body.get('text', ''))
+        )
+        extra_headers = context.get('headers', {})
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
-        result = []
-        body_html = (
-            tools.ustr(body.get('html', '')) or
-            tools.ustr(body.get('text', ''))
-        )
-        if "<br/>" not in body_html and "<br>" not in body_html:
-            body_html = body_html.replace('\n', '<br/>')
-        extra_headers = context.get('headers', {})
-        sent_addr = []
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
+            # Update the sender address from account
             sender_name = account.name + " <" + account.email_id + ">"
-            extra_headers.update({
-                'Organitzation': account.company_id.name
-            })
+            sender_name = parse_sender(
+                pem_account=sender_name,
+                pem_addresses=addresses_list
+            )
+            # If the account is a company account, update the header
+            if account.user.company_id:
+                extra_headers.update({
+                    'Organitzation': account.user.company_id.name
+                })
+            elif 'Organitzation' in extra_headers:
+                extra_headers.pop('Organitzation')
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
             with sender(
@@ -519,8 +561,6 @@ class poweremail_core_accounts(osv.osv):
                             'body_html': body_html
                         }
                     )
-                    )
-                        )
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
