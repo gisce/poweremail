@@ -508,8 +508,6 @@ class poweremail_core_accounts(osv.osv):
         extra_headers = context.get('headers', {})
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
-        result = []
-        sent_addr = []
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
             # Update the sender address from account
