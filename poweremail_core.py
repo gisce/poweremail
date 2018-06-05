@@ -448,6 +448,25 @@ class poweremail_core_accounts(osv.osv):
 
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
+        def create_qreu(headers, payload, **kwargs):
+            mail = Email(**{
+                'subject': kwargs.get('subject'),
+                'from': kwargs.get('from'),
+                'to': kwargs.get('to'),
+                'cc': kwargs.get('cc'),
+                'body_text': kwargs.get('body_text'),
+                'body_html': kwargs.get('body_html')
+            })
+            for header, value in headers.items():
+                mail.add_header(header, value)
+            # Add all attachments (if any)
+            for file_name in payload.keys():
+                mail.add_attachment(
+                    input_b64=payload[file_name],
+                    attname=file_name
+                )
+            return mail
+
         if body is None:
             body = {}
         if payload is None:
@@ -455,6 +474,8 @@ class poweremail_core_accounts(osv.osv):
         if context is None:
             context = {}
         logger = netsvc.Logger()
+        # Get Addresses to send the email
+        sender_str = ''
         try:
             addresses_list = self.get_ids_from_dict(addresses)
             sender_address = addresses_list.get('FROM', False)
@@ -472,11 +493,58 @@ class poweremail_core_accounts(osv.osv):
                   "when the addresses list is empty").format(ids)
             )
             return error
+        # Get email Data
         subject = subject or context.get('subject', '') or ''
+        body_html = (
+                tools.ustr(body.get('html', '')) or
+                tools.ustr(body.get('text', ''))
+        )
+        if (
+                body_html.strip()[0] != '<' and
+                "<br/>" not in body_html and
+                "<br>" not in body_html
+        ):
+            body_html = body_html.replace('\n', '<br/>')
+        extra_headers = context.get('headers', {})
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
+        result = []
+        sent_addr = []
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
+            # Update the sender address from account
+            sender_name = account.name + " <" + account.email_id + ">"
+            if (
+                    sender_address and sender_str and
+                    sender_name != sender_str and
+                    sender_str not in sender_name
+            ):
+                # If the sender differs from the account, send from account
+                # with the "custom" display name
+                sender_name = parseaddr(sender_name)
+                sender_name = Address(sender_name[0], sender_name[1])
+                sender_name = u'{} <{}>'.format(
+                    (
+                        sender_address.display_name
+                        if sender_address.display_name
+                        else sender_name.display_name
+                    ), sender_name.address
+                )
+                # Also add the from address on the BCC
+                if addresses_list.get('BCC', False):
+                    addresses_list['BCC'].append(sender_str)
+                else:
+                    # If there were no BCCs, initialize it
+                    addresses_list['BCC'] = [sender_str]
+                # Remove any duplicated address on BCC
+                addresses_list['BCC'] = list(set(addresses_list['BCC']))
+            # If the account is a company account, update the header
+            if account.company_id:
+                extra_headers.update({
+                    'Organitzation': account.company_id.name
+                })
+            elif 'Organitzation' in extra_headers:
+                extra_headers.pop('Organitzation')
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
             with sender(
@@ -488,59 +556,17 @@ class poweremail_core_accounts(osv.osv):
             ):
                 mail = Email()
                 try:
-                    sender_name = account.name + " <" + account.email_id + ">"
-                    if (
-                        sender_address and sender_str and
-                        sender_name != sender_str and
-                        sender_str not in sender_name
-                    ):
-                        sender_name = parseaddr(sender_name)
-                        sender_name = Address(sender_name[0], sender_name[1])
-                        sender_name = u'{} <{}>'.format(
-                            (
-                                sender_address.display_name
-                                if sender_address.display_name
-                                else sender_name.display_name
-                            ), sender_name.address
-                        )
-                        if addresses_list.get('BCC', False):
-                            addresses_list['BCC'].append(sender_str)
-                        else:
-                            addresses_list['BCC'] = [sender_str]
-                        addresses_list['BCC'] = list(set(addresses_list['BCC']))
-                    body_html = (
-                        tools.ustr(body.get('html', '')) or
-                        tools.ustr(body.get('text', ''))
+                    mail = create_qreu(
+                        headers=extra_headers, payload=payload,
+                        **{
+                            'subject': subject,
+                            'from': sender_name,
+                            'to': addresses_list.get('To', []),
+                            'cc': addresses_list.get('CC', []),
+                            'body_text': tools.ustr(body.get('text', '')),
+                            'body_html': body_html
+                        }
                     )
-                    if (
-                        body_html.strip()[0] != '<' and
-                        "<br/>" not in body_html and
-                        "<br>" not in body_html
-                    ):
-                        body_html = body_html.replace('\n', '<br/>')
-                    mail = Email(**{
-                        'subject': subject,
-                        'from': sender_name,
-                        'to': addresses_list.get('To', []),
-                        'cc': addresses_list.get('CC', []),
-                        'bcc': addresses_list.get('BCC', []),
-                        'body_text': tools.ustr(body.get('text', '')),
-                        'body_html': body_html
-                    })
-                    for header, value in context.get('headers', {}).items():
-                        mail.add_header(header, value)
-                    mail.add_header(
-                        'Organization', account.user.company_id.name
-                    )
-                    mail.add_header(
-                        'Date', formatdate()
-                    )
-                    # Add all attachments (if any)
-                    for file_name in payload.keys():
-                        mail.add_attachment(
-                            input_b64=payload[file_name],
-                            attname=file_name
-                        )
                 except Exception as error:
                     logger.notifyChannel(
                         _("Power Email"), netsvc.LOG_ERROR,
