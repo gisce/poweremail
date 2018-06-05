@@ -477,6 +477,26 @@ class poweremail_core_accounts(osv.osv):
                 html = html.replace('\n', '<br/>')
             return html
 
+        def parse_sender(pem_account, pem_addresses):
+            from_addr = pem_addresses.get('FROM', False)
+            sender_addr = pem_account
+            if from_addr:
+                # If custom from address
+                from_addr = parseaddr(from_addr)
+                account_addr = parseaddr(pem_account)
+                if from_addr.display_name:
+                    # If from address has display name, use it with account addr
+                    sender_addr = u'{} <{}>'.format(
+                        from_addr.display_name,
+                        account_addr.address
+                    ).strip()
+                # ADD the custom from address to BCC
+                if not pem_addresses.get('BCC', False):
+                    pem_addresses['BCC'] = []
+                pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
+                pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
+            return sender_addr
+
         if body is None:
             body = {}
         if payload is None:
@@ -488,14 +508,6 @@ class poweremail_core_accounts(osv.osv):
         sender_str = ''
         try:
             addresses_list = self.get_ids_from_dict(addresses)
-            sender_address = addresses_list.get('FROM', False)
-            if sender_address:
-                sender_address = parseaddr(sender_address)
-                sender_address = Address(sender_address[0], sender_address[1])
-                sender_str = u'{} <{}>'.format(
-                    sender_address.display_name,
-                    sender_address.address
-                ).strip()
         except Exception as error:
             logger.notifyChannel(
                 _("Power Email"), netsvc.LOG_ERROR,
@@ -516,30 +528,10 @@ class poweremail_core_accounts(osv.osv):
             account = self.browse(cr, uid, account_id, context)
             # Update the sender address from account
             sender_name = account.name + " <" + account.email_id + ">"
-            if (
-                    sender_address and sender_str and
-                    sender_name != sender_str and
-                    sender_str not in sender_name
-            ):
-                # If the sender differs from the account, send from account
-                # with the "custom" display name
-                sender_name = parseaddr(sender_name)
-                sender_name = Address(sender_name[0], sender_name[1])
-                sender_name = u'{} <{}>'.format(
-                    (
-                        sender_address.display_name
-                        if sender_address.display_name
-                        else sender_name.display_name
-                    ), sender_name.address
-                )
-                # Also add the from address on the BCC
-                if addresses_list.get('BCC', False):
-                    addresses_list['BCC'].append(sender_str)
-                else:
-                    # If there were no BCCs, initialize it
-                    addresses_list['BCC'] = [sender_str]
-                # Remove any duplicated address on BCC
-                addresses_list['BCC'] = list(set(addresses_list['BCC']))
+            sender_name = parse_sender(
+                pem_account=account,
+                pem_addresses=addresses_list
+            )
             # If the account is a company account, update the header
             if account.company_id:
                 extra_headers.update({
