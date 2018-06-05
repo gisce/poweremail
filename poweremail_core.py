@@ -482,8 +482,8 @@ class poweremail_core_accounts(osv.osv):
             sender_addr = pem_account
             if from_addr:
                 # If custom from address
-                from_addr = parseaddr(from_addr)
-                account_addr = parseaddr(pem_account)
+                from_addr = Address(*parseaddr(from_addr))
+                account_addr = Address(*parseaddr(pem_account))
                 if from_addr.display_name:
                     # If from address has display name, use it with account addr
                     sender_addr = u'{} <{}>'.format(
@@ -529,13 +529,13 @@ class poweremail_core_accounts(osv.osv):
             # Update the sender address from account
             sender_name = account.name + " <" + account.email_id + ">"
             sender_name = parse_sender(
-                pem_account=account,
+                pem_account=sender_name,
                 pem_addresses=addresses_list
             )
             # If the account is a company account, update the header
-            if account.company_id:
+            if account.user.company_id:
                 extra_headers.update({
-                    'Organitzation': account.company_id.name
+                    'Organitzation': account.user.company_id.name
                 })
             elif 'Organitzation' in extra_headers:
                 extra_headers.pop('Organitzation')
