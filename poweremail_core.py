@@ -467,6 +467,16 @@ class poweremail_core_accounts(osv.osv):
                 )
             return mail
 
+        def parse_body_html(pem_body_html, pem_body_text):
+            html = pem_body_text if not pem_body_html else pem_body_html
+            if (
+                html.strip()[0] != '<' and
+                "<br/>" not in html and
+                "<br>" not in html
+            ):
+                html = html.replace('\n', '<br/>')
+            return html
+
         if body is None:
             body = {}
         if payload is None:
@@ -495,16 +505,10 @@ class poweremail_core_accounts(osv.osv):
             return error
         # Get email Data
         subject = subject or context.get('subject', '') or ''
-        body_html = (
-                tools.ustr(body.get('html', '')) or
-                tools.ustr(body.get('text', ''))
+        body_html = parse_body_html(
+            pem_body_html=tools.ustr(body.get('html', '')),
+            pem_body_text=tools.ustr(body.get('text', ''))
         )
-        if (
-                body_html.strip()[0] != '<' and
-                "<br/>" not in body_html and
-                "<br>" not in body_html
-        ):
-            body_html = body_html.replace('\n', '<br/>')
         extra_headers = context.get('headers', {})
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
