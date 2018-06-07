@@ -1120,22 +1120,23 @@ class poweremail_core_accounts(osv.osv):
 
     def get_payloads(self, mail):
         """
+        Parse the Email with qreu's Email and return a dict with:
+        - 'text': body_text
+        - 'html': body_html
+        - 'attachments': [attachments]
         """
-        #This function will go through the mail and identify the payloads and return them
-        parsed_mail = {
-                'text':False,
-                'html':False,
-                'attachments':[]
-                       }
-        for part in mail.walk():
-            mail_part_type = part.get_content_type()
-            if mail_part_type == 'text/plain':
-                parsed_mail['text'] = tools.ustr(part.get_payload(decode=True)) # decode=True to decode a MIME message
-            elif mail_part_type == 'text/html':
-                parsed_mail['html'] = tools.ustr(part.get_payload(decode=True)) # Is decode=True needed in html MIME messages?
-            elif not mail_part_type.startswith('multipart'):
-                parsed_mail['attachments'].append((mail_part_type, part.get_filename(), part.get_payload(decode=True)))
-        return parsed_mail
+        # Use qreu's parsing
+        parsed_mail = Email(mail)
+        parts = parsed_mail.body_parts
+        attachments = [
+            (v['type'], v['name'], v['content'])
+            for v in parsed_mail.attachments
+        ]
+        return {
+            'text': parts['plain'],
+            'html': parts['html'],
+            'attachments': attachments,
+        }
 
     def decode_header_text(self, text):
         """ Decode internationalized headers RFC2822.
