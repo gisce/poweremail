@@ -345,6 +345,21 @@ class poweremail_send_wizard(osv.osv_memory):
                 }, context)
                 attachment_ids.append( new_id )
 
+            if context.get('attachment', False):
+                for attch in context['attachment']:
+                    attachment_obj = self.pool.get('ir.attachment')
+                    name = attch['name']
+                    content = attch['content']
+                    attach_id = attachment_obj.create(cr, uid, {
+                        'description': name,
+                        'name': name,
+                        'datas_fname': name,
+                        'datas': content,
+                        'res_model': 'poweremail.mailbox',
+                        'res_id': mail_id
+                    })
+                    attachment_ids.append(attach_id)
+
             if attachment_ids:
                 self.pool.get('poweremail.mailbox').write(cr, uid, mail_id, {
                     'pem_attachments_ids': [[6, 0, attachment_ids]],
