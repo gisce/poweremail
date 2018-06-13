@@ -454,6 +454,7 @@ class poweremail_core_accounts(osv.osv):
                 'from': kwargs.get('from'),
                 'to': kwargs.get('to'),
                 'cc': kwargs.get('cc'),
+                'bcc': kwargs.get('bcc'),
                 'body_text': kwargs.get('body_text'),
                 'body_html': kwargs.get('body_html')
             })
@@ -490,11 +491,12 @@ class poweremail_core_accounts(osv.osv):
                         from_addr.display_name,
                         account_addr.address
                     ).strip()
-                # ADD the custom from address to BCC
-                if not pem_addresses.get('BCC', False):
-                    pem_addresses['BCC'] = []
-                pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
-                pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
+                if from_addr.address != account_addr.address:
+                    # ADD the custom from address to BCC
+                    if not pem_addresses.get('BCC', False):
+                        pem_addresses['BCC'] = []
+                    pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
+                    pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
             return sender_addr
 
         if body is None:
@@ -557,6 +559,7 @@ class poweremail_core_accounts(osv.osv):
                             'from': sender_name,
                             'to': addresses_list.get('To', []),
                             'cc': addresses_list.get('CC', []),
+                            'bcc': addresses_list.get('BCC', []),
                             'body_text': tools.ustr(body.get('text', '')),
                             'body_html': body_html
                         }
