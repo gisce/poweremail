@@ -454,6 +454,7 @@ class poweremail_core_accounts(osv.osv):
                 'from': kwargs.get('from'),
                 'to': kwargs.get('to'),
                 'cc': kwargs.get('cc'),
+                'bcc': kwargs.get('bcc'),
                 'body_text': kwargs.get('body_text'),
                 'body_html': kwargs.get('body_html')
             })
@@ -557,6 +558,7 @@ class poweremail_core_accounts(osv.osv):
                             'from': sender_name,
                             'to': addresses_list.get('To', []),
                             'cc': addresses_list.get('CC', []),
+                            'bcc': addresses_list.get('BCC', []),
                             'body_text': tools.ustr(body.get('text', '')),
                             'body_html': body_html
                         }
