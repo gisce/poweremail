@@ -491,11 +491,12 @@ class poweremail_core_accounts(osv.osv):
                         from_addr.display_name,
                         account_addr.address
                     ).strip()
-                # ADD the custom from address to BCC
-                if not pem_addresses.get('BCC', False):
-                    pem_addresses['BCC'] = []
-                pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
-                pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
+                if from_addr.address != account_addr.address:
+                    # ADD the custom from address to BCC
+                    if not pem_addresses.get('BCC', False):
+                        pem_addresses['BCC'] = []
+                    pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
+                    pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
             return sender_addr
 
         if body is None:
