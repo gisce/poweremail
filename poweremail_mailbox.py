@@ -314,13 +314,36 @@ class PoweremailMailbox(osv.osv):
 
     def create(self, cursor, user, vals, context=None):
         if vals.get('pem_mail_orig', False):
+            # If created from an email (imported from mail server)
             mail = qreu.Email.parse(vals['pem_mail_orig'])
+            # Import email "Subject"
             vals['pem_subject'] = mail.subject
         for field in ('pem_to', 'pem_cc', 'pem_bcc'):
             if field in vals:
                 vals[field] = filter_send_emails(vals[field])
         res_id = super(PoweremailMailbox, self).create(cursor, user, vals,
                                                        context)
+        if vals.get('pem_mail_orig', False):
+            # If created from an email (imported from mail server)
+            # Create the email attachemts as PEM's attachments
+            attachment_obj = self.pool.get('ir.attachment')
+            attachment_ids = []
+            for attachment_data in mail.attachments:
+                att_id = attachment_obj.create(cursor, user, {
+                    'description': _(
+                        "From Poweremail Mailbox {} Original email as {}"
+                    ).format(res_id, attachment_data['type']),
+                    'datas_fname': attachment_data['name'],
+                    'name': attachment_data['name'],
+                    'datas': attachment_data['content'],
+                    'res_model': self._name,
+                    'res_id': res_id
+                })
+                attachment_ids.append(att_id)
+            if attachment_ids:
+                self.write(cursor, user, {
+                    'pem_attachments_ids': [(6, 0, attachment_ids)]
+                })
         return res_id
 
     _columns = {
