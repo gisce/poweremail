@@ -341,7 +341,7 @@ class PoweremailMailbox(osv.osv):
                 })
                 attachment_ids.append(att_id)
             if attachment_ids:
-                self.write(cursor, user, {
+                self.write(cursor, user, [res_id], {
                     'pem_attachments_ids': [(6, 0, attachment_ids)]
                 })
         return res_id

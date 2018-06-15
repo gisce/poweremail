@@ -1129,7 +1129,7 @@ class poweremail_core_accounts(osv.osv):
         - 'attachments': [attachments]
         """
         # Use qreu's parsing
-        parsed_mail = Email(mail)
+        parsed_mail = Email.parse(mail.as_string())
         parts = parsed_mail.body_parts
         attachments = [
             (v['type'], v['name'], v['content'])
