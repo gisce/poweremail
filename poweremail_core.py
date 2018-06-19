@@ -776,10 +776,12 @@ class poweremail_core_accounts(osv.osv):
                     _("Header for Mail %s Saved successfully as ID: %s for Account: %s.") % (serv_ref,
                                                   crid,
                                                   coreaccountid))
+            # Commenting this code due to the attachments being created on
+            #  mailbox's create, as we decode the email there with QREU's Email
             #If there are attachments save them as well
-            if parsed_mail['attachments']:
-                self.save_attachments(cr, uid, mail, crid,
-                                      parsed_mail, coreaccountid, context)
+            # if parsed_mail['attachments']:
+            #     self.save_attachments(cr, uid, mail, crid,
+            #                           parsed_mail, coreaccountid, context)
             crid = False
             return True
         else:
@@ -831,9 +833,12 @@ class poweremail_core_accounts(osv.osv):
         #Check if a create was success
         if crid:
             logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Mail %s Saved successfully as ID: %s for Account: %s.") % (serv_ref, crid, coreaccountid))
+
+            # Commenting this code due to the attachments being created on
+            #  mailbox's create, as we decode the email there with QREU's Email
             #If there are attachments save them as well
-            if parsed_mail['attachments']:
-                self.save_attachments(cr, uid, mail, mailboxref, parsed_mail, coreaccountid, context)
+            # if parsed_mail['attachments']:
+            #     self.save_attachments(cr, uid, mail, mailboxref, parsed_mail, coreaccountid, context)
             return True
         else:
             logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("IMAP Mail -> Mailbox create error Account: %s, Mail: %s") % (coreaccountid, mail[0].split()[0]))
