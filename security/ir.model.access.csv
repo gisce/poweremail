@@ -14,6 +14,6 @@
 "access_pe_conversation_internal_users","poweremail.conversation","model_poweremail_conversation","res_groups_peusersi",1,1,1,1
 "access_pe_conversation_external_users","poweremail.conversation","model_poweremail_conversation","res_groups_peuserse",1,1,1,1
 "access_pe_conversation_settings_manager","poweremail.conversation","model_poweremail_conversation","res_groups_pemanager",1,1,1,1
-"access_pe_template_attachment_users","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peusersi",1,1,0,0
-"access_pe_template_attachment_users","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peuserse",1,1,0,0
+"access_pe_template_attachment_userssi","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peusersi",1,1,0,0
+"access_pe_template_attachment_usersse","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peuserse",1,1,0,0
 "access_pe_template_attachment_manager","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_pemanager",1,1,1,1

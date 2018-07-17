@@ -107,6 +107,7 @@
                                     required="1" />
                                 <field name="use_sign" colspan="4" />
                                 <field name="lang" colspan="4" />
+                                <field name="def_priority"/>
                             </group>
                             <separator colspan="3" string="Standard Body" />
                             <separator colspan="1"

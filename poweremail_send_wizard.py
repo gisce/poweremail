@@ -186,7 +186,7 @@ class poweremail_send_wizard(osv.osv_memory):
         'requested':lambda self,cr,uid,ctx: len(ctx['src_rec_ids']),
         'full_success': lambda *a: False,
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
-        'priority': lambda *a: '1',
+        'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_priority', ctx),
     }
 
 
