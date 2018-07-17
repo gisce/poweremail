@@ -68,6 +68,7 @@ import poweremail_engines
 import tools
 import report
 import pooler
+from .poweremail_mailbox import _priority_selection
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -272,6 +273,10 @@ class poweremail_templates(osv.osv):
                 'Body (Text-Web Client Only)',
                 help="The text version of the mail.",
                 translate=True),
+        'def_priority': fields.selection(
+            _priority_selection, 'Default priority',
+            help="Default priority for auto generated emails"
+        ),
         'use_sign':fields.boolean(
                 'Use Signature',
                 help="The signature from the User details "
@@ -423,7 +428,8 @@ class poweremail_templates(osv.osv):
 
     _defaults = {
         'ref_ir_act_window': False,
-        'ref_ir_value': False
+        'ref_ir_value': False,
+        'def_priority': lambda *a: '1'
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
@@ -932,7 +938,8 @@ class poweremail_templates(osv.osv):
             #This is a mandatory field when automatic emails are sent
             'state':'na',
             'folder':'drafts',
-            'mail_type':'multipart/alternative'
+            'mail_type':'multipart/alternative',
+            'priority': template.def_priority
         }
         #Use signatures if allowed
         if template.use_sign:
