@@ -91,11 +91,18 @@ class poweremail_core_accounts(osv.osv):
                         size=120, invisible=True,
                         required=False, readonly=True,
                         states={'draft':[('readonly', False)]}),
-        'smtptls':fields.boolean('Use TLS',
-                        states={'draft':[('readonly', False)]}, readonly=True),
-        'smtpssl':fields.boolean('Use SSL/TLS (only in python 2.6)',
-                        states={'draft':[('readonly', False)]}, readonly=True),
-        'send_pref':fields.selection([
+        'smtptls': fields.boolean(
+            'Use TLS', readonly=True,
+            states={'draft':[('readonly', False)]},
+            help='Start a TLS connection after the SMTP connection'
+                 ' (Usually port 587)'
+        ),
+        'smtpssl': fields.boolean(
+            'Use SSL', readonly=True,
+            states={'draft': [('readonly', False)]},
+            help='Start a SMTP connection through SSL (Usually port 465)'
+        ),
+        'send_pref': fields.selection([
                                       ('html', 'HTML otherwise Text'),
                                       ('text', 'Text otherwise HTML'),
                                       ('both', 'Both HTML & Text')
@@ -548,7 +555,8 @@ class poweremail_core_accounts(osv.osv):
                 port=account.smtpport,
                 user=account.smtpuname,
                 passwd=account.smtppass,
-                tls=account.smtptls
+                tls=account.smtptls,
+                ssl=account.smtpssl
             ):
                 mail = Email()
                 try:
