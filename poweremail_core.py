@@ -470,7 +470,8 @@ class poweremail_core_accounts(osv.osv):
             # Add all attachments (if any)
             for file_name in payload.keys():
                 # Decode b64 from raw base64 attachment and write it to a buffer
-                attachment_buffer = StringIO().write(
+                attachment_buffer = StringIO()
+                attachment_buffer.write(
                     base64.b64decode(payload[file_name]))
                 mail.add_attachment(
                     input_buff=attachment_buffer,
