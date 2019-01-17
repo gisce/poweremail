@@ -27,7 +27,7 @@ from osv import osv, fields
 import smtplib
 import base64
 from email.header import decode_header
-from email.utils import formatdate
+from StringIO import StringIO
 import re
 import netsvc
 import poplib
@@ -469,10 +469,14 @@ class poweremail_core_accounts(osv.osv):
                 mail.add_header(header, value)
             # Add all attachments (if any)
             for file_name in payload.keys():
+                # Decode b64 from raw base64 attachment and write it to a buffer
+                attachment_buffer = StringIO().write(
+                    base64.b64decode(payload[file_name]))
                 mail.add_attachment(
-                    input_b64=payload[file_name],
+                    input_buff=attachment_buffer,
                     attname=file_name
                 )
+                del attachment_buffer
             return mail
 
         def parse_body_html(pem_body_html, pem_body_text):
