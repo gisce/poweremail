@@ -745,29 +745,28 @@ class poweremail_core_accounts(osv.osv):
                 cr, uid, coreaccountid, ['last_mail_id'])['last_mail_id']
             self.write(cr, uid, coreaccountid, {'last_mail_id': last_mail_id+1})
             return False
-        #TODO:If multipart save attachments and save ids
+        # Use Qreu to parse email data (headers and text)
+        parsed = Email.parse(mail.as_string())
+        parsed_mail = self.get_payloads(parsed)
         vals = {
-            'pem_from':self.decode_header_text(mail['From']),
-            'pem_to':self.decode_header_text(mail['To']),
-            'pem_cc':self.decode_header_text(mail['cc']),
-            'pem_bcc':self.decode_header_text(mail['bcc']),
+            'pem_from': parsed.from_.address,
+            'pem_to': ','.join(parsed.to),
+            'pem_cc': ','.join(parsed.cc),
+            'pem_bcc': ','.join(parsed.bcc),
             'pem_recd':mail['date'],
             'date_mail':self.extracttime(
                             mail['date']
                                 ) or time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pem_subject':self.decode_header_text(mail['subject']),
+            'pem_subject': parsed.subject,
             'server_ref':serv_ref,
             'folder':'inbox',
             'state':context.get('state', 'unread'),
-            'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
-            'pem_body_html':'Mail not downloaded...', #TODO:Replace
+            'pem_body_text': parsed_mail['text'],
+            'pem_body_html': parsed_mail['html'],
             'pem_account_id':coreaccountid,
             'pem_message_id': mail['Message-Id'],
-            'pem_mail_orig': str(mail)
+            'pem_mail_orig': unicode(parsed.mime_string, errors='ignore')
         }
-        parsed_mail = self.get_payloads(mail)
-        vals['pem_body_text'] = parsed_mail['text']
-        vals['pem_body_html'] = parsed_mail['html']
         #Create the mailbox item now
         crid = False
         try:
@@ -815,28 +814,25 @@ class poweremail_core_accounts(osv.osv):
         #mailboxref: ID of record in malbox to complete
         logger = netsvc.Logger()
         mail_obj = self.pool.get('poweremail.mailbox')
-        #TODO:If multipart save attachments and save ids
+        parsed = Email.parse(mail.as_string())
+        parsed_mail = self.get_payloads(parsed)
         vals = {
-            'pem_from':self.decode_header_text(mail['From']),
-            'pem_to':mail['To'] and self.decode_header_text(mail['To']) or 'no recepient',
-            'pem_cc':self.decode_header_text(mail['cc']),
-            'pem_bcc':self.decode_header_text(mail['bcc']),
+            'pem_from': parsed.from_.address,
+            'pem_to': ','.join(parsed.to) or 'No Recipient',
+            'pem_cc': ','.join(parsed.cc),
+            'pem_bcc': ','.join(parsed.bcc),
             'pem_recd':mail['date'],
             'date_mail':time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pem_subject':self.decode_header_text(mail['subject']),
+            'pem_subject': parsed.subject,
             'server_ref':serv_ref,
             'folder':'inbox',
             'state':context.get('state', 'unread'),
-            'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
-            'pem_body_html':'Mail not downloaded...', #TODO:Replace
+            'pem_body_text': parsed_mail['text'],
+            'pem_body_html': parsed_mail['html'],
             'pem_account_id':coreaccountid,
             'pem_message_id': mail['Message-Id'],
-            'pem_mail_orig': str(mail)
+            'pem_mail_orig': unicode(parsed.mime_string, errors='ignore')
             }
-        #Identify Mail Type and get payload
-        parsed_mail = self.get_payloads(mail)
-        vals['pem_body_text'] = tools.ustr(parsed_mail['text'])
-        vals['pem_body_html'] = tools.ustr(parsed_mail['html'])
         #Create the mailbox item now
         crid = False
         try:
@@ -849,7 +845,7 @@ class poweremail_core_accounts(osv.osv):
 
             # Commenting this code due to the attachments being created on
             #  mailbox's create, as we decode the email there with QREU's Email
-            #If there are attachments save them as well
+            # #If there are attachments save them as well
             # if parsed_mail['attachments']:
             #     self.save_attachments(cr, uid, mail, mailboxref, parsed_mail, coreaccountid, context)
             return True
@@ -1139,15 +1135,13 @@ class poweremail_core_accounts(osv.osv):
             self.pool.get('poweremail.mailbox').send_all_mail(cr, uid, [], context=ctx)
         return True
 
-    def get_payloads(self, mail):
+    def get_payloads(self, parsed_mail):
         """
         Parse the Email with qreu's Email and return a dict with:
         - 'text': body_text
         - 'html': body_html
         - 'attachments': [attachments]
         """
-        # Use qreu's parsing
-        parsed_mail = Email.parse(mail.as_string())
         parts = parsed_mail.body_parts
         attachments = [
             (v['type'], v['name'], v['content'])
