@@ -333,6 +333,10 @@ class poweremail_send_wizard(osv.osv_memory):
                 data['model'] = self.pool.get('ir.model').browse(cr, uid, screen_vals['rel_model'], context).model
 
                 service = netsvc.LocalService(reportname)
+
+                if template.report_template.context:
+                    ctx.update(eval(template.report_template.context))
+
                 if screen_vals['single_email'] and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
                     (result, format) = service.create(cr, uid, report_record_ids, data, ctx)
