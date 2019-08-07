@@ -483,7 +483,7 @@ class poweremail_core_accounts(osv.osv):
         def parse_body_html(pem_body_html, pem_body_text):
             html = pem_body_text if not pem_body_html else pem_body_html
             if (
-                html.strip()[0] != '<' and
+                html and html.strip()[0] != '<' and
                 "<br/>" not in html and
                 "<br>" not in html
             ):
@@ -827,8 +827,8 @@ class poweremail_core_accounts(osv.osv):
             'server_ref':serv_ref,
             'folder':'inbox',
             'state':context.get('state', 'unread'),
-            'pem_body_text': parsed_mail['text'],
-            'pem_body_html': parsed_mail['html'],
+            'pem_body_text': parsed_mail.get('text', ''),
+            'pem_body_html': parsed_mail.get('html', ''),
             'pem_account_id':coreaccountid,
             'pem_message_id': mail['Message-Id'],
             'pem_mail_orig': unicode(parsed.mime_string, errors='ignore')
@@ -1148,8 +1148,8 @@ class poweremail_core_accounts(osv.osv):
             for v in parsed_mail.attachments
         ]
         return {
-            'text': parts['plain'],
-            'html': parts['html'],
+            'text': parts.get('plain', ''),
+            'html': parts.get('html', ''),
             'attachments': attachments,
         }
 
