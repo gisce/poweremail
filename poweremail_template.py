@@ -24,6 +24,7 @@ Email templates & preview
 #You should have received a copy of the GNU General Public License      #
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
+from __future__ import absolute_import
 import base64
 import random
 import time
@@ -64,7 +65,6 @@ except:
                          _("Django templates not installed")
                          )
 
-import poweremail_engines
 import tools
 import report
 import pooler
