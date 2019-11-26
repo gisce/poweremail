@@ -30,6 +30,7 @@ import random
 import time
 import types
 import netsvc
+import six
 
 LOGGER = netsvc.Logger()
 
@@ -141,12 +142,18 @@ def new_register_all(db):
         if soc:
             if not obj.template_hooks['soc']:
                 obj.old_create = obj.create
-                obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                if six.PY2:
+                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                else:
+                    obj.create = types.MethodType(send_on_create, obj)
             obj.template_hooks['soc'] += [tid]
         if sow:
             if not obj.template_hooks['sow']:
                 obj.old_write = obj.write
-                obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                if six.PY2:
+                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                else:
+                    obj.write = types.MethodType(send_on_write, obj)
             obj.template_hooks['sow'] += [tid]
     cr.close()
     return value
@@ -475,12 +482,18 @@ class poweremail_templates(osv.osv):
             if template.send_on_create:
                 if not obj.template_hooks['soc']:
                     obj.old_create = obj.create
-                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                    if six.PY2:
+                        obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                    else:
+                        obj.create = types.MethodType(send_on_create, obj)
                 obj.template_hooks['soc'] += [template.id]
             if template.send_on_write:
                 if not obj.template_hooks['sow']:
                     obj.old_write = obj.write
-                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                    if six.PY2:
+                        obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                    else:
+                        obj.write = types.MethodType(send_on_write, obj)
                 obj.template_hooks['sow'] += [template.id]
 
     def create(self, cr, uid, vals, context=None):
