@@ -146,7 +146,7 @@ class PoweremailMailbox(osv.osv):
                 pem_to = (values['pem_to'] or '').strip()
                 if pem_to in ('', 'False'):
                     self.historise(cr, uid, [id],
-                                   "No recipient: Email cannot be sent",
+                                   _("No recipient: Email cannot be sent"),
                                    context, error=True)
                     continue
                 payload = {}
@@ -200,7 +200,7 @@ class PoweremailMailbox(osv.osv):
                 )
                 if result == True:
                     self.write(cr, uid, id, {'folder':'sent', 'state':'na', 'date_mail':time.strftime("%Y-%m-%d %H:%M:%S")}, context)
-                    self.historise(cr, uid, [id], "Email sent successfully", context)
+                    self.historise(cr, uid, [id], _("Email sent successfully"), context)
                 else:
                     self.historise(cr, uid, [id], result, context, error=True)
             except Exception, error:
