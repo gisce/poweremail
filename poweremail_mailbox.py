@@ -33,6 +33,7 @@ from tools.translate import _
 from tools.config import config
 import tools
 import pooler
+import traceback
 
 import re
 import os
@@ -187,9 +188,10 @@ class PoweremailMailbox(osv.osv):
                     self.historise(cr, uid, [id], "Email sent successfully", context)
                 else:
                     self.historise(cr, uid, [id], result, context, error=True)
-            except Exception, error:
+            except Exception as exc:
+                error = traceback.format_exc()
                 logger = netsvc.Logger()
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, error))
+                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
                 self.historise(cr, uid, [id], error, context, error=True)
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
