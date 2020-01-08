@@ -170,16 +170,32 @@ class PoweremailMailbox(osv.osv):
                         headers['In-Reply-To'] = mails[-1].pem_message_id
                 ctx = context.copy()
                 ctx.update({'MIME_subtype': values['mail_type'] or False})
+                if not values.get('pem_body_html') or not values.get('pem_body_text'):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The body of the email must not be empty.")
+                    )
+                if not values.get('pem_to', u''):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The email must have a destiny account.")
+                    )
+                if not values.get('pem_from', u''):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The email must have a sending account.")
+                    )
+
                 result = core_obj.send_mail(
                     cr, uid, [values['pem_account_id'][0]], {
-                        'To': values.get('pem_to', u'') or u'',
+                        'To': values['pem_to'],
                         'CC': values.get('pem_cc', u'') or u'',
                         'BCC': values.get('pem_bcc', u'') or u'',
-                        'FROM': values.get('pem_from',u'') or u''
+                        'FROM': values['pem_from']
                     },
                     values['pem_subject'] or u'', {
-                        'text': values.get('pem_body_text', u'') or u'',
-                        'html': values.get('pem_body_html', u'') or u''
+                        'text': values['pem_body_text'],
+                        'html': values['pem_body_html']
                     }, payload=payload, context=ctx
                 )
                 if result == True:
