@@ -171,7 +171,7 @@ class PoweremailMailbox(osv.osv):
                         headers['In-Reply-To'] = mails[-1].pem_message_id
                 ctx = context.copy()
                 ctx.update({'MIME_subtype': values['mail_type'] or False})
-                if not values.get('pem_body_html') or not values.get('pem_body_text'):
+                if not values.get('pem_body_html') and not values.get('pem_body_text'):
                     raise osv.except_osv(
                         _('Error'),
                         _("The body of the email must not be empty.")
