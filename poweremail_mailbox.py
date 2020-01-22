@@ -195,8 +195,8 @@ class PoweremailMailbox(osv.osv):
                         'FROM': values['pem_from']
                     },
                     values['pem_subject'] or u'', {
-                        'text': values['pem_body_text'],
-                        'html': values['pem_body_html']
+                        'text': values.get('pem_body_text', u''),
+                        'html': values.get('pem_body_html', u'')
                     }, payload=payload, context=ctx
                 )
                 if result == True:
