@@ -106,6 +106,7 @@
 				<tree string="Power Email Inbox" colors="blue:state=='unread'">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
@@ -123,6 +124,7 @@
 				<tree string="Power Email Drafts">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
@@ -139,6 +141,7 @@
 				<tree string="Power Email Outbox">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
@@ -155,6 +158,7 @@
 				<tree string="Power Email Sent">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
@@ -171,6 +175,7 @@
 				<tree string="Power Email Follow Up">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
@@ -187,6 +192,7 @@
 				<tree string="Power Email Trash">
 					<field name="pem_user" />
 					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
 					<field name="pem_subject" select="1" />
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
