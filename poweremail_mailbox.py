@@ -187,10 +187,11 @@ class PoweremailMailbox(osv.osv):
                         _('Error'),
                         _("The email must have a sending account.")
                     )
-                if ctx.get("extra_vals_to_read"):
-                    if not ctx.get('extra_vals'):
-                        ctx['extra_vals'] = {}
-                    ctx['extra_vals'].update(self.read(cr, uid, id, ctx.get("extra_vals_to_read")))
+
+                if ctx.get("poweremail_mailbox_fields"):
+                    for val_to_read in ctx.get("poweremail_mailbox_fields"):
+                        ctx[val_to_read] = self.read(cr, uid, id, [val_to_read])[val_to_read]
+
                 result = core_obj.send_mail(
                     cr, uid, [values['pem_account_id'][0]], {
                         'To': values['pem_to'],
