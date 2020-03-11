@@ -959,6 +959,7 @@ class poweremail_templates(osv.osv):
                     mailbox_values['pem_body_text'] += "\n--\n"+sign
                 if mailbox_values['pem_body_html']:
                     mailbox_values['pem_body_html'] += sign
+        mailbox_values.update(context.get("extra_vals", {}))
         mailbox_id = self.pool.get('poweremail.mailbox').create(
                                                              cursor,
                                                              user,
