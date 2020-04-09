@@ -171,6 +171,7 @@ class PoweremailMailbox(osv.osv):
                         headers['In-Reply-To'] = mails[-1].pem_message_id
                 ctx = context.copy()
                 ctx.update({'MIME_subtype': values['mail_type'] or False})
+                ctx['poweremail_id'] = id
                 if not values.get('pem_body_html') and not values.get('pem_body_text'):
                     raise osv.except_osv(
                         _('Error'),
@@ -186,6 +187,10 @@ class PoweremailMailbox(osv.osv):
                         _('Error'),
                         _("The email must have a sending account.")
                     )
+
+                if ctx.get("poweremail_mailbox_fields"):
+                    for val_to_read in ctx.get("poweremail_mailbox_fields"):
+                        ctx[val_to_read] = self.read(cr, uid, id, [val_to_read])[val_to_read]
 
                 result = core_obj.send_mail(
                     cr, uid, [values['pem_account_id'][0]], {
