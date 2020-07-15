@@ -1,2 +1,3 @@
 mako
 qreu>=0.7.5
+html2text

@@ -42,6 +42,7 @@ import tools
 from qreu import Email
 from qreu.address import Address, parseaddr
 from qreu.sendcontext import Sender, SMTPSender
+from html2text import html2text
 
 
 def filter_send_emails(emails_str):
@@ -1147,8 +1148,11 @@ class poweremail_core_accounts(osv.osv):
             (v['type'], v['name'], v['content'])
             for v in parsed_mail.attachments
         ]
+        body_text = parts.get('plain', '')
+        if not body_text:
+            body_text = html2text(parts.get('html', ''))
         return {
-            'text': parts.get('plain', ''),
+            'text': body_text,
             'html': parts.get('html', ''),
             'attachments': attachments,
         }
