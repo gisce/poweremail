@@ -975,6 +975,8 @@ class poweremail_templates(osv.osv):
                       context=None):
         if context is None:
             context = {}
+        if not isinstance(record_ids, (list, tuple)):
+            record_ids = [record_ids]
         template = self.browse(cursor, user, template_id, context=context)
         if not template:
             raise Exception("The requested template could not be loaded")
