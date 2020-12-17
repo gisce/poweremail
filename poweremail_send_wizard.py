@@ -32,6 +32,8 @@ import re
 from tools.translate import _
 import tools
 from poweremail_template import get_value
+from poweremail_core import filter_send_emails, _priority_selection
+
 
 class poweremail_send_wizard(osv.osv_memory):
     _name = 'poweremail.send.wizard'
@@ -41,20 +43,58 @@ class poweremail_send_wizard(osv.osv_memory):
     def _get_accounts(self, cr, uid, context=None):
         if context is None:
             context = {}
-
+        users_obj = self.pool.get('res.users')
+        accounts_obj = self.pool.get('poweremail.core_accounts')
         template = self._get_template(cr, uid, context)
         if not template:
             return []
-
+        user_company = users_obj.read(
+            cr, uid, uid, ['company_id'])['company_id'][0]
+        company_users = users_obj.search(
+            cr, uid, [
+                ('company_id', '=', user_company)
+            ]
+        )
         logger = netsvc.Logger()
 
         if template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
+        elif (context.get('from', False) and
+              isinstance(context.get('from'), int)):
+            # If account provided from context, check availability
+            account = accounts_obj.browse(cr, uid, context.get('from'), context)
+            if ((account.user.id == uid or (
+                account.company == 'yes' and
+                account.user.id in company_users
+            )) and account.state == 'approved'):
+                return [(
+                    account.id, "{} ({})".format(account.name, account.email_id)
+                )]
         else:
-            accounts_id = self.pool.get('poweremail.core_accounts').search(cr,uid,[('company','=','no'),('user','=',uid)], context=context)
+            # Check for user's accounts available
+            search_params = [
+                ('company', '=', 'no'),
+                ('user', '=', uid)
+            ]
+            accounts_id = accounts_obj.search(
+                cr, uid, search_params, context=context)
+            search_params = [
+                ('company', '=', 'yes'),
+                ('user', 'in', company_users)
+            ]
+            company_accounts_ids = accounts_obj.search(
+                cr, uid, search_params, context=context)
             if accounts_id:
-                accounts = self.pool.get('poweremail.core_accounts').browse(cr,uid,accounts_id, context)
-                return [(r.id,r.name + " (" + r.email_id + ")") for r in accounts]
+                return [
+                    (r.id, r.name + " (" + r.email_id + ")")
+                    for r in accounts_obj.browse(cr, uid, accounts_id, context)
+                ]
+            elif company_accounts_ids:
+                return [
+                    (r.id, r.name + " (" + r.email_id + ")")
+                    for r in accounts_obj.browse(
+                        cr, uid, company_accounts_ids, context)
+                ]
             else:
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
                 raise osv.except_osv(_("Power Email"),_("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
@@ -127,15 +167,16 @@ class poweremail_send_wizard(osv.osv_memory):
         'full_success':fields.boolean('Complete Success',readonly=True),
         'attachment_ids': fields.many2many('ir.attachment','send_wizard_attachment_rel', 'wizard_id', 'attachment_id', 'Attachments'),
         'single_email': fields.boolean("Single email", help="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these records). If you don't check it, an email with its optional attachment will be send for each record."),
+        'priority': fields.selection(_priority_selection, 'Priority'),
     }
 
     _defaults = {
         'state': lambda self,cr,uid,ctx: len(ctx['src_rec_ids']) > 1 and 'send_type' or 'single',
         'rel_model': lambda self,cr,uid,ctx: self.pool.get('ir.model').search(cr,uid,[('model','=',ctx['src_model'])],context=ctx)[0],
         'rel_model_ref': lambda self,cr,uid,ctx: ctx['active_id'],
-        'to': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_to', ctx),
-        'cc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_cc', ctx),
-        'bcc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_bcc', ctx),
+        'to': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_to', ctx)),
+        'cc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_cc', ctx)),
+        'bcc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_bcc', ctx)),
         'subject':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_subject', ctx),
         'body_text':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_text', ctx),
         'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
@@ -145,10 +186,13 @@ class poweremail_send_wizard(osv.osv_memory):
         'requested':lambda self,cr,uid,ctx: len(ctx['src_rec_ids']),
         'full_success': lambda *a: False,
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
+        'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_priority', ctx),
     }
 
 
     def fields_get(self, cr, uid, fields=None, context=None, read_access=True):
+        if context is None:
+            context = {}
         result = super(poweremail_send_wizard, self).fields_get(cr, uid, fields, context, read_access)
         if 'attachment_ids' in result and 'src_model' in context:
             result['attachment_ids']['domain'] = [('res_model','=',context['src_model']),('res_id','=',context['active_id'])]
@@ -188,36 +232,33 @@ class poweremail_send_wizard(osv.osv_memory):
         if context is None:
             context = {}
         mailbox_obj = self.pool.get('poweremail.mailbox')
-        values = {'folder':'outbox'}
-        check_email = True
+        folder = context.get('folder', 'outbox')
+        values = {'folder': folder}
 
-        mailid = self.save_to_mailbox(cr, uid, ids, context)
+        mail_ids = self.save_to_mailbox(cr, uid, ids, context)
 
-        if len(mailid)>0:
-            mail = mailbox_obj.browse(cr, uid, mailid[0], context)
-            check_email = mail.pem_to and mailbox_obj.check_email_valid(mail.pem_to) or False
-            if mail.pem_cc:
-                check_email = check_email and mailbox_obj.check_email_valid(mail.pem_cc)
-            if mail.pem_bcc:
-                check_email = check_email and mailbox_obj.check_email_valid(mail.pem_bcc)
+        if mail_ids:
+            for mail_id in mail_ids:
+                if not mailbox_obj.is_valid(cr, uid, mail_id):
+                    values['folder'] = 'drafts'
+                else:
+                    values['folder'] = folder
+                mailbox_obj.write(cr, uid, [mail_id], values, context)
 
-        if not check_email:
-            values = {'folder':'drafts'}
-
-        if mailbox_obj.write(cr, uid, mailid, values, context):
-            return {'type':'ir.actions.act_window_close' }
+        return {'type': 'ir.actions.act_window_close'}
 
     def get_generated(self, cr, uid, ids=None, context=None):
         if ids is None:
             ids = []
         if context is None:
             context = {}
+        folder = context.get('folder', 'outbox')
         logger = netsvc.Logger()
         if context['src_rec_ids'] and len(context['src_rec_ids'])>1:
             #Means there are multiple items selected for email.
             mail_ids = self.save_to_mailbox(cr, uid, ids, context)
             if mail_ids:
-                self.pool.get('poweremail.mailbox').write(cr, uid, mail_ids, {'folder':'outbox'}, context)
+                self.pool.get('poweremail.mailbox').write(cr, uid, mail_ids, {'folder': folder}, context)
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Emails for multiple items saved in outbox."))
                 self.write(cr, uid, ids, {
                     'generated':len(mail_ids),
@@ -228,6 +269,9 @@ class poweremail_send_wizard(osv.osv_memory):
         return True
 
     def save_to_mailbox(self, cr, uid, ids, context=None):
+
+        model_obj = self.pool.get('ir.model')
+        
         if context is None:
             context = {}
         def get_end_value(id, value):
@@ -256,9 +300,11 @@ class poweremail_send_wizard(osv.osv_memory):
                 'pem_body_text': get_end_value(id, screen_vals['body_text']),
                 'pem_body_html': get_end_value(id, screen_vals['body_html']),
                 'pem_account_id': screen_vals['from'],
+                'priority': screen_vals['priority'],
                 'state':'na',
                 'mail_type':'multipart/alternative' #Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
+            vals.update(context.get("extra_vals", {}))
             if screen_vals['signature']:
                 signature = self.pool.get('res.users').read(cr, uid, uid, ['signature'], context)['signature']
                 if signature:
@@ -268,7 +314,9 @@ class poweremail_send_wizard(osv.osv_memory):
             attachment_ids = []
 
             #Create partly the mail and later update attachments
-            mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, context)
+            ctx = context.copy()
+            ctx.update({'src_rec_id': id})
+            mail_id = self.pool.get('poweremail.mailbox').create(cr, uid, vals, ctx)
             mail_ids.append(mail_id)
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
@@ -283,7 +331,12 @@ class poweremail_send_wizard(osv.osv_memory):
                 reportname = 'report.' + self.pool.get('ir.actions.report.xml').read(cr, uid, template.report_template.id, ['report_name'], context)['report_name']
                 data = {}
                 data['model'] = self.pool.get('ir.model').browse(cr, uid, screen_vals['rel_model'], context).model
+
                 service = netsvc.LocalService(reportname)
+
+                if template.report_template.context:
+                    ctx.update(eval(template.report_template.context))
+
                 if screen_vals['single_email'] and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
                     (result, format) = service.create(cr, uid, report_record_ids, data, ctx)
@@ -294,6 +347,35 @@ class poweremail_send_wizard(osv.osv_memory):
                     'datas': base64.b64encode(result),
                     'datas_fname': tools.ustr(get_end_value(id, screen_vals['report']) or _('Report')) + "." + format,
                     'description': vals['pem_body_text'] or _("No Description"),
+                    'res_model': 'poweremail.mailbox',
+                    'res_id': mail_id
+                }, context)
+                attachment_ids.append( attachment_id )
+
+            # For each extra attachment in template
+            for tmpl_attach in template.tmpl_attachment_ids:
+                report = tmpl_attach.report_id
+                reportname = 'report.%s' % report.report_name
+                data = {}
+                data['model'] = report.model
+                model_obj = self.pool.get(report.model)
+                #Parse search params
+                search_params = eval(self.get_value(cr, uid, template,
+                                               tmpl_attach.search_params,
+                                               context, id))
+                report_model_ids = model_obj.search(cr, uid, search_params)
+                file_name = self.get_value(cr, uid, template,
+                                           tmpl_attach.file_name,
+                                           context, id)
+                if not report_model_ids:
+                    continue
+                service = netsvc.LocalService(reportname)
+                (result, format) = service.create(cr, uid, report_model_ids, data, ctx)
+                attachment_id = self.pool.get('ir.attachment').create(cr, uid, {
+                    'name': file_name,
+                    'datas': base64.b64encode(result),
+                    'datas_fname': file_name,
+                    'description': _("No Description"),
                     'res_model': 'poweremail.mailbox',
                     'res_id': mail_id
                 }, context)

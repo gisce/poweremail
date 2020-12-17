@@ -7,6 +7,32 @@
     -->
 <openerp>
     <data>
+    	<record model="ir.ui.view" id="poweremail_template_attachment_form">
+            <field name="name">poweremail.template.attachment.form</field>
+            <field name="model">poweremail.template.attachment</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+            	<form string="Attachments">
+            		<field name="report_id"/>
+            		<field name="file_name"/>
+            		<field name="search_params" colspan="4"/>
+            	</form>
+            </field>
+       	</record>
+
+    	<record model="ir.ui.view" id="poweremail_template_attachment_tree">
+            <field name="name">poweremail.template.attachment.tree</field>
+            <field name="model">poweremail.template.attachment</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+            	<tree string="Attachments">
+            		<field name="report_id" colspan="4"/>
+            		<field name="search_params" colspan="4"/>
+            	</tree>
+            </field>
+       	</record>
+
+
         <!-- Power Email Template PReview -->
         <record model="ir.ui.view" id="poweremail_preview_form">
             <field name="name">poweremail.preview.form</field>
@@ -65,8 +91,7 @@
             <field name="arch" type="xml">
                 <form string="Power Email Templates">
                     <field name="name" />
-                    <field name="object_name" required="1"
-                        on_change="change_model(object_name)" />
+                    <field name="object_name" required="1"/>
                     <field name="model_int_name" invisible="1" />
                     <notebook colspan="4">
                         <page string="Mail Details">
@@ -82,6 +107,7 @@
                                     required="1" />
                                 <field name="use_sign" colspan="4" />
                                 <field name="lang" colspan="4" />
+                                <field name="def_priority"/>
                             </group>
                             <separator colspan="3" string="Standard Body" />
                             <separator colspan="1"
@@ -202,14 +228,22 @@
                             </group>
                             <separator string="Email action and wizard"
                                 colspan="4" />
+                            <group colspan="4" col="6">
+                                <field name="ref_ir_act_window" colspan="2"/>
+                                <button
+                                        string="Create action and value"
+                                        colspan="1" name="create_action_reference"
+                                        type="object"
+                                        attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"/>
+                                <field name="ref_ir_value" colspan="2"/>
+                            </group>
                             <field name="server_action" readonly="1" />
-                            <field name="ref_ir_act_window" />
-                            <field name="ref_ir_value" />
                             <separator string="Attachments (Report to attach)"
                                 colspan="4" />
                             <field name="file_name" colspan="2" />
                             <field name="report_template" colspan="2"
                                 domain="[('model','=',model_int_name)]" />
+                            <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
                             <separator string="Log partner events"
                                 colspan="4" />
                             <field name="partner_event" />

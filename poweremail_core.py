@@ -24,16 +24,10 @@
 #########################################################################
 
 from osv import osv, fields
-from html2text import html2text
-import re
 import smtplib
 import base64
-from email import Encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.header import decode_header, Header
-from email.utils import formatdate
+from email.header import decode_header
+from StringIO import StringIO
 import re
 import netsvc
 import poplib
@@ -41,9 +35,24 @@ import imaplib
 import string
 import email
 import time, datetime
-import poweremail_engines
 from tools.translate import _
+from tools import config
 import tools
+
+from qreu import Email
+from qreu.address import Address, parseaddr
+from qreu.sendcontext import Sender, SMTPSender
+from html2text import html2text
+
+
+def filter_send_emails(emails_str):
+    if not emails_str:
+        emails_str = ''
+    return ', '.join(set([e.strip() for e in emails_str.split(',')]))
+
+_priority_selection = [('0', 'Low'),
+                       ('1', 'Normal'),
+                       ('2', 'High')]
 
 class poweremail_core_accounts(osv.osv):
     """
@@ -83,11 +92,18 @@ class poweremail_core_accounts(osv.osv):
                         size=120, invisible=True,
                         required=False, readonly=True,
                         states={'draft':[('readonly', False)]}),
-        'smtptls':fields.boolean('Use TLS',
-                        states={'draft':[('readonly', False)]}, readonly=True),
-        'smtpssl':fields.boolean('Use SSL/TLS (only in python 2.6)',
-                        states={'draft':[('readonly', False)]}, readonly=True),
-        'send_pref':fields.selection([
+        'smtptls': fields.boolean(
+            'Use TLS', readonly=True,
+            states={'draft':[('readonly', False)]},
+            help='Start a TLS connection after the SMTP connection'
+                 ' (Usually port 587)'
+        ),
+        'smtpssl': fields.boolean(
+            'Use SSL', readonly=True,
+            states={'draft': [('readonly', False)]},
+            help='Start a SMTP connection through SSL (Usually port 465)'
+        ),
+        'send_pref': fields.selection([
                                       ('html', 'HTML otherwise Text'),
                                       ('text', 'Text otherwise HTML'),
                                       ('both', 'Both HTML & Text')
@@ -247,8 +263,8 @@ class poweremail_core_accounts(osv.osv):
                         serv = smtplib.SMTP_SSL(this_object.smtpserver, this_object.smtpport)
                     else:
                         serv = smtplib.SMTP(this_object.smtpserver, this_object.smtpport)
+                    serv.ehlo()
                     if this_object.smtptls:
-                        serv.ehlo()
                         serv.starttls()
                         serv.ehlo()
                 except Exception, error:
@@ -256,7 +272,8 @@ class poweremail_core_accounts(osv.osv):
                 try:
                     if serv.has_extn('AUTH'):
                         if this_object.smtpuname or this_object.smtppass:
-                            serv.login(this_object.smtpuname, this_object.smtppass)
+                            serv.login(this_object.smtpuname,
+                                       this_object.smtppass.encode('ascii'))
                 except Exception, error:
                     raise error
                 return serv
@@ -413,9 +430,11 @@ class poweremail_core_accounts(osv.osv):
         "a@b.com,c@bcom; d@b.com;e@b.com->['a@b.com',...]"
         """
         email_sep_by_commas = ids_as_str \
-                                    .replace('; ', ',') \
-                                    .replace(';', ',') \
-                                    .replace(', ', ',')
+            .replace('; ', ',') \
+            .replace(';', ',')  \
+            .replace(', ', ',') \
+            .replace('"', '')   \
+            .replace("'", "")
         return email_sep_by_commas.split(',')
 
     def get_ids_from_dict(self, addresses={}):
@@ -423,17 +442,76 @@ class poweremail_core_accounts(osv.osv):
         TODO: Doc this
         """
         result = {'all':[]}
-        keys = ['To', 'CC', 'BCC']
+        keys = ['To', 'CC', 'BCC', 'FROM']
         for each in keys:
             ids_as_list = self.split_to_ids(addresses.get(each, u''))
             while u'' in ids_as_list:
                 ids_as_list.remove(u'')
-            result[each] = ids_as_list
+            if each == 'FROM':
+                result[each] = ids_as_list[0]
+            else:
+                result[each] = ids_as_list
             result['all'].extend(ids_as_list)
         return result
 
-    def send_mail(self, cr, uid, ids, addresses, subject='', body=None, payload=None, context=None):
-        #TODO: Replace all this crap with a single email object
+    def send_mail(self, cr, uid, ids,
+                  addresses, subject='', body=None, payload=None, context=None):
+        def create_qreu(headers, payload, **kwargs):
+            mail = Email(**{
+                'subject': kwargs.get('subject'),
+                'from': kwargs.get('from'),
+                'to': kwargs.get('to'),
+                'cc': kwargs.get('cc'),
+                'bcc': kwargs.get('bcc'),
+                'body_text': kwargs.get('body_text'),
+                'body_html': kwargs.get('body_html')
+            })
+            for header, value in headers.items():
+                mail.add_header(header, value)
+            # Add all attachments (if any)
+            for file_name in payload.keys():
+                # Decode b64 from raw base64 attachment and write it to a buffer
+                attachment_buffer = StringIO()
+                attachment_buffer.write(
+                    base64.b64decode(payload[file_name]))
+                mail.add_attachment(
+                    input_buff=attachment_buffer,
+                    attname=file_name
+                )
+                del attachment_buffer
+            return mail
+
+        def parse_body_html(pem_body_html, pem_body_text):
+            html = pem_body_text if not pem_body_html else pem_body_html
+            if (
+                html and html.strip()[0] != '<' and
+                "<br/>" not in html and
+                "<br>" not in html
+            ):
+                html = html.replace('\n', '<br/>')
+            return html
+
+        def parse_sender(pem_account, pem_addresses):
+            from_addr = pem_addresses.get('FROM', False)
+            sender_addr = pem_account
+            if from_addr:
+                # If custom from address
+                from_addr = Address(*parseaddr(from_addr))
+                account_addr = Address(*parseaddr(pem_account))
+                if from_addr.display_name:
+                    # If from address has display name, use it with account addr
+                    sender_addr = u'{} <{}>'.format(
+                        from_addr.display_name,
+                        account_addr.address
+                    ).strip()
+                if from_addr.address != account_addr.address:
+                    # ADD the custom from address to BCC
+                    if not pem_addresses.get('BCC', False):
+                        pem_addresses['BCC'] = []
+                    pem_addresses['BCC'].append(u'{}'.format(from_addr.address))
+                    pem_addresses['BCC'] = list(set(pem_addresses['BCC']))
+            return sender_addr
+
         if body is None:
             body = {}
         if payload is None:
@@ -441,65 +519,84 @@ class poweremail_core_accounts(osv.osv):
         if context is None:
             context = {}
         logger = netsvc.Logger()
-        for id in ids:
-            core_obj = self.browse(cr, uid, id, context)
-            serv = self.smtp_connection(cr, uid, id)
-            if serv:
+        # Get Addresses to send the email
+        sender_str = ''
+        try:
+            addresses_list = self.get_ids_from_dict(addresses)
+        except Exception as error:
+            logger.notifyChannel(
+                _("Power Email"), netsvc.LOG_ERROR,
+                _("Cannot send mails of accounts {} "
+                  "when the addresses list is empty").format(ids)
+            )
+            return error
+        # Get email Data
+        subject = subject or context.get('subject', '') or ''
+        body_html = parse_body_html(
+            pem_body_html=tools.ustr(body.get('html', '')),
+            pem_body_text=tools.ustr(body.get('text', ''))
+        )
+        extra_headers = context.get('headers', {})
+        # Try to send the e-mail from each allowed account
+        # Only one mail is sent
+        for account_id in ids:
+            account = self.browse(cr, uid, account_id, context)
+            # Update the sender address from account
+            sender_name = account.name + " <" + account.email_id + ">"
+            sender_name = parse_sender(
+                pem_account=sender_name,
+                pem_addresses=addresses_list
+            )
+            # If the account is a company account, update the header
+            if account.user.company_id:
+                extra_headers.update({
+                    'Organitzation': account.user.company_id.name
+                })
+            elif 'Organitzation' in extra_headers:
+                extra_headers.pop('Organitzation')
+            # Use sender if debug is set
+            sender = (Sender if config.get('debug_mode', False) else SMTPSender)
+            with sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass,
+                tls=account.smtptls,
+                ssl=account.smtpssl
+            ):
+                mail = Email()
                 try:
-                    msg = MIMEMultipart()
-                    if subject:
-                        msg['Subject'] = subject
-                    sender_name = Header(core_obj.name, 'utf-8').encode()
-                    msg['From'] = sender_name + " <" + core_obj.email_id + ">"
-                    msg['Organization'] = tools.ustr(core_obj.user.company_id.name)
-                    msg['Date'] = formatdate()
-                    addresses_l = self.get_ids_from_dict(addresses)
-                    if addresses_l['To']:
-                        msg['To'] = u','.join(addresses_l['To'])
-                    if addresses_l['CC']:
-                        msg['CC'] = u','.join(addresses_l['CC'])
-#                    if addresses_l['BCC']:
-#                        msg['BCC'] = u','.join(addresses_l['BCC'])
-                    if body.get('text', False):
-                        temp_body_text = body.get('text', '')
-                        l = len(temp_body_text.replace(' ', '').replace('\r', '').replace('\n', ''))
-                        if l == 0:
-                            body['text'] = u'No Mail Message'
-                    # Attach parts into message container.
-                    # According to RFC 2046, the last part of a multipart message, in this case
-                    # the HTML message, is best and preferred.
-                    if core_obj.send_pref == 'text' or core_obj.send_pref == 'both':
-                        body_text = body.get('text', u'No Mail Message')
-                        body_text = tools.ustr(body_text)
-                        msg.attach(MIMEText(body_text.encode("utf-8"), _charset='UTF-8'))
-                    if core_obj.send_pref == 'html' or core_obj.send_pref == 'both':
-                        html_body = body.get('html', u'')
-                        if len(html_body) == 0 or html_body == u'':
-                            html_body = body.get('text', u'<p>No Mail Message</p>').replace('\n', '<br/>').replace('\r', '<br/>')
-                        html_body = tools.ustr(html_body)
-                        msg.attach(MIMEText(html_body.encode("utf-8"), _subtype='html', _charset='UTF-8'))
-                    #Now add attachments if any
-                    for file in payload.keys():
-                        part = MIMEBase('application', "octet-stream")
-                        part.set_payload(base64.decodestring(payload[file]))
-                        part.add_header('Content-Disposition', 'attachment; filename="%s"' % file)
-                        Encoders.encode_base64(part)
-                        msg.attach(part)
-                except Exception, error:
-                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: MIME Error\nDescription: %s") % (id, error))
+                    mail = create_qreu(
+                        headers=extra_headers, payload=payload,
+                        **{
+                            'subject': subject,
+                            'from': sender_name,
+                            'to': addresses_list.get('To', []),
+                            'cc': addresses_list.get('CC', []),
+                            'bcc': addresses_list.get('BCC', []),
+                            'body_text': tools.ustr(body.get('text', '')),
+                            'body_html': body_html
+                        }
+                    )
+                except Exception as error:
+                    logger.notifyChannel(
+                        _("Power Email"), netsvc.LOG_ERROR,
+                        _("Could not create mail \"{subject}\" "
+                          "from Account \"{account.name}\".\n"
+                          "Description: {error}").format(**locals())
+                    )
                     return error
                 try:
-                    #print msg['From'],toadds
-                    serv.sendmail(msg['From'], addresses_l['all'], msg.as_string())
-                except Exception, error:
-                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: Server Send Error\nDescription: %s") % (id, error))
-                    return error
-                #The mail sending is complete
-                serv.close()
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Mail from Account %s successfully Sent.") % (id))
-                return True
-            else:
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Mail from Account %s failed. Probable Reason: Account not approved") % id)
+                    return mail.send()
+                except Exception as error:
+                    logger.notifyChannel(
+                        _("Power Email"), netsvc.LOG_ERROR,
+                        _("Sending mail from Account {} failed.\n"
+                          "Description: {}").format(account_id, error)
+                    )
+                    # If error sending,
+                    #  retry with another account if there is any
+                    continue
 
     def extracttime(self, time_as_string):
         """
@@ -584,7 +681,9 @@ class poweremail_core_accounts(osv.osv):
             'state':context.get('state', 'unread'),
             'pem_body_text':'Mail not downloaded...',
             'pem_body_html':'Mail not downloaded...',
-            'pem_account_id':coreaccountid
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': str(mail)
             }
         #Identify Mail Type
         if mail.get_content_type() in self._known_content_types:
@@ -635,27 +734,40 @@ class poweremail_core_accounts(osv.osv):
         #coreaccounti: ID of poeremail core account
         logger = netsvc.Logger()
         mail_obj = self.pool.get('poweremail.mailbox')
-        #TODO:If multipart save attachments and save ids
+        # Check for existing mails
+        existing_mails = mail_obj.search(
+            cr, uid, [
+                ('pem_account_id', '=', coreaccountid),
+                ('pem_message_id', '=', mail['Message-Id'])
+            ]
+        )
+        if existing_mails:
+            last_mail_id = self.read(
+                cr, uid, coreaccountid, ['last_mail_id'])['last_mail_id']
+            self.write(cr, uid, coreaccountid, {'last_mail_id': last_mail_id+1})
+            return False
+        # Use Qreu to parse email data (headers and text)
+        parsed = Email.parse(mail.as_string())
+        parsed_mail = self.get_payloads(parsed)
         vals = {
-            'pem_from':self.decode_header_text(mail['From']),
-            'pem_to':self.decode_header_text(mail['To']),
-            'pem_cc':self.decode_header_text(mail['cc']),
-            'pem_bcc':self.decode_header_text(mail['bcc']),
+            'pem_from': parsed.from_.address,
+            'pem_to': ','.join(parsed.to),
+            'pem_cc': ','.join(parsed.cc),
+            'pem_bcc': ','.join(parsed.bcc),
             'pem_recd':mail['date'],
             'date_mail':self.extracttime(
                             mail['date']
                                 ) or time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pem_subject':self.decode_header_text(mail['subject']),
+            'pem_subject': parsed.subject,
             'server_ref':serv_ref,
             'folder':'inbox',
             'state':context.get('state', 'unread'),
-            'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
-            'pem_body_html':'Mail not downloaded...', #TODO:Replace
-            'pem_account_id':coreaccountid
-            }
-        parsed_mail = self.get_payloads(mail)
-        vals['pem_body_text'] = parsed_mail['text']
-        vals['pem_body_html'] = parsed_mail['html']
+            'pem_body_text': parsed_mail['text'],
+            'pem_body_html': parsed_mail['html'],
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': unicode(parsed.mime_string, errors='ignore')
+        }
         #Create the mailbox item now
         crid = False
         try:
@@ -677,10 +789,12 @@ class poweremail_core_accounts(osv.osv):
                     _("Header for Mail %s Saved successfully as ID: %s for Account: %s.") % (serv_ref,
                                                   crid,
                                                   coreaccountid))
+            # Commenting this code due to the attachments being created on
+            #  mailbox's create, as we decode the email there with QREU's Email
             #If there are attachments save them as well
-            if parsed_mail['attachments']:
-                self.save_attachments(cr, uid, mail, crid,
-                                      parsed_mail, coreaccountid, context)
+            # if parsed_mail['attachments']:
+            #     self.save_attachments(cr, uid, mail, crid,
+            #                           parsed_mail, coreaccountid, context)
             crid = False
             return True
         else:
@@ -701,26 +815,25 @@ class poweremail_core_accounts(osv.osv):
         #mailboxref: ID of record in malbox to complete
         logger = netsvc.Logger()
         mail_obj = self.pool.get('poweremail.mailbox')
-        #TODO:If multipart save attachments and save ids
+        parsed = Email.parse(mail.as_string())
+        parsed_mail = self.get_payloads(parsed)
         vals = {
-            'pem_from':self.decode_header_text(mail['From']),
-            'pem_to':mail['To'] and self.decode_header_text(mail['To']) or 'no recepient',
-            'pem_cc':self.decode_header_text(mail['cc']),
-            'pem_bcc':self.decode_header_text(mail['bcc']),
+            'pem_from': parsed.from_.address,
+            'pem_to': ','.join(parsed.to) or 'No Recipient',
+            'pem_cc': ','.join(parsed.cc),
+            'pem_bcc': ','.join(parsed.bcc),
             'pem_recd':mail['date'],
             'date_mail':time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pem_subject':self.decode_header_text(mail['subject']),
+            'pem_subject': parsed.subject,
             'server_ref':serv_ref,
             'folder':'inbox',
             'state':context.get('state', 'unread'),
-            'pem_body_text':'Mail not downloaded...', #TODO:Replace with mail text
-            'pem_body_html':'Mail not downloaded...', #TODO:Replace
-            'pem_account_id':coreaccountid
+            'pem_body_text': parsed_mail.get('text', ''),
+            'pem_body_html': parsed_mail.get('html', ''),
+            'pem_account_id':coreaccountid,
+            'pem_message_id': mail['Message-Id'],
+            'pem_mail_orig': unicode(parsed.mime_string, errors='ignore')
             }
-        #Identify Mail Type and get payload
-        parsed_mail = self.get_payloads(mail)
-        vals['pem_body_text'] = tools.ustr(parsed_mail['text'])
-        vals['pem_body_html'] = tools.ustr(parsed_mail['html'])
         #Create the mailbox item now
         crid = False
         try:
@@ -730,9 +843,12 @@ class poweremail_core_accounts(osv.osv):
         #Check if a create was success
         if crid:
             logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Mail %s Saved successfully as ID: %s for Account: %s.") % (serv_ref, crid, coreaccountid))
-            #If there are attachments save them as well
-            if parsed_mail['attachments']:
-                self.save_attachments(cr, uid, mail, mailboxref, parsed_mail, coreaccountid, context)
+
+            # Commenting this code due to the attachments being created on
+            #  mailbox's create, as we decode the email there with QREU's Email
+            # #If there are attachments save them as well
+            # if parsed_mail['attachments']:
+            #     self.save_attachments(cr, uid, mail, mailboxref, parsed_mail, coreaccountid, context)
             return True
         else:
             logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("IMAP Mail -> Mailbox create error Account: %s, Mail: %s") % (coreaccountid, mail[0].split()[0]))
@@ -797,33 +913,31 @@ class poweremail_core_accounts(osv.osv):
                         logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("IMAP Folder Statistics for Account: %s: %s") % (id, serv.status('"%s"' % rec.isfolder, '(MESSAGES RECENT UIDNEXT UIDVALIDITY UNSEEN)')[1][0]))
                         #If there are newer mails than the ones in mailbox
                         #print int(msg_count[0]),rec.last_mail_id
-                        if rec.last_mail_id < int(msg_count[0]):
-                            if rec.rec_headers_den_mail:
-                                #Download Headers Only
-                                for i in range(rec.last_mail_id + 1, int(msg_count[0]) + 1):
-                                    typ, msg = serv.fetch(str(i), '(FLAGS BODY.PEEK[HEADER])')
-                                    for mails in msg:
-                                        if type(mails) == type(('tuple', 'type')):
-                                            mail = email.message_from_string(mails[1])
-                                            ctx = context.copy()
-                                            if '\Seen' in mails[0]:
-                                                ctx['state'] = 'read'
-                                            if self.save_header(cr, uid, mail, id, mails[0].split()[0], ctx):#If saved succedfully then increment last mail recd
-                                                self.write(cr, uid, id, {'last_mail_id':mails[0].split()[0]}, context)
-                            else:#Receive Full Mail first time itself
-                                #Download Full RF822 Mails
-                                for i in range(rec.last_mail_id + 1, int(msg_count[0]) + 1):
-                                    typ, msg = serv.fetch(str(i), '(FLAGS RFC822)')
-                                    for j in range(0, len(msg) / 2):
-                                        mails = msg[j * 2]
-                                        flags = msg[(j * 2) + 1]
-                                        if type(mails) == type(('tuple', 'type')):
-                                            ctx = context.copy()
-                                            if '\Seen' in flags:
-                                                ctx['state'] = 'read'
-                                            mail = email.message_from_string(mails[1])
-                                            if self.save_fullmail(cr, uid, mail, id, mails[0].split()[0], ctx):#If saved succedfully then increment last mail recd
-                                                self.write(cr, uid, id, {'last_mail_id':mails[0].split()[0]}, context)
+
+                        msg_count = int(msg_count[0])
+
+                        if rec.last_mail_id < msg_count:
+                            for i in range(msg_count, rec.last_mail_id, -1):
+                                if rec.rec_headers_den_mail:
+                                    message_parts = '(FLAGS BODY[HEADER])'
+                                    method = getattr(self, 'save_header')
+                                else:
+                                    message_parts = '(FLAGS BODY[])'
+                                    method = getattr(self, 'save_fullmail')
+                                typ, msg = serv.fetch(str(i), message_parts)
+
+                                content = msg[0][1]
+                                response = msg[0][0]
+                                seq_id = response.split()[0]
+                                mail = email.message_from_string(content)
+                                ctx = context.copy()
+                                if '\Seen' in response:
+                                    ctx['state'] = 'read'
+                                method(cr, uid, mail, id, seq_id, ctx)
+                            # Always write downloaded messages
+                            self.write(cr, uid, id, {
+                                'last_mail_id': msg_count
+                            }, context)
                         serv.close()
                         serv.logout()
                     elif rec.iserver_type == 'pop3':
@@ -1022,24 +1136,26 @@ class poweremail_core_accounts(osv.osv):
             self.pool.get('poweremail.mailbox').send_all_mail(cr, uid, [], context=ctx)
         return True
 
-    def get_payloads(self, mail):
+    def get_payloads(self, parsed_mail):
         """
+        Parse the Email with qreu's Email and return a dict with:
+        - 'text': body_text
+        - 'html': body_html
+        - 'attachments': [attachments]
         """
-        #This function will go through the mail and identify the payloads and return them
-        parsed_mail = {
-                'text':False,
-                'html':False,
-                'attachments':[]
-                       }
-        for part in mail.walk():
-            mail_part_type = part.get_content_type()
-            if mail_part_type == 'text/plain':
-                parsed_mail['text'] = tools.ustr(part.get_payload(decode=True)) # decode=True to decode a MIME message
-            elif mail_part_type == 'text/html':
-                parsed_mail['html'] = tools.ustr(part.get_payload(decode=True)) # Is decode=True needed in html MIME messages?
-            elif not mail_part_type.startswith('multipart'):
-                parsed_mail['attachments'].append((mail_part_type, part.get_filename(), part.get_payload(decode=True)))
-        return parsed_mail
+        parts = parsed_mail.body_parts
+        attachments = [
+            (v['type'], v['name'], v['content'])
+            for v in parsed_mail.attachments
+        ]
+        body_text = parts.get('plain', '')
+        if not body_text:
+            body_text = html2text(parts.get('html', ''))
+        return {
+            'text': body_text,
+            'html': parts.get('html', ''),
+            'attachments': attachments,
+        }
 
     def decode_header_text(self, text):
         """ Decode internationalized headers RFC2822.
