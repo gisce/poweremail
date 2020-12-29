@@ -4,6 +4,9 @@ from osv import fields,osv
 import pooler
 import netsvc
 import re
+import six
+if six.PY3:
+    unichr = chr
 
 class poweremail_engines(osv.osv):
     _name = "poweremail.engines"
@@ -13,7 +16,7 @@ class poweremail_engines(osv.osv):
 #        print "Started Engine"
 
     def check(self):
-        print "Start self check"
+        print("Start self check")
         
     def strip_html(self,text):
         #Removes HTML, Have to check if still relevent
@@ -40,7 +43,7 @@ class poweremail_engines(osv.osv):
                             except ValueError:
                                 pass
                         else:
-                            return unicode(entity, "iso-8859-1")
+                            return six.text_type(entity, "iso-8859-1")
                 return text # leave as is
             return re.sub("(?s)<[^>]*>|&#?\w+;", fixup, text)
 

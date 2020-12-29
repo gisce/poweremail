@@ -23,11 +23,10 @@ The mailbox is an object which stores the actual email
 #You should have received a copy of the GNU General Public License      #
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
-
+from __future__ import absolute_import
 from osv import osv, fields
 import time
-import poweremail_engines
-from poweremail_core import filter_send_emails, _priority_selection
+from .poweremail_core import filter_send_emails, _priority_selection
 import netsvc
 from tools.translate import _
 from tools.config import config
@@ -56,14 +55,14 @@ class PoweremailMailbox(osv.osv):
         """
         try:
             self.get_all_mail(cursor, user, context={'all_accounts':True})
-        except Exception, e:
+        except Exception as e:
             LOGGER.notifyChannel(
                                  _("Power Email"),
                                  netsvc.LOG_ERROR,
                                  _("Error receiving mail: %s") % str(e))
         try:
             self.send_all_mail(cursor, user, context=context)
-        except Exception, e:
+        except Exception as e:
             LOGGER.notifyChannel(
                                  _("Power Email"),
                                  netsvc.LOG_ERROR,
