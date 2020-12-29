@@ -4,12 +4,12 @@ from destral import testing
 
 class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
 
-    def create_account(self):
+    def create_account(self, extra_vals=None):
         acc_obj = self.openerp.pool.get('poweremail.core_accounts')
         cursor = self.cursor
         uid = self.uid
 
-        acc_id = acc_obj.create(cursor, uid, {
+        vals = {
             'name': 'Test account',
             'user': self.uid,
             'email_id': 'test@example.com',
@@ -18,10 +18,14 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'smtpuname': 'test',
             'smtppass': 'test',
             'company': 'yes'
-        })
+        }
+        if extra_vals:
+            vals.update(extra_vals)
+
+        acc_id = acc_obj.create(cursor, uid, vals)
         return acc_id
 
-    def create_template(self):
+    def create_template(self, extra_vals=None):
 
         imd_obj = self.openerp.pool.get('ir.model.data')
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
@@ -33,13 +37,17 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             cursor, uid, 'base', 'model_res_partner'
         )[1]
 
-        tmpl_id = tmpl_obj.create(cursor, uid, {
+        vals = {
             'name': 'Test template',
             'object_name': model_partner,
             'enforce_from_account': acc_id,
             'template_language': 'mako',
             'def_priority': '2'
-        })
+        }
+        if extra_vals:
+            vals.update(extra_vals)
+
+        tmpl_id = tmpl_obj.create(cursor, uid, vals)
         return tmpl_id
 
     def test_creating_email_gets_default_priority(self):

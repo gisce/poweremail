@@ -303,6 +303,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 'state':'na',
                 'mail_type':'multipart/alternative' #Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
+            vals.update(context.get("extra_vals", {}))
             if screen_vals['signature']:
                 signature = self.pool.get('res.users').read(cr, uid, uid, ['signature'], context)['signature']
                 if signature:

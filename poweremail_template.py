@@ -862,6 +862,25 @@ class poweremail_templates(osv.osv):
                                context)
         return True
 
+    def get_from_account_id_from_template(self, cursor, uid, template_id, context=None):
+        if context is None:
+            context = {}
+        if isinstance(template_id, (list, tuple)):
+            template_id = template_id[0]
+
+        if 'account_id' in context:
+            from_account = self.pool.get('poweremail.core_accounts').read(
+                cursor, uid, context.get('account_id'), ['name', 'email_id'], context=context
+            )
+        else:
+            template = self.browse(cursor, uid, template_id, context=context)
+            from_account = {
+                'id': template.enforce_from_account.id,
+                'name': template.enforce_from_account.name,
+                'email_id': template.enforce_from_account.email_id
+            }
+        return from_account
+
     def _generate_mailbox_item_from_template(self,
                                       cursor,
                                       user,
@@ -883,21 +902,8 @@ class poweremail_templates(osv.osv):
         """
         if context is None:
             context = {}
-        #If account to send from is in context select it, else use enforced account
-        if 'account_id' in context.keys():
-            from_account = self.pool.get('poweremail.core_accounts').read(
-                                                    cursor,
-                                                    user,
-                                                    context.get('account_id'),
-                                                    ['name', 'email_id'],
-                                                    context
-                                                    )
-        else:
-            from_account = {
-                            'id':template.enforce_from_account.id,
-                            'name':template.enforce_from_account.name,
-                            'email_id':template.enforce_from_account.email_id
-                            }
+        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
+
         lang = get_value(cursor,
                          user,
                          record_id,
@@ -966,6 +972,7 @@ class poweremail_templates(osv.osv):
                     mailbox_values['pem_body_text'] += "\n--\n"+sign
                 if mailbox_values['pem_body_html']:
                     mailbox_values['pem_body_html'] += sign
+        mailbox_values.update(context.get("extra_vals", {}))
         mailbox_id = self.pool.get('poweremail.mailbox').create(
                                                              cursor,
                                                              user,
@@ -981,6 +988,8 @@ class poweremail_templates(osv.osv):
                       context=None):
         if context is None:
             context = {}
+        if not isinstance(record_ids, (list, tuple)):
+            record_ids = [record_ids]
         template = self.browse(cursor, user, template_id, context=context)
         if not template:
             raise Exception("The requested template could not be loaded")

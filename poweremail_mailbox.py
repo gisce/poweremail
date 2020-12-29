@@ -32,6 +32,7 @@ from tools.translate import _
 from tools.config import config
 import tools
 import pooler
+import traceback
 
 import re
 import os
@@ -145,7 +146,7 @@ class PoweremailMailbox(osv.osv):
                 pem_to = (values['pem_to'] or '').strip()
                 if pem_to in ('', 'False'):
                     self.historise(cr, uid, [id],
-                                   "No recipient: Email cannot be sent",
+                                   _("No recipient: Email cannot be sent"),
                                    context, error=True)
                     continue
                 payload = {}
@@ -169,26 +170,48 @@ class PoweremailMailbox(osv.osv):
                         headers['In-Reply-To'] = mails[-1].pem_message_id
                 ctx = context.copy()
                 ctx.update({'MIME_subtype': values['mail_type'] or False})
+                ctx['poweremail_id'] = id
+                if not values.get('pem_body_html') and not values.get('pem_body_text'):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The body of the email must not be empty.")
+                    )
+                if not values.get('pem_to', u''):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The email must have a destiny account.")
+                    )
+                if not values.get('pem_from', u''):
+                    raise osv.except_osv(
+                        _('Error'),
+                        _("The email must have a sending account.")
+                    )
+
+                if ctx.get("poweremail_mailbox_fields"):
+                    for val_to_read in ctx.get("poweremail_mailbox_fields"):
+                        ctx[val_to_read] = self.read(cr, uid, id, [val_to_read])[val_to_read]
+
                 result = core_obj.send_mail(
                     cr, uid, [values['pem_account_id'][0]], {
-                        'To': values.get('pem_to', u'') or u'',
+                        'To': values['pem_to'],
                         'CC': values.get('pem_cc', u'') or u'',
                         'BCC': values.get('pem_bcc', u'') or u'',
-                        'FROM': values.get('pem_from',u'') or u''
+                        'FROM': values['pem_from']
                     },
                     values['pem_subject'] or u'', {
-                        'text': values.get('pem_body_text', u'') or u'',
-                        'html': values.get('pem_body_html', u'') or u''
+                        'text': values.get('pem_body_text') or u'',
+                        'html': values.get('pem_body_html') or u''
                     }, payload=payload, context=ctx
                 )
                 if result == True:
                     self.write(cr, uid, id, {'folder':'sent', 'state':'na', 'date_mail':time.strftime("%Y-%m-%d %H:%M:%S")}, context)
-                    self.historise(cr, uid, [id], "Email sent successfully", context)
+                    self.historise(cr, uid, [id], _("Email sent successfully"), context)
                 else:
                     self.historise(cr, uid, [id], result, context, error=True)
-            except Exception as error:
+            except Exception as exc:
+                error = traceback.format_exc()
                 logger = netsvc.Logger()
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, error))
+                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
                 self.historise(cr, uid, [id], error, context, error=True)
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
