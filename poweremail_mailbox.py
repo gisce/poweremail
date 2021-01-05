@@ -159,6 +159,7 @@ class PoweremailMailbox(osv.osv):
                         while att_name in payload:
                             att_name = "%s%d" % ( attachment.datas_fname or attachment.name, counter )
                             counter += 1
+                        att_name = att_name.replace("/", "-")
                         payload[att_name] = attachment.datas
                 if values['conversation_id']:
                     mails = conv_obj.browse(cr, uid,
