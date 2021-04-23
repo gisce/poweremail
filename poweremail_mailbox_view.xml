@@ -200,6 +200,23 @@
 				</tree>
 			</field>
 		</record>
+		<!--ERROR-->
+		<record model="ir.ui.view" id="poweremail_errorbox_tree">
+			<field name="name">poweremail.mailbox.trashboxtree</field>
+			<field name="model">poweremail.mailbox</field>
+			<field name="type">tree</field>
+			<field name="arch" type="xml">
+				<tree string="Power Email Error">
+					<field name="pem_user" />
+					<field name="pem_from" select="1" />
+					<field name="pem_to" select="1" />
+					<field name="pem_subject" select="1" />
+					<field name="pem_attachments_ids" select="2" />
+					<field name="date_mail" select="2" />
+					<field name="pem_recd" colspan="2" />
+				</tree>
+			</field>
+		</record>
 		<!--8888888888888888888888888888888888 ACTIONS 8888888888888888888888888888888888888888-->
 		<record model="ir.actions.act_window" id="action_poweremail_conversation_tree">
 			<field name="name">Email Mailbox Conversation</field>
@@ -323,6 +340,16 @@
 			<field name="domain">[('folder','=','trash')]</field>
 			<field name="context">{'company':True}</field>
 		</record>
+		<!--TRASH-->
+		<record model="ir.actions.act_window" id="action_poweremail_error_tree_company">
+			<field name="name">Email Mailbox</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form,tree</field>
+			<field name="view_id" ref="poweremail_errorbox_tree" />
+			<field name="domain">[('folder', '=', 'error')]</field>
+			<field name="context">{'company':True}</field>
+		</record>
 		<!--8888888888888888888888888888888888 MENUS 8888888888888888888888888888888888888888-->
 		<menuitem name="MailBox" id="menu_poweremail_mailbox_all_main2" parent="menu_poweremail_administration_server" />
 		<menuitem name="Personal" id="menu_poweremail_personal" parent="menu_poweremail_mailbox_all_main2" />
@@ -341,6 +368,7 @@
 		<menuitem name="Follow-up" id="menu_poweremail_follow_company" parent="menu_poweremail_company" action="action_poweremail_follow_tree_company" />
 		<menuitem name="Sent" id="menu_poweremail_sent_company" parent="menu_poweremail_company" action="action_poweremail_sent_tree_company" />
 		<menuitem name="Trash" id="menu_poweremail_trash_company" parent="menu_poweremail_company" action="action_poweremail_trash_tree_company" />
+		<menuitem name="Error" id="menu_poweremail_error_company" parent="menu_poweremail_company" action="action_poweremail_error_tree_company" />
 
 	</data>
 </openerp>
