@@ -218,10 +218,6 @@ class PoweremailMailbox(osv.osv):
                     self.write(cr, uid, id, {'folder':'sent', 'state':'na', 'date_mail':time.strftime("%Y-%m-%d %H:%M:%S")}, context)
                     self.historise(cr, uid, [id], _("Email sent successfully"), context)
                 else:
-                    self.write(
-                        cr, uid, id, {'folder': 'error', 'state': 'na'},
-                        context=context
-                    )
                     self.historise(cr, uid, [id], result, context, error=True)
             except Exception as exc:
                 error = traceback.format_exc()
@@ -307,9 +303,10 @@ class PoweremailMailbox(osv.osv):
             history_newline = "\n{}: {}".format(
                 time.strftime("%Y-%m-%d %H:%M:%S"), tools.ustr(message)
             )
-            self.write(
-                cr, uid, pmail_id, {
-                    'history': (history or '') + history_newline}, context)
+            mailbox_wv = {'history': (history or '') + history_newline}
+            if error:
+                mailbox_wv.update({'folder': 'error', 'state': 'na'})
+            self.write(cr, uid, pmail_id, mailbox_wv, context=context)
 
     def complete_mail(self, cr, uid, ids, context=None):
         if context is None:
