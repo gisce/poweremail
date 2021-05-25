@@ -50,7 +50,7 @@ from html2text import html2text
 def filter_send_emails(emails_str):
     if not emails_str:
         emails_str = ''
-    return ', '.join(set([e.strip() for e in emails_str.split(',')]))
+    return ', '.join(set([e.strip() for e in emails_str.split(',') if e.strip()]))
 
 _priority_selection = [('0', 'Low'),
                        ('1', 'Normal'),
