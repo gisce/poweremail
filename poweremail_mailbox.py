@@ -68,6 +68,16 @@ class PoweremailMailbox(osv.osv):
                                  netsvc.LOG_ERROR,
                                  _("Error sending mail: %s") % str(e))
 
+    def _folder_selection(self, cursor, uid, context=None):
+        return [
+            ('inbox', 'Inbox'),
+            ('drafts', 'Drafts'),
+            ('outbox', 'Outbox'),
+            ('trash', 'Trash'),
+            ('followup', 'Follow Up'),
+            ('sent', 'Sent Items'),
+            ('error', 'Error')
+        ]
 
     def get_all_mail(self, cr, uid, context=None):
         if context is None:
@@ -293,9 +303,10 @@ class PoweremailMailbox(osv.osv):
             history_newline = "\n{}: {}".format(
                 time.strftime("%Y-%m-%d %H:%M:%S"), tools.ustr(message)
             )
-            self.write(
-                cr, uid, pmail_id, {
-                    'history': (history or '') + history_newline}, context)
+            mailbox_wv = {'history': (history or '') + history_newline}
+            if error:
+                mailbox_wv.update({'folder': 'error', 'state': 'na'})
+            self.write(cr, uid, pmail_id, mailbox_wv, context=context)
 
     def complete_mail(self, cr, uid, ids, context=None):
         if context is None:
@@ -423,14 +434,7 @@ class PoweremailMailbox(osv.osv):
                             ], 'Mail Contents'),
             #I like GMAIL which allows putting same mail in many folders
             #Lets plan it for 0.9
-            'folder':fields.selection([
-                            ('inbox', 'Inbox'),
-                            ('drafts', 'Drafts'),
-                            ('outbox', 'Outbox'),
-                            ('trash', 'Trash'),
-                            ('followup', 'Follow Up'),
-                            ('sent', 'Sent Items'),
-                            ], 'Folder', required=True),
+            'folder':fields.selection(_folder_selection, 'Folder', required=True),
             'state':fields.selection([
                             ('read', 'Read'),
                             ('unread', 'Un-Read'),
