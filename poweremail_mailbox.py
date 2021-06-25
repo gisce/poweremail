@@ -117,6 +117,15 @@ class PoweremailMailbox(osv.osv):
             for each_filter in context['filters']:
                 filters.append(each_filter)
         limit = context.get('limit', None)
+
+        if limit is None:
+            varconf_o = self.pool.get('res.config')
+            poweremail_n_mails_per_batch = int(varconf_o.get(
+                cr, uid, 'poweremail_n_mails_per_batch', '0'
+            ))
+            if poweremail_n_mails_per_batch:
+                limit = poweremail_n_mails_per_batch
+
         order = "priority desc, date_mail desc"
         ids = self.search(cr, uid, filters,
                           limit=limit, order=order,
