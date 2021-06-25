@@ -105,13 +105,7 @@ class PoweremailMailbox(osv.osv):
         else:
             raise osv.except_osv(_("Mail fetch exception"), _("No information on which mail should be fetched fully"))
 
-    def send_all_mail(self, cr, uid, ids=None, context=None):
-        if ids is None:
-            ids = []
-        if context is None:
-            context = {}
-        #8888888888888 SENDS MAILS IN OUTBOX 8888888888888888888#
-        #get ids of mails in outbox
+    def _get_mails_to_send(self, cursor, uid, context=None):
         filters = [('folder', '=', 'outbox'), ('state', '!=', 'sending')]
         if 'filters' in context.keys():
             for each_filter in context['filters']:
@@ -121,15 +115,23 @@ class PoweremailMailbox(osv.osv):
         if limit is None:
             varconf_o = self.pool.get('res.config')
             poweremail_n_mails_per_batch = int(varconf_o.get(
-                cr, uid, 'poweremail_n_mails_per_batch', '0'
+                cursor, uid, 'poweremail_n_mails_per_batch', '0'
             ))
             if poweremail_n_mails_per_batch:
                 limit = poweremail_n_mails_per_batch
 
         order = "priority desc, date_mail desc"
-        ids = self.search(cr, uid, filters,
-                          limit=limit, order=order,
-                          context=context)
+        ids = self.search(cursor, uid, filters, limit=limit, order=order, context=context)
+        return ids
+
+    def send_all_mail(self, cr, uid, ids=None, context=None):
+        if ids is None:
+            ids = []
+        if context is None:
+            context = {}
+        #8888888888888 SENDS MAILS IN OUTBOX 8888888888888888888#
+        #get ids of mails in outbox
+        ids = self._get_mails_to_send(cr, uid, context=context)
         LOGGER.notifyChannel('Power Email', netsvc.LOG_INFO,
                              'Sending All mail (PID: %s)' % os.getpid())
         # To prevent resend the same emails in several send_all_mail() calls
