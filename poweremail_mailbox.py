@@ -106,6 +106,8 @@ class PoweremailMailbox(osv.osv):
             raise osv.except_osv(_("Mail fetch exception"), _("No information on which mail should be fetched fully"))
 
     def _get_mails_to_send(self, cursor, uid, context=None):
+        if context is None:
+            context = {}
         filters = [('folder', '=', 'outbox'), ('state', '!=', 'sending')]
         if 'filters' in context.keys():
             for each_filter in context['filters']:
