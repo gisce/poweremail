@@ -122,7 +122,9 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
         imd_obj = self.openerp.pool.get('ir.model.data')
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
-        acc_id = self.create_account(cursor, uid)
+        acc_id = False
+        if 'enforce_from_account' not in extra_vals:
+            acc_id = self.create_account(cursor, uid)
 
         model_partner = imd_obj.get_object_reference(
             cursor, uid, 'base', 'model_res_partner'
@@ -173,3 +175,64 @@ class TestPoweremailMailbox(testing.OOTestCase):
             varconf_o.set(cursor, uid, 'poweremail_n_mails_per_batch', 0)
             mails_per_enviar = mail_o._get_mails_to_send(cursor, uid)
             self.assertEqual(len(mails_per_enviar), 3)
+
+    def test_poweremail_n_mails_per_batch_per_account(self, extra_vals=None):
+        self.openerp.install_module('base_extended')
+
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mail_o = self.openerp.pool.get('poweremail.mailbox')
+            varconf_o = self.openerp.pool.get('res.config')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            tmpl_obj = self.openerp.pool.get('poweremail.templates')
+
+            acc1_id = self.create_account(cursor, uid, extra_vals={'name': 'acc1', 'email_id': 'test1@example.com'})
+            acc2_id = self.create_account(cursor, uid, extra_vals={'name': 'acc2', 'email_id': 'test2@example.com'})
+            acc3_id = self.create_account(cursor, uid, extra_vals={'name': 'acc3', 'email_id': 'test3@example.com'})
+
+            tmpl1_id = self.create_template(cursor, uid, extra_vals={'enforce_from_account': acc1_id, 'name': 'Test template 1'})
+            tmpl2_id = self.create_template(cursor, uid, extra_vals={'enforce_from_account': acc2_id, 'name': 'Test template 2'})
+            tmpl3_id = self.create_template(cursor, uid, extra_vals={'enforce_from_account': acc3_id, 'name': 'Test template 3'})
+
+            partner_id = imd_obj.get_object_reference(
+                cursor, uid, 'base', 'res_partner_asus'
+            )[1]
+            mails_per_acc = {'acc1': set(), 'acc2': set(), 'acc3': set()}
+            for tmpl_id in (tmpl1_id, tmpl2_id, tmpl3_id):
+                template = tmpl_obj.browse(cursor, uid, tmpl_id)
+                for i in range(3):
+                    mail_id = tmpl_obj._generate_mailbox_item_from_template(
+                        cursor, uid, template, partner_id
+                    )
+                    mail_wv = {'folder': 'outbox', 'state': 'na'}
+                    mail_o.write(cursor, uid, mail_id, mail_wv)
+                    mails_per_acc[template.enforce_from_account.name].add(mail_id)
+
+            varconf_o.set(
+                cursor, uid, 'poweremail_n_mails_per_batch_per_account',
+                "{'acc1': 1, 'acc2': 2}"
+            )
+            mails_per_enviar = mail_o._get_mails_to_send(cursor, uid)
+            self.assertEqual(len(mails_per_enviar), 6)  # 1 + 2 + 3
+            self.assertEqual(len(set(mails_per_enviar) - mails_per_acc['acc1']), 5)
+            self.assertEqual(len(set(mails_per_enviar) - mails_per_acc['acc2']), 4)
+            self.assertEqual(len(set(mails_per_enviar) - mails_per_acc['acc3']), 3)
+            mails_per_enviar = mail_o._get_mails_to_send(cursor, uid, context={'limit': 2})
+            self.assertEqual(len(mails_per_enviar), 2)
+
+            varconf_o.set(
+                cursor, uid, 'poweremail_n_mails_per_batch_per_account',
+                "{'acc1': 1, 'acc2': 1, 'acc3': 1}"
+            )
+            mails_per_enviar = mail_o._get_mails_to_send(cursor, uid)
+            self.assertEqual(len(mails_per_enviar), 3)
+            for acc, mails in mails_per_acc.items():
+                self.assertEqual(len(set(mails_per_enviar) - mails), 2)
+
+            varconf_o.set(
+                cursor, uid, 'poweremail_n_mails_per_batch_per_account',
+                "{}"
+            )
+            mails_per_enviar = mail_o._get_mails_to_send(cursor, uid)
+            self.assertEqual(len(mails_per_enviar), 9)
