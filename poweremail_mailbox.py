@@ -33,7 +33,7 @@ from tools.config import config
 import tools
 import pooler
 import traceback
-
+from ast import literal_eval as eval
 import re
 import os
 import email
@@ -105,6 +105,40 @@ class PoweremailMailbox(osv.osv):
         else:
             raise osv.except_osv(_("Mail fetch exception"), _("No information on which mail should be fetched fully"))
 
+    def _get_mails_to_send(self, cursor, uid, context=None):
+        if context is None:
+            context = {}
+        filters = [('folder', '=', 'outbox'), ('state', '!=', 'sending')]
+        if 'filters' in context.keys():
+            for each_filter in context['filters']:
+                filters.append(each_filter)
+        limit = context.get('limit', None)
+        order = "priority desc, date_mail desc"
+        ids = []
+        if limit is None:
+            varconf_o = self.pool.get('res.config')
+            poweremail_n_mails_per_batch = int(varconf_o.get(
+                cursor, uid, 'poweremail_n_mails_per_batch', '0'
+            ))
+            if poweremail_n_mails_per_batch:
+                limit = poweremail_n_mails_per_batch
+            else:
+                poweremail_n_mails_per_batch_per_account = eval(varconf_o.get(
+                    cursor, uid, 'poweremail_n_mails_per_batch_per_account', '{}'
+                ))
+                accounts_filtered = []
+                for account_name, limit_per_account in poweremail_n_mails_per_batch_per_account.items():
+                    accounts_filtered.append(account_name)
+                    filters_per_account = filters + [('pem_account_id.name', '=', account_name)]
+                    ids += self.search(
+                        cursor, uid, filters_per_account, limit=limit_per_account,
+                        order=order, context=context
+                    )
+                filters.append(('pem_account_id.name', 'not in', accounts_filtered))
+
+        ids += self.search(cursor, uid, filters, limit=limit, order=order, context=context)
+        return ids
+
     def send_all_mail(self, cr, uid, ids=None, context=None):
         if ids is None:
             ids = []
@@ -112,15 +146,7 @@ class PoweremailMailbox(osv.osv):
             context = {}
         #8888888888888 SENDS MAILS IN OUTBOX 8888888888888888888#
         #get ids of mails in outbox
-        filters = [('folder', '=', 'outbox'), ('state', '!=', 'sending')]
-        if 'filters' in context.keys():
-            for each_filter in context['filters']:
-                filters.append(each_filter)
-        limit = context.get('limit', None)
-        order = "priority desc, date_mail desc"
-        ids = self.search(cr, uid, filters,
-                          limit=limit, order=order,
-                          context=context)
+        ids = self._get_mails_to_send(cr, uid, context=context)
         LOGGER.notifyChannel('Power Email', netsvc.LOG_INFO,
                              'Sending All mail (PID: %s)' % os.getpid())
         # To prevent resend the same emails in several send_all_mail() calls
