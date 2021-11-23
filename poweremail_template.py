@@ -74,7 +74,7 @@ from .poweremail_mailbox import _priority_selection
 
 def send_on_create(self, cr, uid, vals, context=None):
     oid = self.old_create(cr, uid, vals, context)
-    for tid in self.template_hooks['soc']:
+    for tid in set(self.template_hooks['soc']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on create
@@ -88,7 +88,7 @@ def send_on_write(self, cr, uid, ids, vals, context=None):
     if not context:
         context = {}
     result = self.old_write(cr, uid, ids, vals, context)
-    for tid in self.template_hooks['sow']:
+    for tid in set(self.template_hooks['sow']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on write
