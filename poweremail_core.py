@@ -40,7 +40,7 @@ from tools.translate import _
 from tools import config
 import tools
 import six
-
+from ast import literal_eval as eval
 from qreu import Email
 from qreu.address import Address, parseaddr
 from qreu.sendcontext import Sender, SMTPSender
@@ -532,6 +532,25 @@ class poweremail_core_accounts(osv.osv):
                   "when the addresses list is empty").format(ids)
             )
             return error
+        varconf_o = self.pool.get('res.config')
+        blacklisted_recipients = set(eval(
+            varconf_o.get(cr, uid, 'poweremail_recipients_blacklist', '[]')
+        ))
+        recipients = set(addresses_list.get('To', []) + addresses_list.get('CC', []) + addresses_list.get('BCC', []))
+        if len(blacklisted_recipients - recipients) != len(blacklisted_recipients):
+            error_mssg_blacklisted_recipients = _(
+                "ERROR: Trying to send an email to a blacklisted recipient:\n"
+                " - recipients: {}\n"
+                " - blacklisted recipients: {}"
+            ).format(
+                ", ".join(list(recipients)),
+                ", ".join(list(blacklisted_recipients))
+            )
+            logger.notifyChannel(
+                _("Power Email"), netsvc.LOG_ERROR,
+                error_mssg_blacklisted_recipients
+            )
+            return Exception(error_mssg_blacklisted_recipients)
         # Get email Data
         subject = subject or context.get('subject', '') or ''
         body_html = parse_body_html(
