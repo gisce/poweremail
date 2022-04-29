@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="view_wizard_emails_generats_model_form" model="ir.ui.view">
+            <field name="name">wizard.emails.generats.model.form</field>
+            <field name="model">wizard.emails.generats.model</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Llistar correus relacionats">
+                    <label string="Buscar correos relacionados" colspan="4"/>
+                    <field name="reference"/>
+                    <button icon="gtk-ok" name="list_all_emails" string="Buscar emails" type="object"/>
+                </form>
+            </field>
+        </record>
+        <record id="action_wizard_emails_generats_model" model="ir.actions.act_window">
+            <field name="name">Buscar Correus Relacionats</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">wizard.emails.generats.model</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <menuitem id="menu_wizard_emails_generats"
+                  action="action_wizard_emails_generats_model"
+                  parent="menu_poweremail_administration_server"
+        />
+
+    </data>
+</openerp>
