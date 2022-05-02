@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 from osv import osv, fields
 
-RELATED_MODELS = [
-    ('giscedata.polissa', 'Polissa d\'un Client'),
-    ('giscedata.facturacio.factura', 'Factura d\'electricitat'),
-    ('poweremail.campaign.line', 'Campanyes'),
-]
 
 class WizardEmailsGeneratsModel(osv.osv_memory):
     _name = 'wizard.emails.generats.model'
