@@ -29,7 +29,8 @@ import poweremail_send_wizard
 import poweremail_mailbox
 import poweremail_serveraction
 
-import wizard
+from . import wizard
+
 import logging
 
 logger = logging.getLogger('openerp.poweremail')

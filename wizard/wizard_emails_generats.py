@@ -17,7 +17,8 @@ class WizardEmailsGeneratsModel(osv.osv_memory):
         return [(r['model'], r['name']) for r in res]
 
     def get_reference_items(self, cursor, uid, reference, context=None):
-        references = []
+        references = set()
+        references.add(reference)
         return references
 
     def _get_default_reference(self, cursor, uid, context=None):
