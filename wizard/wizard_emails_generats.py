@@ -33,7 +33,7 @@ class WizardEmailsGeneratsModel(osv.osv_memory):
         references = self.get_reference_items(cursor, uid, reference, context=context)
 
         return {
-            'domain': [('reference', 'in', references)],
+            'domain': [('reference', 'in', list(references))],
             'name': 'Correos relacionados',
             'view_type': 'form',
             'view_mode': 'tree,form',
