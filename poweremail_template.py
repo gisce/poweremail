@@ -1231,4 +1231,15 @@ class res_groups(osv.osv):
     _columns = {}
 res_groups()
 
+class poweremail_template_robinson(osv.osv):
+
+    _name = 'poweremail.template.robinson'
+
+    _columns = {
+        'template_id': fields.many2one(('poweremail.templates', 'Template')),
+        'email': fields.text('Email')
+    }
+
+poweremail_template_robinson()
+
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
