@@ -980,6 +980,9 @@ class poweremail_templates(osv.osv):
                                                              context)
         return mailbox_id
 
+    def check_outbox(self, cursor, uid, mailbox_id, context=None):
+        return True
+
     def generate_mail(self,
                       cursor,
                       user,
@@ -1054,13 +1057,10 @@ class poweremail_templates(osv.osv):
             # Emails before all the work is complete in
             # Generating email, attachments and event
             if not template.save_to_drafts:
-                self.pool.get('poweremail.mailbox').write(
-                                                    cursor,
-                                                    user,
-                                                    mailbox_id,
-                                                    {'folder':'outbox'},
-                                                    context=context
-                                                          )
+                pe_obj = self.pool.get('poweremail.mailbox')
+                folder = pe_obj.read(cursor, user, mailbox_id, ['folder'], context=context)['folder']
+                if self.check_outbox(cursor, user, mailbox_id, context):
+                    pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         return True
 
     def create_action_reference(self, cursor, uid, ids, context):
