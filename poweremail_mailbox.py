@@ -76,7 +76,8 @@ class PoweremailMailbox(osv.osv):
             ('trash', 'Trash'),
             ('followup', 'Follow Up'),
             ('sent', 'Sent Items'),
-            ('error', 'Error')
+            ('error', 'Error'),
+            ('robinson', 'Robinson')
         ]
 
     def get_all_mail(self, cr, uid, context=None):

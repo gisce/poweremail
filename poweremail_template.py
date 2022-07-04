@@ -960,6 +960,15 @@ class poweremail_templates(osv.osv):
             'mail_type':'multipart/alternative',
             'priority': template.def_priority
         }
+        #Comprovem si existeix un registre de poweremail_template_robinson amb el mateix email i la id del template (o template a null).
+        robinson_obj = self.pool.get('poweremail_template_robinson')
+        search_params = [('template_id', '=', template.id), ('email', '=', mailbox_values['pem_to'])]
+        robinson_ids_1 = robinson_obj.search(cursor, user, search_params, context)
+        search_params = [('template_id', '=', False), ('email', '=', mailbox_values['pem_to'])]
+        robinson_ids_2 = robinson_obj.search(cursor, user, search_params, context)
+        robinson_ids = robinson_ids_1 + robinson_ids_2
+        if robinson_ids:
+            mailbox_values['folder'] = 'robinson'
         #Use signatures if allowed
         if template.use_sign:
             sign = self.pool.get('res.users').read(cursor,
@@ -1054,13 +1063,10 @@ class poweremail_templates(osv.osv):
             # Emails before all the work is complete in
             # Generating email, attachments and event
             if not template.save_to_drafts:
-                self.pool.get('poweremail.mailbox').write(
-                                                    cursor,
-                                                    user,
-                                                    mailbox_id,
-                                                    {'folder':'outbox'},
-                                                    context=context
-                                                          )
+                pe_obj = self.pool.get('poweremail.mailbox')
+                folder = pe_obj.read(cursor, user, mailbox_id, ['folder'], context=context)['folder']
+                if folder != 'robinson':
+                    pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         return True
 
     def create_action_reference(self, cursor, uid, ids, context):
