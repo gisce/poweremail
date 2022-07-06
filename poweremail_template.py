@@ -1058,8 +1058,7 @@ class poweremail_templates(osv.osv):
             # Generating email, attachments and event
             if not template.save_to_drafts:
                 pe_obj = self.pool.get('poweremail.mailbox')
-                folder = pe_obj.read(cursor, user, mailbox_id, ['folder'], context=context)['folder']
-                if self.check_outbox(cursor, user, mailbox_id, context):
+                if self.check_outbox(cursor, user, mailbox_id, context=context):
                     pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         return True
 
