@@ -58,7 +58,7 @@
         'poweremail_send_wizard.xml',
         'poweremail_mailbox_view.xml',
         'poweremail_serveraction_view.xml',
-        'wizards/wizard_poweremail.xml',
+        'wizard/wizard_poweremail.xml',
     ],
     "installable": True,
     "active": False,
