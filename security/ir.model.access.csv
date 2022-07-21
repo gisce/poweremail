@@ -17,3 +17,6 @@
 "access_pe_template_attachment_userssi","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peusersi",1,1,0,0
 "access_pe_template_attachment_usersse","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_peuserse",1,1,0,0
 "access_pe_template_attachment_manager","poweremail.template.attachment","model_poweremail_template_attachment","res_groups_pemanager",1,1,1,1
+"access_wizard_change_state_email_r","wizard.change.state.email","model_wizard_change_state_email","poweremail.res_groups_peuserse",1,0,0,0
+"access_wizard_change_state_email_w","wizard.change.state.email","model_wizard_change_state_email","poweremail.res_groups_peusersi",1,1,1,0
+"access_wizard_change_state_email_u","wizard.change.state.email","model_wizard_change_state_email","poweremail.res_groups_pemanager",1,1,1,1
