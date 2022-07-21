@@ -9,7 +9,7 @@ class WizardPoweremail(osv.osv_memory):
 
     def _state_selection(self, cursor, uid, context=None):
         pwmb_obj = self.pool.get('poweremail.mailbox')
-        states = pwmb_obj.fields_get(cursor, uid)['state']
+        states = pwmb_obj.fields_get(cursor, uid, context=context)['state']['selection']
         return states
 
     def action_change_state_email_form(self, cursor, uid, ids, context=None):
