@@ -11,9 +11,9 @@ class WizardSendPoweremail(osv.osv_memory):
         #Cridar send_this_mail
         active_ids = context['active_ids']
         pm_camp_obj = self.pool.get('poweremail.mailbox')
-        wizard = self.browse(cursor, uid, ids[0])
+        wizard = self.browse(cursor, uid, ids[0], context=context)
         pm_camp_obj.send_this_mail(cursor, uid, active_ids, context=context)
-        wizard.write({'state': 'end'})
+        wizard.write({'state': 'end'}, context=context)
 
 
     _columns = {
