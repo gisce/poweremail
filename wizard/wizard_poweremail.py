@@ -21,9 +21,9 @@ class WizardPoweremail(osv.osv_memory):
     def action_change_folder_email_form(self, cursor, uid, ids, context=None):
         active_ids = context['active_ids']
         pm_camp_obj = self.pool.get('poweremail.mailbox')
-        wizard = self.browse(cursor, uid, ids[0])
+        wizard = self.browse(cursor, uid, ids[0], context=context)
         pm_camp_obj.write(cursor, uid, active_ids, {'folder': wizard.folder}, context=context)
-        wizard.write({'state': 'end'})
+        wizard.write({'state': 'end'}, context=context)
 
 
     _columns = {
