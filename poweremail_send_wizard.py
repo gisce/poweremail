@@ -336,11 +336,23 @@ class poweremail_send_wizard(osv.osv_memory):
                 if template.report_template.context:
                     ctx.update(eval(template.report_template.context))
 
-                if screen_vals['single_email'] and len(report_record_ids) > 1:
-                    # The optional attachment will be generated as a single file for all these records
-                    (result, format) = service.create(cr, uid, report_record_ids, data, ctx)
+                if template.report_template_object_reference:
+                    if screen_vals['single_email'] and len(report_record_ids) > 1:
+                        report_reference_ids = []
+                        for record_id in report_record_ids:
+                            report_reference_ids.append(self.get_value(cr, uid, template, template.report_template_object_reference, context, record_id))
+                        record_to_print_ids = report_record_ids
+                    else:
+                        report_reference_id = self.get_value(cr, uid, template, template.report_template_object_reference, context, id)
+                        record_to_print_ids = [report_reference_id]
                 else:
-                    (result, format) = service.create(cr, uid, [id], data, ctx)
+                    if screen_vals['single_email'] and len(report_record_ids) > 1:
+                        record_to_print_ids = report_record_ids
+                    else:
+                        record_to_print_ids = [id]
+
+                (result, format) = service.create(cr, uid, record_to_print_ids, data, ctx)
+
                 attachment_id = self.pool.get('ir.attachment').create(cr, uid, {
                     'name': _('%s (Email Attachment)') % tools.ustr(vals['pem_subject']),
                     'datas': base64.b64encode(result),
