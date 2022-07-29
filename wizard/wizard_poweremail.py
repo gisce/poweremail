@@ -8,15 +8,9 @@ class WizardPoweremail(osv.osv_memory):
     _name = 'wizard.change.folder.email'
 
     def _folder_selection(self, cursor, uid, context=None):
-        return [
-            ('inbox', 'Inbox'),
-            ('drafts', 'Drafts'),
-            ('outbox', 'Outbox'),
-            ('trash', 'Trash'),
-            ('followup', 'Follow Up'),
-            ('sent', 'Sent Items'),
-            ('error', 'Error')
-        ]
+        pwmb_obj = self.pool.get('poweremail.mailbox')
+        states = pwmb_obj.fields_get(cursor, uid, context=context)['folder']['selection']
+        return states
 
     def action_change_folder_email_form(self, cursor, uid, ids, context=None):
         active_ids = context['active_ids']
