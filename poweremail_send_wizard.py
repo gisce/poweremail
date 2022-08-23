@@ -22,17 +22,15 @@
 #You should have received a copy of the GNU General Public License      #
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
+from __future__ import absolute_import
 from osv import osv, fields
-from mako.template import Template
-from mako import exceptions
 import netsvc
 import base64
 import time
-import re
 from tools.translate import _
 import tools
-from poweremail_template import get_value
-from poweremail_core import filter_send_emails, _priority_selection
+from .poweremail_template import get_value
+from .poweremail_core import filter_send_emails, _priority_selection
 
 
 class poweremail_send_wizard(osv.osv_memory):

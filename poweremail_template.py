@@ -24,11 +24,13 @@ Email templates & preview
 #You should have received a copy of the GNU General Public License      #
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
+from __future__ import absolute_import
 import base64
 import random
 import time
 import types
 import netsvc
+import six
 
 LOGGER = netsvc.Logger()
 
@@ -64,7 +66,6 @@ except:
                          _("Django templates not installed")
                          )
 
-import poweremail_engines
 import tools
 import report
 import pooler
@@ -73,7 +74,7 @@ from .poweremail_mailbox import _priority_selection
 
 def send_on_create(self, cr, uid, vals, context=None):
     oid = self.old_create(cr, uid, vals, context)
-    for tid in self.template_hooks['soc']:
+    for tid in set(self.template_hooks['soc']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on create
@@ -87,7 +88,7 @@ def send_on_write(self, cr, uid, ids, vals, context=None):
     if not context:
         context = {}
     result = self.old_write(cr, uid, ids, vals, context)
-    for tid in self.template_hooks['sow']:
+    for tid in set(self.template_hooks['sow']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on write
@@ -141,12 +142,18 @@ def new_register_all(db):
         if soc:
             if not obj.template_hooks['soc']:
                 obj.old_create = obj.create
-                obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                if six.PY2:
+                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                else:
+                    obj.create = types.MethodType(send_on_create, obj)
             obj.template_hooks['soc'] += [tid]
         if sow:
             if not obj.template_hooks['sow']:
                 obj.old_write = obj.write
-                obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                if six.PY2:
+                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                else:
+                    obj.write = types.MethodType(send_on_write, obj)
             obj.template_hooks['sow'] += [tid]
     cr.close()
     return value
@@ -475,12 +482,18 @@ class poweremail_templates(osv.osv):
             if template.send_on_create:
                 if not obj.template_hooks['soc']:
                     obj.old_create = obj.create
-                    obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                    if six.PY2:
+                        obj.create = types.MethodType(send_on_create, obj, osv.osv)
+                    else:
+                        obj.create = types.MethodType(send_on_create, obj)
                 obj.template_hooks['soc'] += [template.id]
             if template.send_on_write:
                 if not obj.template_hooks['sow']:
                     obj.old_write = obj.write
-                    obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                    if six.PY2:
+                        obj.write = types.MethodType(send_on_write, obj, osv.osv)
+                    else:
+                        obj.write = types.MethodType(send_on_write, obj)
                 obj.template_hooks['sow'] += [template.id]
 
     def create(self, cr, uid, vals, context=None):
@@ -986,6 +999,9 @@ class poweremail_templates(osv.osv):
                                                              context)
         return mailbox_id
 
+    def check_outbox(self, cursor, uid, mailbox_id, context=None):
+        return True
+
     def generate_mail(self,
                       cursor,
                       user,
@@ -1059,13 +1075,9 @@ class poweremail_templates(osv.osv):
             # Emails before all the work is complete in
             # Generating email, attachments and event
             if not template.save_to_drafts:
-                self.pool.get('poweremail.mailbox').write(
-                                                    cursor,
-                                                    user,
-                                                    mailbox_id,
-                                                    {'folder':'outbox'},
-                                                    context=context
-                                                          )
+                pe_obj = self.pool.get('poweremail.mailbox')
+                if self.check_outbox(cursor, user, mailbox_id, context=context):
+                    pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         return True
 
     def create_action_reference(self, cursor, uid, ids, context):

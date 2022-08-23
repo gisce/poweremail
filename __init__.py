@@ -22,12 +22,13 @@
 #You should have received a copy of the GNU General Public License      #
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
-
-import poweremail_core
-import poweremail_template
-import poweremail_send_wizard
-import poweremail_mailbox
-import poweremail_serveraction
+from __future__ import absolute_import
+from . import poweremail_core
+from . import poweremail_template
+from . import poweremail_send_wizard
+from . import poweremail_mailbox
+from . import poweremail_serveraction
+from . import wizard
 
 import logging
 
