@@ -781,6 +781,20 @@ class poweremail_templates(osv.osv):
                                                   context)
         return True
 
+    def create_report(self, cursor, user, template, record_ids, context=None):
+        reportname = 'report.' + \
+                     self.pool.get('ir.actions.report.xml').read(
+                         cursor,
+                         user,
+                         template.report_template.id,
+                         ['report_name'],
+                         context)['report_name']
+        service = netsvc.LocalService(reportname)
+        data = {}
+        data['model'] = template.model_int_name
+        (result, format) = service.create(cursor, user, record_ids, data, context)
+        return (result, format)
+
     def _generate_attach_reports(self,
                                  cursor,
                                  user,
@@ -802,6 +816,8 @@ class poweremail_templates(osv.osv):
         @param mail: Browse record of email object
         @return: True
         """
+        if context is None:
+            context = {}
         attachment_obj = self.pool.get('ir.attachment')
         lang = get_value(cursor,
                          user,
@@ -809,27 +825,18 @@ class poweremail_templates(osv.osv):
                          template.lang,
                          template,
                          context)
+        ctx = context.copy()
         if lang:
-            ctx = context.copy()
-            ctx.update({'lang':lang})
+            ctx['lang'] = lang
             template = self.browse(cursor, user, template.id, context=ctx)
+        elif 'lang' not in ctx:
+            ctx['lang'] = tools.config.get('lang', 'en_US')
         attachment_id = []
         if template.report_template:
-            reportname = 'report.' + \
-                self.pool.get('ir.actions.report.xml').read(
-                                             cursor,
-                                             user,
-                                             template.report_template.id,
-                                             ['report_name'],
-                                             context)['report_name']
-            service = netsvc.LocalService(reportname)
-            data = {}
-            data['model'] = template.model_int_name
-            (result, format) = service.create(cursor,
-                                              user,
-                                              record_ids,
-                                              data,
-                                              context)
+            report_vals = self.create_report(cursor, user, template, record_ids, context=context)
+            result = report_vals[0]
+            format = report_vals[1]
+
             new_att_vals = {
                 'name': mail.pem_subject + ' (Email Attachment)',
                 'datas': base64.b64encode(result),
