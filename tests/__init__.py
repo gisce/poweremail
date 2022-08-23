@@ -1,4 +1,6 @@
 # coding=utf-8
+import base64
+import mock
 from destral import testing
 from destral.transaction import Transaction
 
@@ -236,3 +238,170 @@ class TestPoweremailMailbox(testing.OOTestCase):
             )
             mails_per_enviar = mail_o._get_mails_to_send(cursor, uid)
             self.assertEqual(len(mails_per_enviar), 9)
+
+    def generate_mail_with_attachments_no_report(self):
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+            # Agafem un template de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            # Hem de posar 'enforce_from_account' al template perque és required
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Escribim al template el que necessitem
+            pm_tmp_obj.write(cursor, uid, template_id, {'enforce_from_account': pw_account_id})
+
+            # Creem un attachment de prova
+            ir_vals = {
+                'name': 'filename_prova',
+                'datas': base64.b64encode(b'attachment test content'),
+                'datas_fname': 'filename_prova.txt',
+                'res_model': 'poweremail.templates',
+                'res_id': template_id,
+            }
+            attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
+
+            # Busquem els attachments que hi ha creats i hauriem de trobar el que acabem de crear
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 1)
+            self.assertIn(attachment_id, attach_ids)
+
+            # Cridem el mètode per generar el mail a partir del template que té un attachment.
+            # Ens hauria de crear un segon attachment al crear el poweremail.mailbox
+            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id])
+
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 2)
+
+    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    def generate_mail_with_attachments_and_report(self, mock_function):
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+            mock_function.return_value = ("Result", "provapdf")
+
+            # Agafem un template de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            # Hem de posar 'enforce_from_account' al template perque és required
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Agafem un report de demo
+            report_id = imd_obj.get_object_reference(
+                cursor, uid, 'base', 'report_test'
+            )[1]
+
+            # Escribim el que necessitem al template
+            template_vals = {
+                'enforce_from_account': pw_account_id,
+                'report_template': report_id
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
+
+            # Creem un attachment de prova
+            ir_vals = {
+                'name': 'filename_prova',
+                'datas': base64.b64encode(b'attachment test content'),
+                'datas_fname': 'filename_prova.txt',
+                'res_model': 'poweremail.templates',
+                'res_id': template_id,
+            }
+            attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
+
+            # Busquem els attachments que hi ha creats i hauriem de trobar el que acabem de crear
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 1)
+            self.assertIn(attachment_id, attach_ids)
+
+            # Cridem el mètode per generar el mail a partir del template que té un attachment i un report.
+            # Ens hauria de crear un segon attachment al crear el poweremail.mailbox
+            # I també ens hauria de crear un tercer attachment que és el report
+            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id])
+
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 3)
+
+    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    def generate_mail_with_report_no_attachments(self, mock_function):
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+            mock_function.return_value = ("Result", "provapdf")
+
+            # Agafem un template de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            # Hem de posar 'enforce_from_account' al template perque és required
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Agafem un report de demo
+            report_id = imd_obj.get_object_reference(
+                cursor, uid, 'base', 'report_test'
+            )[1]
+
+            # Escribim el que necessitem al template
+            template_vals = {
+                'enforce_from_account': pw_account_id,
+                'report_template': report_id
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
+
+            # Busquem els attachments que hi ha creats i no n'hi hauria d'haver cap
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 0)
+
+            # Cridem el mètode per generar el mail a partir del template que té no té attachments però té un report.
+            # Ens hauria de crear un attachment que és el report
+            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id])
+
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 1)
