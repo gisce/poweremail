@@ -849,6 +849,7 @@ class poweremail_templates(osv.osv):
         for attach in attachment_obj.browse(cursor, user, attach_ids, context=context):
             attachment_vals = {
                 'res_model': 'poweremail.mailbox',
+                'res_id': mail.id,
                 'name': attach.name.replace('.%s' % ctx['lang'], ''),
                 'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'], '')
             }
