@@ -238,6 +238,29 @@ class poweremail_templates(osv.osv):
             res[template_id] = mod_name
         return res
 
+    def _fnc_ir_attachment_ids(self, cr, uid, template_ids, fieldnames, args, context=None):
+        res = dict.fromkeys(template_ids, [])
+        proxy = self.pool.get('ir.attachment')
+        for template_id in template_ids:
+            search_params = [
+                ('res_model', '=', 'poweremail.templates'),
+                ('res_id', '=', template_id),
+            ]
+            res[template_id] = proxy.search(cr, uid, search_params, context=context )
+        return res
+
+    def fnct_inv_attachment_ids(self, cursor, uid, ids, field_name, value, args, context=None):
+        if context is None:
+            context = {}
+        if not value:
+            return False
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+
+        for pm_template_id in ids:
+            self.write(cursor, uid, pm_template_id, {'attachment_ids': value}, context=context)
+        return True
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -430,7 +453,8 @@ class poweremail_templates(osv.osv):
                     "Example : o.type == 'out_invoice' and o.number and o.number[:3]<>'os_' "),
         'tmpl_attachment_ids': fields.one2many('poweremail.template.attachment',
                                                'template_id',
-                                               'Attachments')
+                                               'Attachments'),
+        'ir_attachment_ids': fields.function(_fnc_ir_attachment_ids, fnct_inv= fnct_inv_attachment_ids, method=True, type='one2many', relation='ir.attachment', string='Attachments'),
     }
 
     _defaults = {
