@@ -269,6 +269,7 @@ class poweremail_send_wizard(osv.osv_memory):
     def save_to_mailbox(self, cr, uid, ids, context=None):
 
         model_obj = self.pool.get('ir.model')
+        attach_obj = self.pool.get('ir.attachment')
         
         if context is None:
             context = {}
@@ -277,7 +278,6 @@ class poweremail_send_wizard(osv.osv_memory):
                 return self.get_value(cr, uid, template, value, context, id)
             else:
                 return value
-        attach_obj = self.pool.get('ir.attachment')
         mail_ids = []
         template = self._get_template(cr, uid, context)
         screen_vals = self.read(cr, uid, ids[0], [], context)
@@ -393,19 +393,16 @@ class poweremail_send_wizard(osv.osv_memory):
                 ('res_id', '=', template.id),
             ]
             if ctx['lang']:
-                search_params += [
-                    ('datas_fname', 'ilike', '%%.%s.%%' % ctx['lang'])
-                ]
-                attach_ids = attach_obj.search(cr, uid, search_params,
-                                           context=context)
-        for attach in attach_obj.browse(cr, uid, attach_ids, context):
-            new_id = attach_obj.copy(cr, uid, attach.id, {
+                search_params.append(('datas_fname', 'ilike', '%%.%s.%%' % ctx['lang']))
+                attach_ids = attach_obj.search(cr, uid, search_params, context=context)
+        for attach in attach_obj.browse(cr, uid, attach_ids, context=context):
+            attach_values = {
                'res_model': 'poweremail.mailbox',
                'res_id': mail_id,
                'name': attach.name.replace('.%s' % ctx['lang'], ''),
-               'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'],
-                                                         '')
-            })
+               'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'], '')
+            }
+            new_id = attach_obj.copy(cr, uid, attach.id, attach_values, context=context)
             attachment_ids.append(new_id)
 
             if attachment_ids:

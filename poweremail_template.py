@@ -240,16 +240,17 @@ class poweremail_templates(osv.osv):
 
     def _fnc_ir_attachment_ids(self, cr, uid, template_ids, fieldnames, args, context=None):
         res = dict.fromkeys(template_ids, [])
-        proxy = self.pool.get('ir.attachment')
+        attach_obj = self.pool.get('ir.attachment')
         for template_id in template_ids:
             search_params = [
                 ('res_model', '=', 'poweremail.templates'),
                 ('res_id', '=', template_id),
             ]
-            res[template_id] = proxy.search(cr, uid, search_params, context=context )
+            res[template_id] = attach_obj.search(cr, uid, search_params, context=context)
         return res
 
     def fnct_inv_attachment_ids(self, cursor, uid, ids, field_name, value, args, context=None):
+        attach_obj = self.pool.get('ir.attachment')
         if context is None:
             context = {}
         if not value:
@@ -257,8 +258,18 @@ class poweremail_templates(osv.osv):
         if isinstance(ids, (int, long)):
             ids = [ids]
 
-        for pm_template_id in ids:
-            self.write(cursor, uid, pm_template_id, {'attachment_ids': value}, context=context)
+        for attach in value:
+            operation = attach[0]
+            attach_id = attach[1]
+            if operation != 2:  # si estamos eliminando no tendremos vals
+                vals = attach[2]
+            if operation == 0: # el volem crear
+                vals.update({'res_id': ids[0], 'res_model': 'poweremail.templates'})
+                attach_obj.create(cursor, uid, vals, context=context)
+            elif operation == 1: # volem escriure sobre un registre existent
+                attach_obj.write(cursor, uid, attach_id, vals, context=context)
+            elif operation == 2: # volem eliminar-lo
+                attach_obj.unlink(cursor, uid, [attach_id], context=context)
         return True
 
     _columns = {
@@ -454,7 +465,11 @@ class poweremail_templates(osv.osv):
         'tmpl_attachment_ids': fields.one2many('poweremail.template.attachment',
                                                'template_id',
                                                'Attachments'),
-        'ir_attachment_ids': fields.function(_fnc_ir_attachment_ids, fnct_inv= fnct_inv_attachment_ids, method=True, type='one2many', relation='ir.attachment', string='Attachments'),
+        'ir_attachment_ids': fields.function(_fnc_ir_attachment_ids,
+                                             fnct_inv= fnct_inv_attachment_ids,
+                                             method=True, type='one2many',
+                                             relation='ir.attachment',
+                                             string='Attachments'),
     }
 
     _defaults = {
@@ -814,8 +829,7 @@ class poweremail_templates(osv.osv):
         )['report_name']
         reportname = 'report.' + report_name
         service = netsvc.LocalService(reportname)
-        data = {}
-        data['model'] = template.model_int_name
+        data = {'model': template.model_int_name}
         (result, format) = service.create(cursor, user, record_ids, data, context=context)
         return (result, format)
 
@@ -837,6 +851,7 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
         attachment_obj = self.pool.get('ir.attachment')
+        mailbox_obj = self.pool.get('poweremail.mailbox')
         lang = get_value(cursor, user, record_ids[0], template.lang, template, context=context)
         ctx = context.copy()
         if lang:
@@ -877,14 +892,14 @@ class poweremail_templates(osv.osv):
                 'name': attach.name.replace('.%s' % ctx['lang'], ''),
                 'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'], '')
             }
-            new_id = attachment_obj.copy(cursor, user, attach.id, attachment_vals)
+            new_id = attachment_obj.copy(cursor, user, attach.id, attachment_vals, context=context)
             attachment_id.append(new_id)
         if attachment_id:
             mailbox_vals = {
                 'pem_attachments_ids': [[6, 0, attachment_id]],
                 'mail_type': 'multipart/mixed'
             }
-            self.pool.get('poweremail.mailbox').write(cursor, user, mail.id, mailbox_vals, context=context)
+            mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
         return True
 
     def get_from_account_id_from_template(self, cursor, uid, template_id, context=None):
@@ -922,6 +937,9 @@ class poweremail_templates(osv.osv):
         """
         if context is None:
             context = {}
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        users_obj = self.pool.get('res.users')
+
         from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
 
         lang = get_value(cursor, user, record_id, template.lang, template, context=context)
@@ -946,14 +964,14 @@ class poweremail_templates(osv.osv):
         }
         #Use signatures if allowed
         if template.use_sign:
-            sign = self.pool.get('res.users').read(cursor, user, user, ['signature'], context=context)['signature']
+            sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']
             if sign:
                 if mailbox_values['pem_body_text']:
                     mailbox_values['pem_body_text'] += "\n--\n"+sign
                 if mailbox_values['pem_body_html']:
                     mailbox_values['pem_body_html'] += sign
         mailbox_values.update(context.get("extra_vals", {}))
-        mailbox_id = self.pool.get('poweremail.mailbox').create(cursor, user, mailbox_values, context=context)
+        mailbox_id = mailbox_obj.create(cursor, user, mailbox_values, context=context)
         return mailbox_id
 
     def check_outbox(self, cursor, uid, mailbox_id, context=None):
