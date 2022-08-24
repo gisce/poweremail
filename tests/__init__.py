@@ -405,3 +405,97 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 1)
+
+    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    def generate_mail_with_attachments_and_report_multi_users(self, mock_function):
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+            mock_function.return_value = ("Result", "provapdf")
+
+            # Agafem dos templates de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            template_id_2 = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail_2'
+            )[1]
+
+            # Hem de posar 'enforce_from_account' al template perque és required
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            pw_account_id_2 = pw_account_obj.create(cursor, uid, {
+                'name': 'test_2',
+                'user': 3,
+                'email_id': 'test_2@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Agafem un report de demo
+            report_id = imd_obj.get_object_reference(
+                cursor, uid, 'base', 'report_test'
+            )[1]
+
+            # Escribim el que necessitem als templates
+            template_vals = {
+                'enforce_from_account': pw_account_id,
+                'report_template': report_id
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
+
+            template_vals_2 = {
+                'enforce_from_account': pw_account_id_2,
+                'report_template': report_id
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals_2)
+
+            # Creem dos attachments de prova
+            ir_vals = {
+                'name': 'filename_prova',
+                'datas': base64.b64encode(b'attachment test content'),
+                'datas_fname': 'filename_prova.txt',
+                'res_model': 'poweremail.templates',
+                'res_id': template_id,
+            }
+            attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
+
+            ir_vals_2 = {
+                'name': 'filename_prova',
+                'datas': base64.b64encode(b'attachment test content'),
+                'datas_fname': 'filename_prova.txt',
+                'res_model': 'poweremail.templates',
+                'res_id': template_id_2,
+            }
+            attachment_id_2 = ir_attachment_obj.create(cursor, uid, ir_vals_2)
+
+            # Busquem els attachments que hi ha creats i hauriem de trobar els que acabem de crear
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 2)
+            self.assertIn(attachment_id, attach_ids)
+            self.assertIn(attachment_id_2, attach_ids)
+
+            # Cridem el mètode per generar el mail a partir dels templates que tenen un attachment i un report.
+            # Ens hauria de crear un segon attachment al crear el poweremail.mailbox
+            # I també ens hauria de crear un tercer attachment que és el report
+            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id, template_id_2])
+
+            attach_ids = ir_attachment_obj.search(cursor, uid, [])
+            self.assertEqual(len(attach_ids), 6)
