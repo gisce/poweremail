@@ -121,6 +121,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
         return acc_id
 
     def create_template(self, cursor, uid, extra_vals=None):
+        if extra_vals is None:
+            extra_vals = {}
 
         imd_obj = self.openerp.pool.get('ir.model.data')
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
@@ -179,6 +181,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(len(mails_per_enviar), 3)
 
     def test_poweremail_n_mails_per_batch_per_account(self, extra_vals=None):
+        if extra_vals is None:
+            extra_vals = {}
         self.openerp.install_module('base_extended')
 
         with Transaction().start(self.database) as txn:
@@ -424,25 +428,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
                 cursor, uid, 'poweremail', 'default_template_poweremail'
             )[1]
 
-            template_id_2 = imd_obj.get_object_reference(
-                cursor, uid, 'poweremail', 'default_template_poweremail_2'
-            )[1]
-
             # Hem de posar 'enforce_from_account' al template perque és required
             pw_account_id = pw_account_obj.create(cursor, uid, {
                 'name': 'test',
                 'user': 1,
                 'email_id': 'test@email',
-                'smtpserver': 'smtp.gmail.com',
-                'smtpport': '587',
-                'company': 'no',
-                'state': 'approved',
-            })
-
-            pw_account_id_2 = pw_account_obj.create(cursor, uid, {
-                'name': 'test_2',
-                'user': 3,
-                'email_id': 'test_2@email',
                 'smtpserver': 'smtp.gmail.com',
                 'smtpport': '587',
                 'company': 'no',
@@ -461,15 +451,10 @@ class TestPoweremailMailbox(testing.OOTestCase):
             }
             pm_tmp_obj.write(cursor, uid, template_id, template_vals)
 
-            template_vals_2 = {
-                'enforce_from_account': pw_account_id_2,
-                'report_template': report_id
-            }
-            pm_tmp_obj.write(cursor, uid, template_id, template_vals_2)
 
             # Creem dos attachments de prova
             ir_vals = {
-                'name': 'filename_prova',
+                'name': 'filename_prova_1',
                 'datas': base64.b64encode(b'attachment test content'),
                 'datas_fname': 'filename_prova.txt',
                 'res_model': 'poweremail.templates',
@@ -478,11 +463,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
 
             ir_vals_2 = {
-                'name': 'filename_prova',
+                'name': 'filename_prova_2',
                 'datas': base64.b64encode(b'attachment test content'),
                 'datas_fname': 'filename_prova.txt',
                 'res_model': 'poweremail.templates',
-                'res_id': template_id_2,
+                'res_id': template_id,
             }
             attachment_id_2 = ir_attachment_obj.create(cursor, uid, ir_vals_2)
 
@@ -495,7 +480,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             # Cridem el mètode per generar el mail a partir dels templates que tenen un attachment i un report.
             # Ens hauria de crear un segon attachment al crear el poweremail.mailbox
             # I també ens hauria de crear un tercer attachment que és el report
-            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id, template_id_2])
+            pm_tmp_obj.generate_mail(cursor, uid, template_id, [template_id])
 
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
-            self.assertEqual(len(attach_ids), 6)
+            self.assertEqual(len(attach_ids), 5)
