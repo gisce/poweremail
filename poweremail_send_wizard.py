@@ -266,27 +266,210 @@ class poweremail_send_wizard(osv.osv_memory):
                 raise osv.except_osv(_("Power Email"),_("Email sending failed for one or more objects."))
         return True
 
-    def save_to_mailbox(self, cr, uid, ids, context=None):
+    def get_end_value(self, cr, uid, src_rec_id, value, template, context=None):
+        if context is None:
+            context = {}
+        if len(context['src_rec_ids']) > 1:  # Multiple Mail: Gets value from the template
+            return self.get_value(cr, uid, template, value, context, src_rec_id)
+        else:
+            return value
+
+    def create_mail(self, cr, uid, screen_vals, src_rec_id, vals, context=None):
+        if context is None:
+            context = {}
+
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        core_accounts_obj = self.pool.get('poweremail.core_accounts')
+        res_users_obj = self.pool.get('res.users')
+
+        vals.update(context.get("extra_vals", {}))
+        if screen_vals['signature']:
+            signature = res_users_obj.read(cr, uid, uid, ['signature'], context)['signature']
+            if signature:
+                vals['pem_body_text'] = tools.ustr(vals['pem_body_text'] or '') + '\n--\n' + signature
+                vals['pem_body_html'] = tools.ustr(vals['pem_body_html'] or '') + signature
+        # Create partly the mail and later update attachments
+        context.update({'src_rec_id': src_rec_id})
+        mail_id = mailbox_obj.create(cr, uid, vals, context)
+        return mail_id
+
+    def check_lang(self, cr, uid, template, src_rec_id, context=None):
+        if context is None:
+            context = {}
+
+        res_lang_obj = self.pool.get('res.lang')
+        res_users_obj = self.pool.get('res.users')
+
+        if template.lang:
+            context['lang'] = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
+            lang = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
+            if len(res_lang_obj.search(cr, uid, [('name', '=', lang)], context=context)):
+                return lang
+        if not context.get('lang', False) or context['lang'] == 'False':
+            return res_users_obj.read(cr, uid, uid, ['context_lang'], context)['context_lang']
+
+    def check_template_report(self, cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=None):
+        if context is None:
+            context = {}
+
+        ir_act_rep_xml_obj = self.pool.get('ir.actions.report.xml')
+        ir_model_obj = self.pool.get('ir.model')
+        attach_obj = self.pool.get('ir.attachment')
+
+        if template.report_template:
+            reportname_read = ir_act_rep_xml_obj.read(
+                cr, uid, template.report_template.id, ['report_name'], context=context
+            )['report_name']
+            reportname = 'report.' + reportname_read
+            data = {}
+            data['model'] = ir_model_obj.browse(cr, uid, screen_vals['rel_model'], context=context).model
+            service = netsvc.LocalService(reportname)
+            if template.report_template.context:
+                context.update(eval(template.report_template.context))
+            if screen_vals['single_email'] and len(report_record_ids) > 1:
+                # The optional attachment will be generated as a single file for all these records
+                (result, format) = service.create(cr, uid, report_record_ids, data, context=context)
+            else:
+                (result, format) = service.create(cr, uid, [src_rec_id], data, context=context)
+            attach_vals = {
+                'name': _('%s (Email Attachment)') % tools.ustr(vals['pem_subject']),
+                'datas': base64.b64encode(result),
+                'datas_fname': tools.ustr(
+                    self.get_end_value(
+                        cr, uid, src_rec_id, screen_vals['report'], template, context=context
+                    ) or _('Report')
+                ) + "." + format,
+                'description': vals['pem_body_text'] or _("No Description"),
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id
+            }
+            attachment_id = attach_obj.create(cr, uid, attach_vals, context=context)
+            return attachment_id
+
+    def process_extra_attachment_in_template(self, cr, uid, template, src_rec_id, mail_id, data, context=None):
         if context is None:
             context = {}
 
         attach_obj = self.pool.get('ir.attachment')
-        core_accounts_obj = self.pool.get('poweremail.core_accounts')
-        mailbox_obj = self.pool.get('poweremail.mailbox')
-        res_users_obj = self.pool.get('res.users')
-        res_lang_obj = self.pool.get('res.lang')
-        ir_act_rep_xml_obj = self.pool.get('ir.actions.report.xml')
-        ir_model_obj = self.pool.get('ir.model')
+
+        attachment_ids = []
+        # For each extra attachment in template
+        for tmpl_attach in template.tmpl_attachment_ids:
+            report = tmpl_attach.report_id
+            reportname = 'report.%s' % report.report_name
+            data['model'] = report.model
+            model_obj = self.pool.get(report.model)
+            # Parse search params
+            search_params = eval(self.get_value(cr, uid, template, tmpl_attach.search_params,context, src_rec_id))
+            report_model_ids = model_obj.search(cr, uid, search_params)
+            file_name = self.get_value(cr, uid, template, tmpl_attach.file_name, context, src_rec_id)
+            if not report_model_ids:
+                continue
+            service = netsvc.LocalService(reportname)
+            (result, format) = service.create(cr, uid, report_model_ids, data, context)
+            attach_vals = {
+                'name': file_name,
+                'datas': base64.b64encode(result),
+                'datas_fname': file_name,
+                'description': _("No Description"),
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id
+            }
+            attachment_id = attach_obj.create(cr, uid, attach_vals, context)
+            attachment_ids.append(attachment_id)
+        return attachment_ids
+
+    def add_attachment_documents(self, cr, uid, screen_vals, mail_id, context=None):
+        if context is None:
+            context = {}
+
+        attach_obj = self.pool.get('ir.attachment')
+
+        # Add document attachments
+        attachment_ids_doc = []
+        for attachment_id in screen_vals.get('attachment_ids', []):
+            new_id = attach_obj.copy(cr, uid, attachment_id, {
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id,
+            }, context)
+            attachment_ids_doc.append(new_id)
+        return attachment_ids_doc
+
+    def add_template_attachments(self, cr, uid, template, mail_id, context=None):
+        if context is None:
+            context = {}
+
+        attach_obj = self.pool.get('ir.attachment')
+
+        # Add template attachments
+        search_params = [
+            ('res_model', '=', 'poweremail.templates'),
+            ('res_id', '=', template.id),
+        ]
+        if context['lang']:
+            search_params.append(('datas_fname', 'ilike', '%%.%s.%%' % context['lang']))
+            attach_ids = attach_obj.search(cr, uid, search_params, context=context)
+        attachment_ids_templ = []
+        for attach in attach_obj.browse(cr, uid, attach_ids, context=context):
+            attach_values = {
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id,
+                'name': attach.name.replace('.%s' % context['lang'], ''),
+                'datas_fname': attach.datas_fname.replace('.%s' % context['lang'], '')
+            }
+            new_id = attach_obj.copy(cr, uid, attach.id, attach_values, context=context)
+            attachment_ids_templ.append(new_id)
+        return attachment_ids_templ
+
+    def create_partner_event(self, cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=None):
+        if context is None:
+            context = {}
+
         rrlink_obj = self.pool.get('res.request.link')
         mailgate_obj = self.pool.get('mailgate.message')
 
+        # Create a partner event
+        if template.partner_event and self._get_template_value(cr, uid, 'partner_event', context):
+            name = vals['pem_subject']
+            if isinstance(name, str):
+                name = unicode(name, 'utf-8')
+            if len(name) > 64:
+                name = name[:61] + '...'
+            model = res_id = False
+            if template.report_template and rrlink_obj.search(cr, uid, [
+                ('object', '=', data['model'])], context=context):
+                model = data['model']
+                res_id = src_rec_id
+            elif attachment_ids and rrlink_obj.search(cr, uid, [('object', '=', 'ir.attachment')], context=context):
+                model = 'ir.attachment'
+                res_id = attachment_ids[0]
+            cr.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
+            mail_gateway = cr.fetchall()
+            if mail_gateway:
+                values = {
+                    'history': True,
+                    'name': name,
+                    'date': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'user_id': uid,
+                    'email_from': vals['pem_from'] or None,
+                    'email_to': vals['pem_to'] or None,
+                    'email_cc': vals['pem_cc'] or None,
+                    'email_bcc': vals['pem_bcc'] or None,
+                    'message_id': mail_id,
+                    'description': vals['pem_body_text'] and vals['pem_body_text'] or vals['pem_body_html'],
+                    'partner_id': self.get_value(cr, uid, template, template.partner_event, context, src_rec_id),
+                    'model': model,
+                    'res_id': res_id,
+                }
+                mailgate_obj.create(cr, uid, values, context)
+
+    def save_to_mailbox(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
-        def get_end_value(id, value):
-            if len(context['src_rec_ids']) > 1:  # Multiple Mail: Gets value from the template
-                return self.get_value(cr, uid, template, value, context, id)
-            else:
-                return value
+
+        core_accounts_obj = self.pool.get('poweremail.core_accounts')
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        res_users_obj = self.pool.get('res.users')
 
         mail_ids = []
         template = self._get_template(cr, uid, context)
@@ -302,154 +485,50 @@ class poweremail_send_wizard(osv.osv_memory):
             accounts = core_accounts_obj.read(cr, uid, screen_vals['from'], context=context)
             vals = {
                 'pem_from': tools.ustr(accounts['name']) + "<" + tools.ustr(accounts['email_id']) + ">",
-                'pem_to': get_end_value(src_rec_id, screen_vals['to']),
-                'pem_cc': get_end_value(src_rec_id, screen_vals['cc']),
-                'pem_bcc': get_end_value(src_rec_id, screen_vals['bcc']),
-                'pem_subject': get_end_value(src_rec_id, screen_vals['subject']),
-                'pem_body_text': get_end_value(src_rec_id, screen_vals['body_text']),
-                'pem_body_html': get_end_value(src_rec_id, screen_vals['body_html']),
+                'pem_to': self.get_end_value(cr, uid, src_rec_id, screen_vals['to'], template, context=context),
+                'pem_cc': self.get_end_value(cr, uid, src_rec_id, screen_vals['cc'], template, context=context),
+                'pem_bcc': self.get_end_value(cr, uid, src_rec_id, screen_vals['bcc'], template, context=context),
+                'pem_subject': self.get_end_value(cr, uid, src_rec_id, screen_vals['subject'], template,
+                                                  context=context),
+                'pem_body_text': self.get_end_value(cr, uid, src_rec_id, screen_vals['body_text'], template,
+                                                    context=context),
+                'pem_body_html': self.get_end_value(cr, uid, src_rec_id, screen_vals['body_html'], template,
+                                                    context=context),
                 'pem_account_id': screen_vals['from'],
                 'priority': screen_vals['priority'],
                 'state': 'na',
                 'mail_type': 'multipart/alternative'
                 # Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
-            vals.update(context.get("extra_vals", {}))
-            if screen_vals['signature']:
-                signature = res_users_obj.read(cr, uid, uid, ['signature'], context)['signature']
-                if signature:
-                    vals['pem_body_text'] = tools.ustr(vals['pem_body_text'] or '') + '\n--\n' + signature
-                    vals['pem_body_html'] = tools.ustr(vals['pem_body_html'] or '') + signature
-            # Create partly the mail and later update attachments
             ctx = context.copy()
-            ctx.update({'src_rec_id': src_rec_id})
-            mail_id = mailbox_obj.create(cr, uid, vals, ctx)
+            mail_id = self.create_mail(cr, uid, screen_vals, src_rec_id, vals, context=ctx)
             mail_ids.append(mail_id)
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
-            if template.lang:
-                ctx['lang'] = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
-                lang = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
-                if len(res_lang_obj.search(cr, uid, [('name', '=', lang)], context=context)):
-                    ctx['lang'] = lang
-            if not ctx.get('lang', False) or ctx['lang'] == 'False':
-                ctx['lang'] = res_users_obj.read(cr, uid, uid, ['context_lang'], context)['context_lang']
-            if template.report_template:
-                reportname = 'report.' + \
-                             ir_act_rep_xml_obj.read(cr, uid, template.report_template.id,
-                                                                         ['report_name'], context)['report_name']
-                data = {}
-                data['model'] = ir_model_obj.browse(cr, uid, screen_vals['rel_model'], context).model
-                service = netsvc.LocalService(reportname)
-                if template.report_template.context:
-                    ctx.update(eval(template.report_template.context))
-                if screen_vals['single_email'] and len(report_record_ids) > 1:
-                    # The optional attachment will be generated as a single file for all these records
-                    (result, format) = service.create(cr, uid, report_record_ids, data, ctx)
-                else:
-                    (result, format) = service.create(cr, uid, [src_rec_id], data, ctx)
-                attachment_id = attach_obj.create(cr, uid, {
-                    'name': _('%s (Email Attachment)') % tools.ustr(vals['pem_subject']),
-                    'datas': base64.b64encode(result),
-                    'datas_fname': tools.ustr(get_end_value(src_rec_id, screen_vals['report']) or _('Report')) + "." + format,
-                    'description': vals['pem_body_text'] or _("No Description"),
-                    'res_model': 'poweremail.mailbox',
-                    'res_id': mail_id
-                }, context)
+            self.check_lang(cr, uid, template, src_rec_id, context=ctx)
+            attachment_id = self.check_template_report(
+                cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
+            )
+            if attachment_id:
                 attachment_ids.append(attachment_id)
-            # For each extra attachment in template
-            for tmpl_attach in template.tmpl_attachment_ids:
-                report = tmpl_attach.report_id
-                reportname = 'report.%s' % report.report_name
-                data = {}
-                data['model'] = report.model
-                model_obj = self.pool.get(report.model)
-                # Parse search params
-                search_params = eval(self.get_value(cr, uid, template,
-                                                    tmpl_attach.search_params,
-                                                    context, src_rec_id))
-                report_model_ids = model_obj.search(cr, uid, search_params)
-                file_name = self.get_value(cr, uid, template,
-                                           tmpl_attach.file_name,
-                                           context, src_rec_id)
-                if not report_model_ids:
-                    continue
-                service = netsvc.LocalService(reportname)
-                (result, format) = service.create(cr, uid, report_model_ids, data, ctx)
-                attachment_id = attach_obj.create(cr, uid, {
-                    'name': file_name,
-                    'datas': base64.b64encode(result),
-                    'datas_fname': file_name,
-                    'description': _("No Description"),
-                    'res_model': 'poweremail.mailbox',
-                    'res_id': mail_id
-                }, context)
-                attachment_ids.append(attachment_id)
+            data = []
+            attachment_ids_extra = self.process_extra_attachment_in_template(
+                cr, uid, template, src_rec_id, mail_id, data, context=ctx
+            )
+            attachment_ids.extend(attachment_ids_extra)
             # Add document attachments
-            for attachment_id in screen_vals.get('attachment_ids', []):
-                new_id = attach_obj.copy(cr, uid, attachment_id, {
-                    'res_model': 'poweremail.mailbox',
-                    'res_id': mail_id,
-                }, context)
-                attachment_ids.append(new_id)
-
+            attachment_ids_doc = self.add_attachment_documents(cr, uid, screen_vals, mail_id, context=ctx)
+            attachment_ids.extend(attachment_ids_doc)
             # Add template attachments
-            search_params = [
-                ('res_model', '=', 'poweremail.templates'),
-                ('res_id', '=', template.id),
-            ]
-            if ctx['lang']:
-                search_params.append(('datas_fname', 'ilike', '%%.%s.%%' % ctx['lang']))
-                attach_ids = attach_obj.search(cr, uid, search_params, context=context)
-            for attach in attach_obj.browse(cr, uid, attach_ids, context=context):
-                attach_values = {
-                    'res_model': 'poweremail.mailbox',
-                    'res_id': mail_id,
-                    'name': attach.name.replace('.%s' % ctx['lang'], ''),
-                    'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'], '')
-                }
-                new_id = attach_obj.copy(cr, uid, attach.id, attach_values, context=context)
-                attachment_ids.append(new_id)
-
+            attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
+            attachment_ids.extend(attachment_ids_templ)
             if attachment_ids:
-                mailbox_obj.write(cr, uid, mail_id, {
+                mailbox_vals = {
                     'pem_attachments_ids': [[6, 0, attachment_ids]],
                     'mail_type': 'multipart/mixed'
-                }, context)
-            # Create a partner event
-            if template.partner_event and self._get_template_value(cr, uid, 'partner_event', context):
-                name = vals['pem_subject']
-                if isinstance(name, str):
-                    name = unicode(name, 'utf-8')
-                if len(name) > 64:
-                    name = name[:61] + '...'
-                model = res_id = False
-                if template.report_template and rrlink_obj.search(cr, uid, [
-                    ('object', '=', data['model'])], context=context):
-                    model = data['model']
-                    res_id = src_rec_id
-                elif attachment_ids and rrlink_obj.search(cr, uid, [('object', '=', 'ir.attachment')], context=context):
-                    model = 'ir.attachment'
-                    res_id = attachment_ids[0]
-                cr.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
-                mail_gateway = cr.fetchall()
-                if mail_gateway:
-                    values = {
-                        'history': True,
-                        'name': name,
-                        'date': time.strftime('%Y-%m-%d %H:%M:%S'),
-                        'user_id': uid,
-                        'email_from': vals['pem_from'] or None,
-                        'email_to': vals['pem_to'] or None,
-                        'email_cc': vals['pem_cc'] or None,
-                        'email_bcc': vals['pem_bcc'] or None,
-                        'message_id': mail_id,
-                        'description': vals['pem_body_text'] and vals['pem_body_text'] or vals['pem_body_html'],
-                        'partner_id': self.get_value(cr, uid, template, template.partner_event, context, src_rec_id),
-                        'model': model,
-                        'res_id': res_id,
-                    }
-                    mailgate_obj.create(cr, uid, values, context)
+                }
+                mailbox_obj.write(cr, uid, mail_id, mailbox_vals, context)
+            self.create_partner_event(cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=ctx)
         return mail_ids
 
 poweremail_send_wizard()
