@@ -283,13 +283,14 @@ class poweremail_send_wizard(osv.osv_memory):
 
         vals.update(context.get("extra_vals", {}))
         if screen_vals['signature']:
-            signature = res_users_obj.read(cr, uid, uid, ['signature'], context)['signature']
+            signature = res_users_obj.read(cr, uid, uid, ['signature'], context=context)['signature']
             if signature:
                 vals['pem_body_text'] = tools.ustr(vals['pem_body_text'] or '') + '\n--\n' + signature
                 vals['pem_body_html'] = tools.ustr(vals['pem_body_html'] or '') + signature
         # Create partly the mail and later update attachments
-        context.update({'src_rec_id': src_rec_id})
-        mail_id = mailbox_obj.create(cr, uid, vals, context)
+        ctx = context.copy()
+        ctx.update({'src_rec_id': src_rec_id})
+        mail_id = mailbox_obj.create(cr, uid, vals, context=ctx)
         return mail_id
 
     def check_lang(self, cr, uid, template, src_rec_id, context=None):
@@ -305,9 +306,9 @@ class poweremail_send_wizard(osv.osv_memory):
             if len(res_lang_obj.search(cr, uid, [('name', '=', lang)], context=context)):
                 return lang
         if not context.get('lang', False) or context['lang'] == 'False':
-            return res_users_obj.read(cr, uid, uid, ['context_lang'], context)['context_lang']
+            return res_users_obj.read(cr, uid, uid, ['context_lang'], context=context)['context_lang']
 
-    def check_template_report(self, cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=None):
+    def create_report_attachment(self, cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=None):
         if context is None:
             context = {}
 
@@ -361,22 +362,21 @@ class poweremail_send_wizard(osv.osv_memory):
             model_obj = self.pool.get(report.model)
             # Parse search params
             search_params = eval(self.get_value(cr, uid, template, tmpl_attach.search_params,context, src_rec_id))
-            report_model_ids = model_obj.search(cr, uid, search_params)
+            report_model_ids = model_obj.search(cr, uid, search_params, context=context)
             file_name = self.get_value(cr, uid, template, tmpl_attach.file_name, context, src_rec_id)
-            if not report_model_ids:
-                continue
-            service = netsvc.LocalService(reportname)
-            (result, format) = service.create(cr, uid, report_model_ids, data, context)
-            attach_vals = {
-                'name': file_name,
-                'datas': base64.b64encode(result),
-                'datas_fname': file_name,
-                'description': _("No Description"),
-                'res_model': 'poweremail.mailbox',
-                'res_id': mail_id
-            }
-            attachment_id = attach_obj.create(cr, uid, attach_vals, context)
-            attachment_ids.append(attachment_id)
+            if report_model_ids:
+                service = netsvc.LocalService(reportname)
+                (result, format) = service.create(cr, uid, report_model_ids, data, context=context)
+                attach_vals = {
+                    'name': file_name,
+                    'datas': base64.b64encode(result),
+                    'datas_fname': file_name,
+                    'description': _("No Description"),
+                    'res_model': 'poweremail.mailbox',
+                    'res_id': mail_id
+                }
+                attachment_id = attach_obj.create(cr, uid, attach_vals, context=context)
+                attachment_ids.append(attachment_id)
         return attachment_ids
 
     def add_attachment_documents(self, cr, uid, screen_vals, mail_id, context=None):
@@ -385,13 +385,15 @@ class poweremail_send_wizard(osv.osv_memory):
 
         attach_obj = self.pool.get('ir.attachment')
 
+        attach_values = {
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id,
+        }
+
         # Add document attachments
         attachment_ids_doc = []
         for attachment_id in screen_vals.get('attachment_ids', []):
-            new_id = attach_obj.copy(cr, uid, attachment_id, {
-                'res_model': 'poweremail.mailbox',
-                'res_id': mail_id,
-            }, context)
+            new_id = attach_obj.copy(cr, uid, attachment_id, attach_values, context=context)
             attachment_ids_doc.append(new_id)
         return attachment_ids_doc
 
@@ -429,7 +431,7 @@ class poweremail_send_wizard(osv.osv_memory):
         mailgate_obj = self.pool.get('mailgate.message')
 
         # Create a partner event
-        if template.partner_event and self._get_template_value(cr, uid, 'partner_event', context):
+        if template.partner_event and self._get_template_value(cr, uid, 'partner_event', context=context):
             name = vals['pem_subject']
             if isinstance(name, str):
                 name = unicode(name, 'utf-8')
@@ -461,7 +463,7 @@ class poweremail_send_wizard(osv.osv_memory):
                     'model': model,
                     'res_id': res_id,
                 }
-                mailgate_obj.create(cr, uid, values, context)
+                mailgate_obj.create(cr, uid, values, context=context)
 
     def save_to_mailbox(self, cr, uid, ids, context=None):
         if context is None:
@@ -527,7 +529,7 @@ class poweremail_send_wizard(osv.osv_memory):
                     'pem_attachments_ids': [[6, 0, attachment_ids]],
                     'mail_type': 'multipart/mixed'
                 }
-                mailbox_obj.write(cr, uid, mail_id, mailbox_vals, context)
+                mailbox_obj.write(cr, uid, mail_id, mailbox_vals, context=context)
             self.create_partner_event(cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=ctx)
         return mail_ids
 
