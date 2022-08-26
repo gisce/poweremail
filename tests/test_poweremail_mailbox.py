@@ -398,7 +398,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.check_template_report')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.check_lang')
     def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5, mock_function_6):

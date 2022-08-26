@@ -508,7 +508,7 @@ class poweremail_send_wizard(osv.osv_memory):
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
             self.check_lang(cr, uid, template, src_rec_id, context=ctx)
-            attachment_id = self.check_template_report(
+            attachment_id = self.create_report_attachment(
                 cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
             )
             if attachment_id:
