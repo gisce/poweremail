@@ -1,0 +1,47 @@
+
+<openerp>
+	<data>
+        <record id="action_wizard_generate_email_form" model="ir.actions.act_window">
+            <field name="name">Generate Email test</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">wizard.generate.test.email</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="value_wizard_generate_email_form" model="ir.values">
+            <field name="object" eval="1"/>
+            <field name="name">Generate Email test</field>
+            <field name="key2">client_action_multi</field>
+            <field name="key">action</field>
+            <field name="model">poweremail.templates</field>
+            <field name="value"
+                   eval="'ir.actions.act_window,'+str(ref('action_wizard_generate_email_form'))" />
+        </record>
+
+        <!--Finestra de dins de l'assistent-->
+        <record id="view_wizard_send_email_form" model="ir.ui.view">
+	    	<field name="name">wizard.generate.test.email.form</field>
+	      	<field name="model">wizard.generate.test.email</field>
+	      	<field name="type">form</field>
+	      	<field name="arch" type="xml">
+	        	<form string="Enviar emails">
+	        		<field name="state" invisible="1"/>
+                    <group attrs="{'invisible': [('state','!=','init')]}">
+		        		<group colspan="4" col="2">
+		        			<button icon="gtk-close" special="cancel" string="Cancel" type="object"/>
+		        			<button name="action_generate_static_mail"
+                                    icon="gtk-ok" string="Generate Email" type="object"/>
+		        		</group>
+		        	</group>
+		        	<group attrs="{'invisible': [('state','!=','end')]}">
+		        		<label string="Email done!" colspan="4"/>
+		        		<newline/>
+		        		<button icon="gtk-close" special="cancel" string="Close" type="object" colspan="4"/>
+		        	</group>
+		        </form>
+	        </field>
+	    </record>
+	</data>
+</openerp>
