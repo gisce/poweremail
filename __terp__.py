@@ -64,6 +64,7 @@
         'wizard/wizard_state_poweremail.xml',
         'wizard/wizard_send_email.xml',
         'wizard/wizard_poweremail.xml',
+        'wizard/wizard_generate_test_email.xml'
     ],
     "installable": True,
     "active": False,
