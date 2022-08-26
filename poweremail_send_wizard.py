@@ -279,7 +279,6 @@ class poweremail_send_wizard(osv.osv_memory):
             context = {}
 
         mailbox_obj = self.pool.get('poweremail.mailbox')
-        core_accounts_obj = self.pool.get('poweremail.core_accounts')
         res_users_obj = self.pool.get('res.users')
 
         vals.update(context.get("extra_vals", {}))
@@ -345,6 +344,7 @@ class poweremail_send_wizard(osv.osv_memory):
             }
             attachment_id = attach_obj.create(cr, uid, attach_vals, context=context)
             return attachment_id
+        return False
 
     def process_extra_attachment_in_template(self, cr, uid, template, src_rec_id, mail_id, data, context=None):
         if context is None:
