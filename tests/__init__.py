@@ -423,7 +423,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
             mock_function.return_value = ("Result", "provapdf")
 
-            # Agafem dos templates de prova per posar a l'attachment
+            # Agafem un template de prova per posar a l'attachment
             template_id = imd_obj.get_object_reference(
                 cursor, uid, 'poweremail', 'default_template_poweremail'
             )[1]
@@ -484,3 +484,164 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 5)
+
+
+
+
+
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.check_template_report')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
+    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.check_lang')
+    def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5, mock_function_6):
+        self.openerp.install_module('giscedata_facturacio')
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+            send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
+
+            fact_id = imd_obj.get_object_reference(cursor, uid, 'giscedata_facturacio', 'factura_0006')[1]
+            # Agafem un template de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            # Creem un wizard 'poweremail_send_wizard'
+            body_text = "<!doctype html>" \
+                        "<html>" \
+                        "<head></head>" \
+                        "<body>" \
+                        "Querid@ Agrolait,<br/>" \
+                        "<br/>" \
+                        "El importe de su factura de electricidad que comprende el periodo del <B>2021/06/01</B> al <B>2021/06/30</B> es de <B> 14.54€</B>.<br/>" \
+                        "<br/>" \
+                        "Por favor, encuentre adjunta la factura en formato PDF.<br/>" \
+                        "<br/>" \
+                        "<br/>" \
+                        "Atentamente,<br/>" \
+                        "<br/>" \
+                        "Tiny sprl" \
+                        "</body>" \
+                        "</html>"
+
+            wizard_vals = {
+                'rel_model_ref': fact_id,
+                'requested': 1,
+                'from': 1,
+                'attachment_ids': [],
+                'body_text': body_text,
+                'cc' : False,
+                'body_html': False,
+                'bcc': False,
+                'priority': '1',
+                'to': 'aorellana@gisce.net',
+                'state': 'single',
+                'ref_template': template_id,
+                'single_email': 0,
+                'rel_model': 301,
+                'signature': 0,
+                'report': False,
+                'subject': 'Factura electricidad False',
+                'generated': False,
+                'full_success': False,
+            }
+
+            # Creem un mailbox
+            wizard_id = send_wizard_obj.create(cursor, uid, wizard_vals)
+
+            # Hem de posar 'enforce_from_account' al template perque és required
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Agafem un report de demo
+            report_id = imd_obj.get_object_reference(
+                cursor, uid, 'base', 'report_test'
+            )[1]
+
+            # Escribim el que necessitem als templates
+            template_vals = {
+                'enforce_from_account': pw_account_id,
+                'report_template': report_id
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
+
+            # Creem un attachments de prova
+            ir_vals = {
+                'name': 'filename_prova_1',
+                'datas': base64.b64encode(b'attachment test content'),
+                'datas_fname': 'filename_prova.txt',
+                'res_model': 'poweremail.templates',
+                'res_id': template_id,
+            }
+            attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
+
+            mail_vals = {
+                'pem_from': 'test@email',
+                'pem_to': 'aorellana@gisce.net',
+                'pem_cc': False,
+                'pem_bcc': False,
+                'pem_subject': 'Factura electricidad False',
+                'pem_body_text': body_text,
+                'pem_body_html': False,
+                'pem_account_id': 1,
+                'priority': '1',
+                'state': 'na',
+                'mail_type': 'multipart/alternative'
+            }
+
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+
+            attach_vals = {
+                'name': 'Factura electricidad False(adjunto correo electrónico)',
+                'datas': "datas_test",
+                'datas_fname': "False.pdf",
+                'description': body_text,
+                'res_model': 'poweremail.mailbox',
+                'res_id': mail_id
+            }
+            attachment_report_id = ir_attachment_obj.create(cursor, uid, attach_vals)
+
+            mock_function.return_value = "es_ES"
+            mock_function_2.return_value = mail_id
+            mock_function_3.return_value = attachment_report_id
+            mock_function_4.return_value = []
+            mock_function_5.return_value = []
+            mock_function_6.return_value = [attachment_id]
+
+
+
+            context = {}
+            context['template_id'] = template_id
+            context['lang'] = False
+            context['src_rec_id'] = fact_id
+            context['tz'] = False
+            context['src_rec_ids'] = [fact_id]
+            context['active_ids'] = [fact_id]
+            context['type'] = 'out_invoice'
+            context['template_id'] = template_id
+            context['active_id'] = fact_id
+
+            mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
+            mail_created_vals = mailbox_obj.read(cursor, uid, mail_ids[0], [])
+            self.assertEqual(len(mail_created_vals['pem_attachments_ids']), 2)
+            self.assertIn(attachment_report_id, mail_created_vals['pem_attachments_ids'])
+            self.assertIn(attachment_id, mail_created_vals['pem_attachments_ids'])
+
+
+
+
+
