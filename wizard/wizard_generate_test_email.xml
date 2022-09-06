@@ -30,7 +30,7 @@
 	        		<field name="state" invisible="1"/>
                     <group attrs="{'invisible': [('state','!=','init')]}">
 						<group colspan="4" col="2">
-							<field name="mode_ref"/>
+							<field name="model_ref"/>
 						</group>
 		        		<group colspan="4" col="2">
 		        			<button icon="gtk-close" special="cancel" string="Cancel" type="object"/>
