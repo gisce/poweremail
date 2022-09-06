@@ -29,6 +29,9 @@
 	        	<form string="Enviar emails">
 	        		<field name="state" invisible="1"/>
                     <group attrs="{'invisible': [('state','!=','init')]}">
+						<group colspan="4" col="2">
+							<field name="mode_ref"/>
+						</group>
 		        		<group colspan="4" col="2">
 		        			<button icon="gtk-close" special="cancel" string="Cancel" type="object"/>
 		        			<button name="action_generate_static_mail"
