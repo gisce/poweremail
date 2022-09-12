@@ -998,8 +998,10 @@ class poweremail_templates(osv.osv):
             # We send a single email for several records
             record_ids = record_ids[:1]
 
+        mailbox_ids = []
         for record_id in record_ids:
             mailbox_id = self._generate_mailbox_item_from_template(cursor, user, template, record_id, context=context)
+            mailbox_ids.append(mailbox_id)
             mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
             if template.single_email and len(report_record_ids) > 1:
                 # The optional attachment will be generated as a single file for all these records
@@ -1019,7 +1021,12 @@ class poweremail_templates(osv.osv):
                 pe_obj = self.pool.get('poweremail.mailbox')
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
                     pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
-        return True
+        if len(mailbox_ids) > 1:
+            return mailbox_ids
+        elif mailbox_ids:
+            return mailbox_ids[0]
+        else:
+            return False
 
     def create_action_reference(self, cursor, uid, ids, context):
         template = self.pool.get('poweremail.templates').browse(
