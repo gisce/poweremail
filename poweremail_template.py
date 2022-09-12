@@ -983,12 +983,7 @@ class poweremail_templates(osv.osv):
     def check_outbox(self, cursor, uid, mailbox_id, context=None):
         return True
 
-    def generate_mail(self,
-                      cursor,
-                      user,
-                      template_id,
-                      record_ids,
-                      context=None):
+    def generate_mail(self, cursor, user, template_id, record_ids, context=None):
         if context is None:
             context = {}
         if not isinstance(record_ids, (list, tuple)):
@@ -998,7 +993,7 @@ class poweremail_templates(osv.osv):
             raise Exception("The requested template could not be loaded")
         
         if template.use_filter and template.filter:
-            filtered_record_ids=[]
+            filtered_record_ids = []
             for record in self.pool.get(template.object_name.model).browse(cursor, user, record_ids, context=context):
                 if safe_eval(template.filter, {'o':record, 'self':self, 'cr':cursor, 'context':context, 'uid': user}):
                     filtered_record_ids.append(record.id)
@@ -1009,49 +1004,21 @@ class poweremail_templates(osv.osv):
             # We send a single email for several records
             record_ids = record_ids[:1]
 
+        mailbox_ids = []
         for record_id in record_ids:
-            mailbox_id = self._generate_mailbox_item_from_template(
-                                                                cursor,
-                                                                user,
-                                                                template,
-                                                                record_id,
-                                                                context)
-            mail = self.pool.get('poweremail.mailbox').browse(
-                                                        cursor,
-                                                        user,
-                                                        mailbox_id,
-                                                        context=context
-                                                              )
-            if template.report_template:
-                if template.single_email and len(report_record_ids) > 1:
-                    # The optional attachment will be generated as a single file for all these records
-                    self._generate_attach_reports(
-                                              cursor,
-                                              user,
-                                              template,
-                                              report_record_ids,
-                                              mail,
-                                              context
-                                              )
-                else:                              
-                    self._generate_attach_reports(
-                                              cursor,
-                                              user,
-                                              template,
-                                              [record_id],
-                                              mail,
-                                              context
-                                              )
+            mailbox_id = self._generate_mailbox_item_from_template(cursor, user, template, record_id, context=context)
+            mailbox_ids.append(mailbox_id)
+            mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
+            if template.single_email and len(report_record_ids) > 1:
+                # The optional attachment will be generated as a single file for all these records
+                self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
+            else:
+                self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
             # Create a partner event
             cursor.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
             mail_gateway = cursor.fetchall()
             if template.partner_event and mail_gateway:
-                self._generate_partner_events(cursor,
-                                              user,
-                                              template,
-                                              record_id,
-                                              mail,
-                                              context)
+                self._generate_partner_events(cursor, user, template, record_id, mail, context=context)
             # This should be the last statement in this method.
             # This prevents attempts by the scheduler to send
             # Emails before all the work is complete in
@@ -1060,7 +1027,12 @@ class poweremail_templates(osv.osv):
                 pe_obj = self.pool.get('poweremail.mailbox')
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
                     pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
-        return True
+        if len(mailbox_ids) > 1:
+            return mailbox_ids
+        elif mailbox_ids:
+            return mailbox_ids[0]
+        else:
+            return False
 
     def create_action_reference(self, cursor, uid, ids, context):
         template = self.pool.get('poweremail.templates').browse(
