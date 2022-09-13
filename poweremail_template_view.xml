@@ -305,6 +305,7 @@
             <field name="name">poweremail.basic.templates.form</field>
             <field name="model">poweremail.templates</field>
             <field name="type">form</field>
+            <field name="priority">17</field>
             <field name="arch" type="xml">
                 <form string="Power Email Templates">
                     <field name="name" />
@@ -345,6 +346,7 @@
             <field name="name">poweremail.basic.templates.tree</field>
             <field name="model">poweremail.templates</field>
             <field name="type">tree</field>
+            <field name="priority">17</field>
             <field name="arch" type="xml">
                 <tree string="Power Email Templates">
                     <field name="name" select="1" />
