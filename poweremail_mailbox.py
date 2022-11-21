@@ -364,7 +364,10 @@ class PoweremailMailbox(osv.osv):
         if not email:
             return False
 
-        emails = email.split(',')
+        emails = []
+        for mail in email.split(','):
+            emails += mail.split(';')
+
         if len(emails)>0:
             for email in emails:
                 if not get_validate_email(email.strip()):
