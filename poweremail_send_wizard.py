@@ -238,7 +238,11 @@ class poweremail_send_wizard(osv.osv_memory):
         if mail_ids:
             for mail_id in mail_ids:
                 if not mailbox_obj.is_valid(cr, uid, mail_id):
-                    values['folder'] = 'drafts'
+                    values['folder'] = 'error'
+                    mailbox_v = mailbox_obj.read(cr, uid, mail_id, ['history'], context=context)
+                    values['history'] = '{}\n{}'.format(
+                        _(u'Not valid destiny email'), mailbox_v['history']
+                    )
                 else:
                     values['folder'] = folder
                 mailbox_obj.write(cr, uid, [mail_id], values, context)
