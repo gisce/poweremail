@@ -881,6 +881,14 @@ class poweremail_templates(osv.osv):
             }
         return from_account
 
+    def calc_company_id_from_record(self, cursor, uid, record_id, template, context=None):
+        record_o = self.pool.get(template.model_int_name)
+        if 'company_id' in record_id._columns:
+            cid = record_id.read(cursor, uid, record_id, ['company_id'])
+            if cid['company_id']:
+                return cid['company_id'][0]
+        return None
+
     def _generate_mailbox_item_from_template(self,
                                       cursor,
                                       user,
@@ -902,7 +910,13 @@ class poweremail_templates(osv.osv):
         """
         if context is None:
             context = {}
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
+
+        ctx = context.copy()
+        cid = self.calc_company_id_from_record(cursor, user, record_id, template, context=context)
+        if cid:
+            ctx['company_id'] = cid
+
+        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx)
 
         lang = get_value(cursor,
                          user,
