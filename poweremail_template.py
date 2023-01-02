@@ -470,6 +470,7 @@ class poweremail_templates(osv.osv):
                                              method=True, type='one2many',
                                              relation='ir.attachment',
                                              string='Attachments'),
+        'attach_record_items': fields.boolean('Attach record items', select=2, help="Si es marca aquesta opció, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email.")
     }
 
     _defaults = {
@@ -884,6 +885,17 @@ class poweremail_templates(osv.osv):
         ]
         if lang:
             search_params += [('datas_fname', 'ilike', '%%.%s.%%' % lang)]
+
+        # SI el template te el camp nou "enviar adjunts del regtistre per email" a True, s'ha de buscar els adjunts
+        # vinculats als record_ids i afegirlos a la llista de attach_ids
+        if template.attach_record_items:
+            for record_id in record_ids:
+                ids = attachment_obj.search(cursor, user, [
+                    ('res_model', '=', template.object_name.model),
+                    ('res_id', '=', record_id)
+                ], context=context)
+                attachment_id.extend(ids)
+
         attach_ids = attachment_obj.search(cursor, user, search_params, context=context)
         for attach in attachment_obj.browse(cursor, user, attach_ids, context=context):
             attachment_vals = {
