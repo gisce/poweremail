@@ -470,7 +470,7 @@ class poweremail_templates(osv.osv):
                                              method=True, type='one2many',
                                              relation='ir.attachment',
                                              string='Attachments'),
-        'attach_record_items': fields.boolean('Attach record items')
+        'attach_record_items': fields.boolean('Attach record items', select=2, help="Si es marca aquesta opció, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email.")
     }
 
     _defaults = {
