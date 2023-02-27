@@ -517,7 +517,7 @@ class poweremail_send_wizard(osv.osv_memory):
             )
             if attachment_id:
                 attachment_ids.append(attachment_id)
-            data = []
+            data = {}
             attachment_ids_extra = self.process_extra_attachment_in_template(
                 cr, uid, template, src_rec_id, mail_id, data, context=ctx
             )
