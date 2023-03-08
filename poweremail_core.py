@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 #########################################################################
 #Power Email is a module for Open ERP which enables it to send mails    #
 #Core settings are stored here                                          #
@@ -303,22 +304,44 @@ class poweremail_core_accounts(osv.osv):
                                  _("Reason: %s") % error
                                  )
 
-    def _get_imap_server(self, record):
+    def login_imap(self, cursor, uid, core_account, imap_connection, context=None):
+        if context is None:
+            context = {}
+
+        imap_connection.login(core_account.isuser, core_account.ispass)
+
+    def _get_imap_server(self, cursor, uid, record):
         """
         @param record: Browse record of current connection
         @return: IMAP or IMAP_SSL object
         """
+        logger = netsvc.Logger()
+
         if record:
-            if record.isssl:
-                serv = imaplib.IMAP4_SSL(record.iserver, record.isport)
-            else:
-                serv = imaplib.IMAP4(record.iserver, record.isport)
-            #Now try to login
-            serv.login(record.isuser, record.ispass)
+            try:
+                if record.isssl:
+                    serv = imaplib.IMAP4_SSL(record.iserver, record.isport)
+                else:
+                    serv = imaplib.IMAP4(record.iserver, record.isport)
+            except imaplib.IMAP4.error as error:
+                logger.notifyChannel(
+                    _("Power Email"),
+                    netsvc.LOG_ERROR,
+                    _("IMAP Server Error: {}".format(error))
+                )
+
+            try:
+                self.login_imap(cursor, uid, record, serv)
+            except imaplib.IMAP4.error as error:
+                msg = _("IMAP Server Login Error: {}".format(error))
+                logger.notifyChannel(
+                    _("Power Email"),
+                    netsvc.LOG_ERROR,
+                    msg
+                )
+                raise Exception(msg)
+
             return serv
-        raise Exception(
-                        _("Programming Error in _get_imap_server method. The record received is invalid.")
-                        )
 
     def _get_pop3_server(self, record):
         """
@@ -369,11 +392,14 @@ class poweremail_core_accounts(osv.osv):
             if not this_object.isuser:
                 raise Exception(_("Incoming server password is not defined"))
             #Now fetch the connection
-            if this_object.iserver_type == 'imap':
-                serv = self._get_imap_server(this_object)
-            elif this_object.iserver_type == 'pop3':
-                serv = self._get_pop3_server(this_object)
-            return serv
+            try:
+                if this_object.iserver_type == 'imap':
+                    serv = self._get_imap_server(cursor, user, this_object)
+                elif this_object.iserver_type == 'pop3':
+                    serv = self._get_pop3_server(this_object)
+                return serv
+            except Exception as error:
+                raise Exception(error)
         raise Exception(
                     _("The specified record for connection does not exist")
                         )
@@ -390,7 +416,6 @@ class poweremail_core_accounts(osv.osv):
         """
         try:
             self._get_incoming_server(cursor, user, ids, context)
-            raise osv.except_osv(_("Incoming Test Connection Was Successful"), '')
         except osv.except_osv as success_message:
             raise success_message
         except Exception as error:
@@ -398,6 +423,7 @@ class poweremail_core_accounts(osv.osv):
                                  _("In coming connection test failed"),
                                  _("Reason: %s") % error
                                  )
+        raise osv.except_osv(_("Incoming Test Connection Was Successful"), '')
 
     def do_approval(self, cr, uid, ids, context={}):
         #TODO: Check if user has rights
@@ -892,18 +918,7 @@ class poweremail_core_accounts(osv.osv):
                 if rec.iserver and rec.isport and rec.isuser and rec.ispass :
                     if rec.iserver_type == 'imap' and rec.isfolder:
                         #Try Connecting to Server
-                        try:
-                            if rec.isssl:
-                                serv = imaplib.IMAP4_SSL(rec.iserver, rec.isport)
-                            else:
-                                serv = imaplib.IMAP4(rec.iserver, rec.isport)
-                        except imaplib.IMAP4.error as error:
-                            logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("IMAP Server Error Account: %s Error: %s.") % (id, error))
-                        #Try logging in to server
-                        try:
-                            serv.login(rec.isuser, rec.ispass)
-                        except imaplib.IMAP4.error as error:
-                            logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("IMAP Server Login Error Account: %s Error: %s.") % (id, error))
+                        serv = self._get_imap_server(cr, uid, rec)
                         logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("IMAP Server Connected & logged in successfully Account: %s.") % (id))
                         #Select IMAP folder
                         try:
@@ -1003,34 +1018,8 @@ class poweremail_core_accounts(osv.osv):
             if rec.iserver and rec.isport and rec.isuser and rec.ispass :
                 if rec.iserver_type == 'imap' and rec.isfolder:
                     #Try Connecting to Server
-                    try:
-                        if rec.isssl:
-                            serv = imaplib.IMAP4_SSL(
-                                                     rec.iserver,
-                                                     rec.isport
-                                                     )
-                        else:
-                            serv = imaplib.IMAP4(
-                                                 rec.iserver,
-                                                 rec.isport
-                                                 )
-                    except imaplib.IMAP4.error as error:
-                        logger.notifyChannel(
-                                _("Power Email"),
-                                netsvc.LOG_ERROR,
-                                _(
-                                  "IMAP Server Error Account: %s Error: %s."
-                                  ) % (id, error))
-                    #Try logging in to server
-                    try:
-                        serv.login(rec.isuser, rec.ispass)
-                    except imaplib.IMAP4.error as error:
-                        logger.notifyChannel(
-                                _("Power Email"),
-                                netsvc.LOG_ERROR,
-                                _(
-                        "IMAP Server Login Error Account:%s Error: %s."
-                                ) % (id, error))
+                    pw_core_obj = self.pool.get('poweremail.core_accounts')
+                    serv = pw_core_obj._get_imap_server(cr, uid, rec)
                     logger.notifyChannel(
                                 _("Power Email"),
                                 netsvc.LOG_INFO,
@@ -1038,6 +1027,7 @@ class poweremail_core_accounts(osv.osv):
                         "IMAP Server Connected & logged in successfully Account: %s."
                                 ) % (id))
                     #Select IMAP folder
+
                     try:
                         typ, msg_count = serv.select('"%s"' % rec.isfolder)#typ,msg_count: practically not used here
                     except imaplib.IMAP4.error as error:
@@ -1218,30 +1208,11 @@ class PoweremailSelectFolder(osv.osv_memory):
 
     def _get_folders(self, cr, uid, context=None):
         if 'active_ids' in context.keys():
-            record = self.pool.get(
-                        'poweremail.core_accounts'
-                        ).browse(cr, uid, context['active_ids'][0], context)
+            pw_acc_obj = self.pool.get('poweremail.core_accounts')
+            record = pw_acc_obj.browse(cr, uid, context['active_ids'][0], context)
             if record:
                 folderlist = []
-                try:
-                    if record.isssl:
-                        serv = imaplib.IMAP4_SSL(record.iserver, record.isport)
-                    else:
-                        serv = imaplib.IMAP4(record.iserver, record.isport)
-                except imaplib.IMAP4.error as error:
-                    raise osv.except_osv(_("IMAP Server Error"),
-                                         _("An error occurred: %s") % error)
-                except Exception as error:
-                    raise osv.except_osv(_("IMAP Server connection Error"),
-                                         _("An error occurred: %s") % error)
-                try:
-                    serv.login(record.isuser, record.ispass)
-                except imaplib.IMAP4.error as error:
-                    raise osv.except_osv(_("IMAP Server Login Error"),
-                                         _("An error occurred: %s") % error)
-                except Exception as error:
-                    raise osv.except_osv(_("IMAP Server Login Error"),
-                                         _("An error occurred: %s") % error)
+                serv = pw_acc_obj._get_imap_server(cr, uid, record)
                 try:
                     for folders in serv.list()[1]:
                         folder_readable_name = self.makereadable(folders)
