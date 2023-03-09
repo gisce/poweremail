@@ -241,6 +241,12 @@ class poweremail_core_accounts(osv.osv):
                           }
                 }
 
+    def login_smtp(self, cursor, uid, core_account, smtp_conn, context=None):
+        if context is None:
+            context = {}
+
+        smtp_conn.login(core_account.smtpuname, core_account.smtppass.encode('ascii'))
+
     def _get_outgoing_server(self, cursor, user, ids, context=None):
         """
         Returns the Out Going Connection (SMTP) object
@@ -275,8 +281,7 @@ class poweremail_core_accounts(osv.osv):
                 try:
                     if serv.has_extn('AUTH'):
                         if this_object.smtpuname or this_object.smtppass:
-                            serv.login(this_object.smtpuname,
-                                       this_object.smtppass.encode('ascii'))
+                            self.login_smtp(cursor, user, this_object, serv, context=context)
                 except Exception as error:
                     raise error
                 return serv
