@@ -227,7 +227,7 @@
 		</record>
 		<!--INBOX-->
 		<record model="ir.actions.act_window" id="action_poweremail_inbox_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Inbox</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -236,7 +236,7 @@
 		</record>
 		<!--OUTBOX-->
 		<record model="ir.actions.act_window" id="action_poweremail_outbox_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Outbox</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -245,7 +245,7 @@
 		</record>
 		<!--DRAFTS-->
 		<record model="ir.actions.act_window" id="action_poweremail_drafts_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Drafts</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -254,7 +254,7 @@
 		</record>
 		<!--FOLLOWUP-->
 		<record model="ir.actions.act_window" id="action_poweremail_follow_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Followup</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -263,7 +263,7 @@
 		</record>
 		<!--SENT-->
 		<record model="ir.actions.act_window" id="action_poweremail_sent_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Sent</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -272,7 +272,7 @@
 		</record>
 		<!--TRASH-->
 		<record model="ir.actions.act_window" id="action_poweremail_trash_tree">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Trash</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -282,7 +282,7 @@
 		<!--company-->
 		<!--INBOX-->
 		<record model="ir.actions.act_window" id="action_poweremail_inbox_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Inbox</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -292,7 +292,7 @@
 		</record>
 		<!--OUTBOX-->
 		<record model="ir.actions.act_window" id="action_poweremail_outbox_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Outbox</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -302,7 +302,7 @@
 		</record>
 		<!--DRAFTS-->
 		<record model="ir.actions.act_window" id="action_poweremail_drafts_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Drafts</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -312,7 +312,7 @@
 		</record>
 		<!--FOLLOWUP-->
 		<record model="ir.actions.act_window" id="action_poweremail_follow_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Followup</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -322,7 +322,7 @@
 		</record>
 		<!--SENT-->
 		<record model="ir.actions.act_window" id="action_poweremail_sent_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Sent</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -332,7 +332,7 @@
 		</record>
 		<!--TRASH-->
 		<record model="ir.actions.act_window" id="action_poweremail_trash_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Trash</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
@@ -340,9 +340,9 @@
 			<field name="domain">[('folder','=','trash')]</field>
 			<field name="context">{'company':True}</field>
 		</record>
-		<!--TRASH-->
+		<!--ERROR-->
 		<record model="ir.actions.act_window" id="action_poweremail_error_tree_company">
-			<field name="name">Email Mailbox</field>
+			<field name="name">Mailbox: Error</field>
 			<field name="res_model">poweremail.mailbox</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">form,tree</field>
