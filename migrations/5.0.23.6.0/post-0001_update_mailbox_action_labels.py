@@ -3,6 +3,7 @@ import logging
 from oopgrade.oopgrade import load_data_records
 from oopgrade.oopgrade import load_data
 from tools.translate import trans_load
+from tools import config
 
 
 def up(cursor, installed_version):
@@ -32,8 +33,8 @@ def up(cursor, installed_version):
         cursor, 'poweremail', 'security/ir.model.access.csv', idref=None, mode='update'
     )
     logger.info("XMLs succesfully updatd.")
-    trans_load(cursor, 'poweremail/i18n/ca_ES.po', 'ca_ES')
-    trans_load(cursor, 'poweremail/i18n/es_ES.po', 'es_ES')
+    trans_load(cursor, '{}/poweremail/i18n/ca_ES.po'.format(config['addons_path']), 'ca_ES')
+    trans_load(cursor, '{}/poweremail/i18n/es_ES.po'.format(config['addons_path']), 'es_ES')
 
 
 def down(cursor, installed_version):
