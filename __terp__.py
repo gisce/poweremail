@@ -62,7 +62,7 @@
         'poweremail_send_wizard.xml',
         'poweremail_mailbox_view.xml',
         'poweremail_serveraction_view.xml',
-        'wizard/wizard_emails_generats.xml'
+        'wizard/wizard_emails_generats.xml',
         'wizard/wizard_state_poweremail.xml',
         'wizard/wizard_send_email.xml',
         'wizard/wizard_poweremail.xml'
