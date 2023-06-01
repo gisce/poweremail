@@ -1,0 +1,48 @@
+
+<openerp>
+	<data>
+        <record id="action_wizard_change_state_email_form" model="ir.actions.act_window">
+            <field name="name">Canviar estat dels emails</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">wizard.change.state.email</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="value_wizard_change_state_email_form" model="ir.values">
+            <field name="object" eval="1"/>
+            <field name="name">Canviar estat dels emails</field>
+            <field name="key2">client_action_multi</field>
+            <field name="key">action</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="value"
+                   eval="'ir.actions.act_window,'+str(ref('action_wizard_change_state_email_form'))" />
+        </record>
+
+        <!--Finestra de dins de l'assistent-->
+        <record id="view_wizard_change_state_email_form" model="ir.ui.view">
+	    	<field name="name">wizard.change.state.email.form</field>
+	      	<field name="model">wizard.change.state.email</field>
+	      	<field name="type">form</field>
+	      	<field name="arch" type="xml">
+	        	<form string="Canviar estat dels emails">
+	        		<field name="wiz_state" invisible="1"/>
+                    <group attrs="{'invisible': [('wiz_state','!=','init')]}">
+		        		<field name="estat" colspan="4" width="250"/>
+		        		<group colspan="4" col="2">
+		        			<button icon="gtk-close" special="cancel" string="Cancel·lar" type="object"/>
+		        			<button name="action_change_state_email_form"
+                                    icon="gtk-ok" string="Endavant" type="object"/>
+		        		</group>
+		        	</group>
+		        	<group attrs="{'invisible': [('wiz_state','!=','end')]}">
+		        		<label string="Emails canviats d'estat!" colspan="4"/>
+		        		<newline/>
+		        		<button icon="gtk-close" special="cancel" string="Finalitzar" type="object" colspan="4"/>
+		        	</group>
+		        </form>
+	        </field>
+	    </record>
+	</data>
+</openerp>

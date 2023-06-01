@@ -25,7 +25,7 @@
 
 {
     "name" : "Powerful Email capabilities for Open ERP",
-    "version" : "0.34.0",
+    "version" : "0.41.0",
     "author" : "Sharoon Thomas, Openlabs",
     "website" : "http://openlabs.co.in/blog/post/poweremail/",
     "category" : "Added functionality",
@@ -49,16 +49,23 @@
 
     """,
     "init_xml": ['poweremail_scheduler_data.xml'],
+    "demo_xml": [
+        'poweremail_demo.xml'
+    ],
     "update_xml": [
         'security/poweremail_security.xml',
         'security/ir.model.access.csv',
         'poweremail_workflow.xml',
         'poweremail_core_view.xml',
+        'wizard/wizard_generate_test_email.xml',
         'poweremail_template_view.xml',
         'poweremail_send_wizard.xml',
         'poweremail_mailbox_view.xml',
         'poweremail_serveraction_view.xml',
         'wizard/wizard_emails_generats.xml'
+        'wizard/wizard_state_poweremail.xml',
+        'wizard/wizard_send_email.xml',
+        'wizard/wizard_poweremail.xml'
     ],
     "installable": True,
     "active": False,

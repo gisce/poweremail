@@ -238,15 +238,22 @@
                                 <field name="ref_ir_value" colspan="2"/>
                             </group>
                             <field name="server_action" readonly="1" />
-                            <separator string="Attachments (Report to attach)"
-                                colspan="4" />
-                            <field name="file_name" colspan="2" />
-                            <field name="report_template" colspan="2"
-                                domain="[('model','=',model_int_name)]" />
-                            <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
-                            <separator string="Log partner events"
-                                colspan="4" />
-                            <field name="partner_event" />
+                            <group colspan="4">
+                                <notebook>
+                                    <page string="Report attachments">
+                                        <separator string="Attachments (Report to attach)" colspan="4" />
+                                        <field name="file_name" colspan="2" />
+                                        <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]" />
+                                        <field name="attach_record_items" colspan="2"/>
+                                        <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
+                                        <separator string="Log partner events" colspan="4" />
+                                        <field name="partner_event" />
+                                    </page>
+                                    <page string="Attachments">
+                                        <field name="ir_attachment_ids" colspan="2" nolabel="1"/>
+                                    </page>
+                                </notebook>
+                            </group>
                         </page>
                     </notebook>
                 </form>
@@ -293,5 +300,85 @@
 
         <menuitem name="Email Templates" id="menu_poweremail_templates_all"
             parent="menu_poweremail_templates" action="action_poweremail_template_tree_all" />
+
+        <!--EMail Basic client Form view  -->
+        <record model="ir.ui.view" id="poweremail_basic_template_form">
+            <field name="name">poweremail.basic.templates.form</field>
+            <field name="model">poweremail.templates</field>
+            <field name="type">form</field>
+            <field name="priority">17</field>
+            <field name="arch" type="xml">
+                <form string="Power Email Templates">
+                    <field name="name" />
+                    <field name="object_name" required="1"/>
+                    <field name="model_int_name" invisible="1" />
+                    <notebook colspan="4">
+                        <page string="Mail Details">
+                            <group col="4" colspan="2">
+                                <field name="def_to" colspan="4"
+                                    required="1" />
+                                <field name="enforce_from_account"
+                                attrs="{'required':[('auto_email','=',True)]}" />
+                            </group>
+                            <group col="2" colspan="2">
+                                <field name="def_subject" colspan="4"
+                                    required="1" />
+                            </group>
+                            <separator colspan="3" string="Standard Body" />
+                            <separator colspan="1"
+                                string="Template Tester" />
+                            <notebook>
+                                <page string="Body (Text)">
+                                    <field name="def_body_text"
+                                        colspan="4" nolabel="1" />
+                                </page>
+                            </notebook>
+                            <group col="4">
+                            <button icon="gtk-go-forward" name="%(action_wizard_generate_email_form)d"
+                                    string="Generate test mail" type="action" colspan="4"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="poweremail_basic_template_tree">
+            <field name="name">poweremail.basic.templates.tree</field>
+            <field name="model">poweremail.templates</field>
+            <field name="type">tree</field>
+            <field name="priority">17</field>
+            <field name="arch" type="xml">
+                <tree string="Power Email Templates">
+                    <field name="name" select="1" />
+                    <field name="object_name" required="1" select="1" />
+                    <field name="def_to" colspan="4" select="2" />
+                    <field name="use_sign" colspan="4" select="2" />
+                    <field name="def_subject" colspan="4" select="2" />
+                </tree>
+            </field>
+        </record>
+
+        <!--Email Basic Client actions to open basic views  -->
+        <record model="ir.actions.act_window" id="action_poweremail_basic_template_all">
+            <field name="name">Email Basic Templates</field>
+            <field name="res_model">poweremail.templates</field>
+        </record>
+
+        <record model="ir.actions.act_window.view" id="action_poweremail_basic_template_tree_all">
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="poweremail_basic_template_tree"/>
+            <field name="act_window_id" ref="action_poweremail_basic_template_all"/>
+        </record>
+
+        <record model="ir.actions.act_window.view" id="action_poweremail_basic_template_form_all">
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="poweremail_basic_template_form"/>
+            <field name="act_window_id" ref="action_poweremail_basic_template_all"/>
+        </record>
+
+        <menuitem name="Email Basic Templates" id="menu_poweremail_basic_templates_all"
+            parent="menu_poweremail_templates" action="action_poweremail_basic_template_all" />
+
     </data>
 </openerp>

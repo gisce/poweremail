@@ -1,1 +1,5 @@
 import wizard_emails_generats
+import wizard_state_poweremail
+import wizard_send_email
+import wizard_poweremail
+import wizard_generate_test_email
