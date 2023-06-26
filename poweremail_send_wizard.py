@@ -412,9 +412,11 @@ class poweremail_send_wizard(osv.osv_memory):
             ('res_model', '=', 'poweremail.templates'),
             ('res_id', '=', template.id),
         ]
-        if context['lang']:
+        if context.get('lang'):
             search_params.append(('datas_fname', 'ilike', '%%.%s.%%' % context['lang']))
             attach_ids = attach_obj.search(cr, uid, search_params, context=context)
+        else:
+            return []
         attachment_ids_templ = []
         for attach in attach_obj.browse(cr, uid, attach_ids, context=context):
             attach_values = {
