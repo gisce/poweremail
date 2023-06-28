@@ -16,6 +16,8 @@ def up(cursor, installed_version):
         "poweremail_all_emails_tree",
         "action_poweremail_all_emails_tree",
         "action_poweremail_all_emails_tree_company",
+        "menu_poweremail_all_emails",
+        "menu_poweremail_all_emails_company",
     ]
     logger.info("Updating XML {}".format(view))
     load_data_records(
