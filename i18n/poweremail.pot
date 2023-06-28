@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 5.0.14\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2023-05-16 12:34\n"
-"PO-Revision-Date: 2023-05-16 12:34\n"
+"POT-Creation-Date: 2023-06-28 14:35\n"
+"PO-Revision-Date: 2023-06-28 14:35\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -260,9 +260,8 @@ msgid "Server Information"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_core.py:728
-#, python-format
-msgid "Saving Header of unknown payload (%s) Account: %s."
+#: field:poweremail.send.wizard,generated:0
+msgid "No of generated Mails"
 msgstr ""
 
 #. module: poweremail
@@ -306,11 +305,6 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.mailbox,mail_type:0
 msgid "Mail Contents"
-msgstr ""
-
-#. module: poweremail
-#: field:poweremail.mailbox,pem_mail_orig:0
-msgid "Original Mail"
 msgstr ""
 
 #. module: poweremail
@@ -421,6 +415,12 @@ msgid "Copy of template "
 msgstr ""
 
 #. module: poweremail
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_all_emails
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_all_emails_company
+msgid "All emails"
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid "Discard Mail"
 msgstr ""
@@ -512,6 +512,7 @@ msgstr ""
 #: field:poweremail.preview,rel_model:0
 #: field:poweremail.send.wizard,rel_model:0
 #: field:poweremail.templates,object_name:0
+#: field:wizard.emails.generats.model,reference:0
 msgid "Model"
 msgstr ""
 
@@ -762,6 +763,11 @@ msgstr ""
 #: selection:wizard.generate.test.email,state:0
 #: selection:wizard.send.email,state:0
 msgid "End"
+msgstr ""
+
+#. module: poweremail
+#: view:wizard.emails.generats.model:0
+msgid "Buscar emails"
 msgstr ""
 
 #. module: poweremail
@@ -1022,8 +1028,8 @@ msgid "Mail fetch exception"
 msgstr ""
 
 #. module: poweremail
-#: field:wizard.generate.test.email,model_ref:0
-msgid "Template reference"
+#: help:poweremail.core_accounts,smtpport:0
+msgid "Enter port number, eg: SMTP-587 "
 msgstr ""
 
 #. module: poweremail
@@ -1071,8 +1077,8 @@ msgid "Trash"
 msgstr ""
 
 #. module: poweremail
-#: help:poweremail.templates,save_to_drafts:0
-msgid "When automatically sending emails generated from this template, save them into the Drafts folder rather than sending them immediately."
+#: view:wizard.emails.generats.model:0
+msgid "Buscar correos relacionados"
 msgstr ""
 
 #. module: poweremail
@@ -1244,8 +1250,13 @@ msgid "Power Email Preview"
 msgstr ""
 
 #. module: poweremail
-#: field:poweremail.core_accounts,dont_auto_down_attach:0
-msgid "Dont Download attachments automatically"
+#: field:poweremail.mailbox,pem_mail_orig:0
+msgid "Original Mail"
+msgstr ""
+
+#. module: poweremail
+#: model:ir.model,name:poweremail.model_wizard_emails_generats_model
+msgid "wizard.emails.generats.model"
 msgstr ""
 
 #. module: poweremail
@@ -1270,8 +1281,28 @@ msgid "eg: yourname@yourdomain.com"
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.templates,attach_record_items:0
+msgid "Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.mailbox:0
+msgid "Power Email All Emails"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.core_accounts,dont_auto_down_attach:0
+msgid "Dont Download attachments automatically"
+msgstr ""
+
+#. module: poweremail
 #: field:poweremail.core_selfolder,folder:0
 msgid "IMAP Folder"
+msgstr ""
+
+#. module: poweremail
+#: view:wizard.emails.generats.model:0
+msgid "Llistar correus relacionats"
 msgstr ""
 
 #. module: poweremail
@@ -1371,8 +1402,9 @@ msgid "Close"
 msgstr ""
 
 #. module: poweremail
-#: help:poweremail.templates,attach_record_items:0
-msgid "Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_all_emails_tree
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_all_emails_tree_company
+msgid "Mailbox: All emails"
 msgstr ""
 
 #. module: poweremail
@@ -1544,8 +1576,8 @@ msgid "Message-Id"
 msgstr ""
 
 #. module: poweremail
-#: help:poweremail.core_accounts,smtpport:0
-msgid "Enter port number, eg: SMTP-587 "
+#: field:wizard.generate.test.email,model_ref:0
+msgid "Template reference"
 msgstr ""
 
 #. module: poweremail
@@ -1608,8 +1640,9 @@ msgid "Generate Email test"
 msgstr ""
 
 #. module: poweremail
-#: field:poweremail.send.wizard,generated:0
-msgid "No of generated Mails"
+#: code:addons/poweremail/poweremail_core.py:728
+#, python-format
+msgid "Saving Header of unknown payload (%s) Account: %s."
 msgstr ""
 
 #. module: poweremail
@@ -1663,6 +1696,11 @@ msgstr ""
 #: view:wizard.change.state.email:0
 #: view:wizard.send.email:0
 msgid "Endavant"
+msgstr ""
+
+#. module: poweremail
+#: help:poweremail.templates,save_to_drafts:0
+msgid "When automatically sending emails generated from this template, save them into the Drafts folder rather than sending them immediately."
 msgstr ""
 
 #. module: poweremail
@@ -1929,11 +1967,6 @@ msgid "Select the fields you require in the table."
 msgstr ""
 
 #. module: poweremail
-#: selection:poweremail.templates,template_language:0
-msgid "Django Template"
-msgstr ""
-
-#. module: poweremail
 #: help:poweremail.templates,def_priority:0
 msgid "Default priority for auto generated emails"
 msgstr ""
@@ -2183,6 +2216,12 @@ msgstr ""
 #. module: poweremail
 #: help:poweremail.core_accounts,isport:0
 msgid "For example IMAP: 993,POP3:995"
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_wizard_emails_generats_model
+#: model:ir.ui.menu,name:poweremail.menu_wizard_emails_generats
+msgid "Buscar Correus Relacionats"
 msgstr ""
 
 #. module: poweremail
