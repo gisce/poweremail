@@ -766,7 +766,7 @@ class poweremail_templates(osv.osv):
         """
         Generates partner event if configured
         @author: Jordi Esteve
-        
+
         @param cursor: Database Cursor
         @param user: ID of User
         @param template: Browse record of
@@ -775,7 +775,7 @@ class poweremail_templates(osv.osv):
                           for which this mail has
                           to be generated
         @param mail: Browse record of email object
-        
+
         @return: True
         """
         name = mail.pem_subject
@@ -838,7 +838,7 @@ class poweremail_templates(osv.osv):
         """
         Generate report to be attached and attach it
         to the email
-        
+
         @param cursor: Database Cursor
         @param user: ID of User
         @param template: Browse record of
@@ -937,7 +937,7 @@ class poweremail_templates(osv.osv):
         """
         Generates an email from the template for
         record record_id of target object
-        
+
         @param cursor: Database Cursor
         @param user: ID of User
         @param template: Browse record of
@@ -972,7 +972,8 @@ class poweremail_templates(osv.osv):
             'state': 'na',
             'folder': 'drafts',
             'mail_type': 'multipart/alternative',
-            'priority': template.def_priority
+            'priority': template.def_priority,
+            'template_id': template.id,
         }
         #Use signatures if allowed
         if template.use_sign:
@@ -997,14 +998,14 @@ class poweremail_templates(osv.osv):
         template = self.browse(cursor, user, template_id, context=context)
         if not template:
             raise Exception("The requested template could not be loaded")
-        
+
         if template.use_filter and template.filter:
             filtered_record_ids = []
             for record in self.pool.get(template.object_name.model).browse(cursor, user, record_ids, context=context):
                 if safe_eval(template.filter, {'o': record, 'self': self, 'cr': cursor, 'context': context, 'uid': user}):
                     filtered_record_ids.append(record.id)
             record_ids = filtered_record_ids
-        
+
         report_record_ids = record_ids[:]
         if template.single_email and len(record_ids) > 1:
             # We send a single email for several records
@@ -1108,7 +1109,20 @@ class poweremail_templates(osv.osv):
                 'ref_ir_value': ref_ir_value,
             }, context)
 
+
 poweremail_templates()
+
+
+class PoweremailMailbox(osv.osv):
+    _inherit = 'poweremail.mailbox'
+    _columns = {
+        'template_id': fields.many2one(
+            'poweremail.templates', 'Template', readonly=True,
+        ),
+    }
+
+
+PoweremailMailbox()
 
 
 class poweremail_template_attachment(osv.osv):
@@ -1123,6 +1137,7 @@ class poweremail_template_attachment(osv.osv):
                                      required=True),
         'template_id': fields.many2one('poweremail.templates', 'Template')
     }
+
 
 poweremail_template_attachment()
 

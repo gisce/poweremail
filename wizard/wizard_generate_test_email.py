@@ -62,7 +62,8 @@ class WizardGenerateTestEmail(osv.osv_memory):
                 'pem_account_id': from_account['id'],
                 'priority': '1',
                 'state': 'na',
-                'mail_type': 'multipart/alternative'
+                'mail_type': 'multipart/alternative',
+                'template_id': template_id
             }
 
             mailbox_id = mailbox_obj.create(cursor, uid, mail_vals)
