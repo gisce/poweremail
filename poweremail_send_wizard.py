@@ -505,7 +505,8 @@ class poweremail_send_wizard(osv.osv_memory):
                 'pem_account_id': screen_vals['from'],
                 'priority': screen_vals['priority'],
                 'state': 'na',
-                'mail_type': 'multipart/alternative'
+                'mail_type': 'multipart/alternative',
+                'template_id': template.id
                 # Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
             ctx = context.copy()
