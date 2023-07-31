@@ -993,6 +993,11 @@ class poweremail_templates(osv.osv):
     def generate_mail(self, cursor, user, template_id, record_ids, context=None):
         if context is None:
             context = {}
+        return self.generate_mail_sync(cursor, user, template_id, record_ids, context=context)
+
+    def generate_mail_sync(self, cursor, user, template_id, record_ids, context=None):
+        if context is None:
+            context = {}
         if not isinstance(record_ids, (list, tuple)):
             record_ids = [record_ids]
         template = self.browse(cursor, user, template_id, context=context)
