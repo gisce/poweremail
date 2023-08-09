@@ -309,36 +309,15 @@
             <field name="priority">17</field>
             <field name="arch" type="xml">
                 <form string="Power Email Templates">
-                    <field name="name" />
-                    <field name="object_name" required="1"/>
                     <field name="model_int_name" invisible="1" />
-                    <notebook colspan="4">
-                        <page string="Mail Details">
-                            <group col="4" colspan="2">
-                                <field name="def_to" colspan="4"
-                                    required="1" />
-                                <field name="enforce_from_account"
-                                attrs="{'required':[('auto_email','=',True)]}" />
-                            </group>
-                            <group col="2" colspan="2">
-                                <field name="def_subject" colspan="4"
-                                    required="1" />
-                            </group>
-                            <separator colspan="3" string="Standard Body" />
-                            <separator colspan="1"
-                                string="Template Tester" />
-                            <notebook>
-                                <page string="Body (Text)">
-                                    <field name="def_body_text"
-                                        colspan="4" nolabel="1" />
-                                </page>
-                            </notebook>
-                            <group col="4">
-                            <button icon="gtk-go-forward" name="%(action_wizard_generate_email_form)d"
-                                    string="Generate test mail" type="action" colspan="4"/>
-                            </group>
-                        </page>
-                    </notebook>
+                    <field name="name" colspan="4"/>
+                    <field name="enforce_from_account" attrs="{'required':[('auto_email','=',True)]}" />
+                    <field name="object_name" required="1"/>
+                    <field name="def_to" colspan="4" required="1" />
+                    <field name="def_subject" colspan="4" required="1" />
+                    <separator colspan="4" string="Email body"/>
+                    <field name="def_body_text" colspan="4" nolabel="1" />
+                    <button icon="gtk-go-forward" name="%(action_wizard_generate_email_form)d" string="Generate test mail" type="action" colspan="4"/>
                 </form>
             </field>
         </record>
