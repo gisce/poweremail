@@ -33,55 +33,6 @@
        	</record>
 
 
-        <!-- Power Email Template PReview -->
-        <record model="ir.ui.view" id="poweremail_preview_form">
-            <field name="name">poweremail.preview.form</field>
-            <field name="model">poweremail.preview</field>
-            <field name="type">form</field>
-            <field name="arch" type="xml">
-                <form string="Power Email Preview">
-                    <field name="rel_model" />
-                    <newline />
-                    <field name="rel_model_ref"
-                        on_change="on_change_ref(rel_model_ref, context)" />
-                    <newline />
-                    <field name="to" />
-                    <newline />
-                    <field name="cc" />
-                    <newline />
-                    <field name="bcc" />
-                    <newline />
-                    <field name="subject" />
-                    <newline />
-                    <field name="body_text" />
-                    <newline />
-                    <field name="body_html" widget="text_html" />
-                    <!--
-                        IF YOU NEED RAW HTML EDITING THEN UNCOMMENT THE
-                        FOLLOWING
-                    -->
-                    <!-- <field name="body_html"/>-->
-                    <newline />
-                    <field name="report" />
-                    <group>
-                        <button icon="gtk-ok" special="cancel"
-                            string="OK" />
-                    </group>
-                </form>
-            </field>
-        </record>
-
-        <record id="wizard_poweremail_preview" model="ir.actions.act_window">
-            <field name="name">Template Preview</field>
-            <field name="res_model">poweremail.preview</field>
-            <field name="src_model">poweremail.templates</field>
-            <field name="type">ir.actions.act_window</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">form</field>
-            <field name="auto_refresh" eval="1" />
-            <field name="target">new</field>
-            <field name="context">{'ids':active_id}</field>
-        </record>
         <!--EMail client Form view  -->
 
         <record model="ir.ui.view" id="poweremail_template_form">
@@ -317,7 +268,7 @@
                     <field name="def_subject" colspan="4" required="1" />
                     <separator colspan="4" string="Email body"/>
                     <field name="def_body_text" colspan="4" nolabel="1" />
-                    <button icon="gtk-go-forward" name="%(action_wizard_generate_email_form)d" string="Generate test mail" type="action" colspan="4"/>
+                    <button icon="gtk-go-forward" name="%(wizard_poweremail_preview)d" string="Preview Template" type="action" colspan="4"/>
                 </form>
             </field>
         </record>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <!-- Power Email Template PReview -->
+        <record model="ir.ui.view" id="poweremail_preview_form">
+            <field name="name">poweremail.preview.form</field>
+            <field name="model">poweremail.preview</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Power Email Preview">
+                    <field name="model_ref" on_change="on_change_ref(model_ref, context)" colspan="4"/>
+                    <field name="to" colspan="4"/>
+                    <field name="cc" colspan="4"/>
+                    <field name="bcc" colspan="4"/>
+                    <field name="subject" colspan="4"/>
+                    <field name="body_text" colspan="4"/>
+                    <field name="report" colspan="4"/>
+                    <button icon="gtk-close" special="cancel" string="Close" />
+                    <button name="action_generate_static_mail" icon="gtk-ok" string="Generate Email" type="object"/>
+                </form>
+            </field>
+        </record>
+
+        <record id="wizard_poweremail_preview" model="ir.actions.act_window">
+            <field name="name">Template Preview</field>
+            <field name="res_model">poweremail.preview</field>
+            <field name="src_model">poweremail.templates</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="auto_refresh" eval="1" />
+            <field name="target">new</field>
+            <field name="context">{'ids':active_id}</field>
+        </record>
+    </data>
+</openerp>
