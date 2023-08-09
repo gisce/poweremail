@@ -137,8 +137,8 @@
                         </page>
                         <page string="Advanced">
                             <separator string="Email action and wizard" colspan="4" />
-                            <field name="ref_ir_act_window" colspan="4"/>
-                            <field name="ref_ir_value" colspan="4"/>
+                            <field name="ref_ir_act_window"/>
+                            <field name="ref_ir_value"/>
                             <field name="server_action" colspan="4" readonly="1" />
                             <button
                                 string="Create action and value"
