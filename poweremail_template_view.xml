@@ -46,25 +46,13 @@
                     <field name="model_int_name" invisible="1" />
                     <notebook colspan="4">
                         <page string="Mail Details">
-                            <group col="4" colspan="2">
-                                <field name="def_to" colspan="4"
-                                    required="1" />
-                                <field name="def_cc" colspan="4" />
-                                <field name="def_bcc" colspan="4" />
-                                <field name="single_email"/>
-                            </group>
-                            <group col="2" colspan="2">
-                                <field name="def_subject" colspan="4"
-                                    required="1" />
-                                <field name="use_sign" colspan="4" />
-                                <field name="lang" colspan="4" />
-                                <field name="def_priority"/>
-                            </group>
-                            <separator colspan="3" string="Standard Body" />
-                            <separator colspan="1"
-                                string="Expression Builder" />
-
-                            <notebook>
+                            <field name="enforce_from_account" attrs="{'required':[('auto_email','=',True)]}" colspan="4"/>
+                            <field name="def_to" colspan="4" required="1" />
+                            <field name="def_subject" colspan="4" required="1" />
+                            <field name="def_cc"/>
+                            <field name="def_bcc"/>
+                            <field name="lang" colspan="4" />
+                            <notebook colspan="4">
                                 <page string="Body (Text)">
                                     <field name="def_body_text"
                                         colspan="4" nolabel="1" />
@@ -89,80 +77,37 @@
                                     community votes for it
                                 -->
                                 <page string="Body (HTML)">
-                                    <field name="def_body_html"
-                                        colspan="4" nolabel="1" widget="text_html" />
-                                    <label
-                                        string="Note: HTML body can't be edited with GTK desktop client."
-                                        colspan="4" />
+                                    <field name="def_body_html" colspan="4" nolabel="1" widget="text_html" />
+                                    <label string="Note: HTML body can't be edited with GTK desktop client." colspan="4" />
                                 </page>
                             </notebook>
-                            <group col="4">
-                                <field name="template_language"
-                                    on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" />
-                                <notebook>
-                                    <page string="Insert Simple Field">
-
-                                        <field name="model_object_field"
-                                            domain="[('model_id','=',object_name),('ttype','!=','one2many'),('ttype','!=','many2many')]"
-                                            on_change="onchange_model_object_field(model_object_field, template_language,context)"
-                                            colspan="4" />
-                                        <field name="sub_object"
-                                            readonly="1" colspan="4" />
-                                        <field name="sub_model_object_field"
-                                            domain="[('model_id','=',sub_object),('ttype','!=','one2many'),('ttype','!=','many2many')]"
-                                            colspan="4"
-                                            attrs="{'readonly':[('sub_object','=',False)],'required':[('sub_object','!=',False)]}"
-                                            on_change="onchange_sub_model_object_field(model_object_field,sub_model_object_field,template_language,context)" />
-                                        <field name="null_value"
-                                            colspan="4"
-                                            on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" />
-                                        <field name="copyvalue"
-                                            colspan="4" />
-                                    </page>
-                                    <page string="Insert Table">
-                                        <field
-                                            name="table_model_object_field"
-                                            domain="[('model_id','=',object_name),('ttype','in',['one2many','many2many'])]"
-                                            colspan="2"
-                                            on_change="onchange_table_model_object_field(table_model_object_field,template_language,context)" />
-                                        <field name="table_sub_object"
-                                            readonly="1" colspan="2" />
-                                        <field name="table_required_fields"
-                                            colspan="4" nolabel="1"
-                                            domain="[('model_id','=',table_sub_object),('ttype','!=','one2many'),('ttype','!=','many2many')]"
-                                            on_change="onchange_table_required_fields(table_model_object_field,table_required_fields,template_language,context)" />
-                                        <field name="table_html"
-                                            colspan="4" />
-                                    </page>
-
-                                </notebook>
-                                <button name="%(wizard_poweremail_preview)d"
-                                    string="Preview Template" type="action"
-                                    colspan="4" target="new" />
-                            </group>
+                            <label colspan="2"/>
+                            <button
+                                name="%(wizard_poweremail_preview)d"
+                                string="Preview Template" type="action"
+                                colspan="2" target="new" icon="gtk-execute"
+                            />
                         </page>
-                        <page string="Security">
-                            <separator colspan="4"
-                                string="Allowed User Groups" />
-                            <field name="allowed_groups" string="Allowed User Groups"
-                                nolabel="1" />
+                        <page string="Attachment settings">
+                            <separator string="Dynamic attachments (reports)" colspan="4" />
+                            <field name="file_name" colspan="2" />
+                            <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]" />
+                            <field name="attach_record_items" colspan="2"/>
+                            <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
+                            <separator string="Static attachments" colspan="4"/>
+                            <field name="ir_attachment_ids" colspan="4" nolabel="1"/>
                         </page>
-                        <page string="Advanced">
-                            <separator string="Automatic Email"
-                                colspan="4" />
-                            <field name="enforce_from_account"
-                                attrs="{'required':[('auto_email','=',True)]}" />
-                            <field name="auto_email" />
+                        <page string="Automatisms settings">
+                            <field name="auto_email" colspan="4"/>
                             <field name="attached_wkf"
                                 domain="[('osv','=',model_int_name)]"
-                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" />
+                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
                             <field name="attached_activity"
                                 domain="[('wkf_id', '=', attached_wkf)]"
-                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" />
-                            <field name="send_on_create" />
-                            <field name="send_on_write" />
-                            <field name="save_to_drafts" />
-                            <field name="use_filter" />
+                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
+                            <field name="send_on_create" colspan="4"/>
+                            <field name="send_on_write" colspan="4"/>
+                            <field name="use_filter" colspan="4"/>
                             <group string="Filter" colspan="4" attrs="{'invisible':[('use_filter','=',False)]}">
                                 <group colspan="3" col="1">
                                     <separator string="OpenObject Code Filter:"/>
@@ -177,34 +122,71 @@
                                     <label string="context - current context"/>
                                 </group>
                             </group>
-                            <separator string="Email action and wizard"
-                                colspan="4" />
-                            <group colspan="4" col="6">
-                                <field name="ref_ir_act_window" colspan="2"/>
-                                <button
-                                        string="Create action and value"
-                                        colspan="1" name="create_action_reference"
-                                        type="object"
-                                        attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"/>
-                                <field name="ref_ir_value" colspan="2"/>
+                        </page>
+                        <page string="Other settings">
+                            <group>
+                                <field name="def_priority" colspan="4"/>
+                                <field name="single_email" colspan="4"/>
+                                <field name="use_sign" colspan="4"/>
+                                <field name="save_to_drafts" colspan="4"/>
                             </group>
-                            <field name="server_action" readonly="1" />
-                            <group colspan="4">
-                                <notebook>
-                                    <page string="Report attachments">
-                                        <separator string="Attachments (Report to attach)" colspan="4" />
-                                        <field name="file_name" colspan="2" />
-                                        <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]" />
-                                        <field name="attach_record_items" colspan="2"/>
-                                        <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
-                                        <separator string="Log partner events" colspan="4" />
-                                        <field name="partner_event" />
-                                    </page>
-                                    <page string="Attachments">
-                                        <field name="ir_attachment_ids" colspan="2" nolabel="1"/>
-                                    </page>
-                                </notebook>
+                            <group>
+                                <separator colspan="4" string="Allowed User Groups" />
+                                <field name="allowed_groups" string="Allowed User Groups" nolabel="1" colspan="4"/>
                             </group>
+                        </page>
+                        <page string="Advanced">
+                            <separator string="Email action and wizard" colspan="4" />
+                            <field name="ref_ir_act_window" colspan="4"/>
+                            <field name="ref_ir_value" colspan="4"/>
+                            <field name="server_action" colspan="4" readonly="1" />
+                            <button
+                                string="Create action and value"
+                                colspan="1" name="create_action_reference"
+                                type="object"
+                                attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"
+                                icon="gtk-execute"
+                            />
+                            <separator string="Expression builder" colspan="4"/>
+                            <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" />
+                            <notebook>
+                                <page string="Insert Simple Field">
+
+                                    <field name="model_object_field"
+                                        domain="[('model_id','=',object_name),('ttype','!=','one2many'),('ttype','!=','many2many')]"
+                                        on_change="onchange_model_object_field(model_object_field, template_language,context)"
+                                        colspan="4" />
+                                    <field name="sub_object"
+                                        readonly="1" colspan="4" />
+                                    <field name="sub_model_object_field"
+                                        domain="[('model_id','=',sub_object),('ttype','!=','one2many'),('ttype','!=','many2many')]"
+                                        colspan="4"
+                                        attrs="{'readonly':[('sub_object','=',False)],'required':[('sub_object','!=',False)]}"
+                                        on_change="onchange_sub_model_object_field(model_object_field,sub_model_object_field,template_language,context)" />
+                                    <field name="null_value"
+                                        colspan="4"
+                                        on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" />
+                                    <field name="copyvalue"
+                                        colspan="4" />
+                                </page>
+                                <page string="Insert Table">
+                                    <field
+                                        name="table_model_object_field"
+                                        domain="[('model_id','=',object_name),('ttype','in',['one2many','many2many'])]"
+                                        colspan="2"
+                                        on_change="onchange_table_model_object_field(table_model_object_field,template_language,context)" />
+                                    <field name="table_sub_object"
+                                        readonly="1" colspan="2" />
+                                    <field name="table_required_fields"
+                                        colspan="4" nolabel="1"
+                                        domain="[('model_id','=',table_sub_object),('ttype','!=','one2many'),('ttype','!=','many2many')]"
+                                        on_change="onchange_table_required_fields(table_model_object_field,table_required_fields,template_language,context)" />
+                                    <field name="table_html"
+                                        colspan="4" />
+                                </page>
+                            </notebook>
+                            <separator string="Log partner events" colspan="4"/>
+                            <field name="partner_event" colspan="4"/>
                         </page>
                     </notebook>
                 </form>
