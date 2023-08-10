@@ -17,6 +17,8 @@ def up(cursor, installed_version):
     cursor.execute(q_check_columns_exists)
     res = cursor.fetchall()
     if res:
+        logger.info('Migration script for pull request #100 not necessary.')
+    else:
         logger.info('Migration script for pull request #100...')
         logger.info('Adding column attach_record_items to poweremail_templates table')
         add_columns(cursor, {
@@ -29,9 +31,6 @@ def up(cursor, installed_version):
         )
         logger.info(
             'Migration script for pull request #100 finished succesfully.')
-
-    else:
-        logger.info('Migration script for pull request #100 not necessary.')
 
 
 def down(cursor, installed_version):
