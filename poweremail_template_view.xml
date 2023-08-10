@@ -148,8 +148,8 @@
                                 icon="gtk-execute"
                             />
                             <separator string="Expression builder" colspan="4"/>
-                            <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" />
-                            <notebook>
+                            <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" colspan="4"/>
+                            <notebook colspan="4">
                                 <page string="Insert Simple Field">
 
                                     <field name="model_object_field"
