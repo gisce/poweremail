@@ -11,7 +11,12 @@ def up(cursor, installed_version):
     logger = logging.getLogger('openerp.migration')
     model = 'wizard.change.state.email'
     pool = pooler.get_pool(cursor.dbname)
-    if pool.get(model):
+    q_check_model_exists = """
+        SELECT * FROM ir_model_data WHERE name = 'model_wizard_change_state_email'
+    """
+    cursor.execute(q_check_model_exists)
+    res = cursor.fetchall()
+    if res:
         logger.info('Migration script for pull request #91 not necessary.')
     else:
         logger.info('Migration script for pull request #91...')
