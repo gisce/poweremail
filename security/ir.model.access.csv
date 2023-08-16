@@ -32,3 +32,6 @@
 "access_poweremail_send_wizard_r","poweremail.send.wizard","model_poweremail_send_wizard","poweremail.res_groups_peuserse",1,0,0,0
 "access_poweremail_send_wizard_w","poweremail.send.wizard","model_poweremail_send_wizard","poweremail.res_groups_peusersi",1,1,1,0
 "access_poweremail_send_wizard_u","poweremail.send.wizard","model_poweremail_send_wizard","poweremail.res_groups_pemanager",1,1,1,1
+"access_wizard_emails_generats_model_r","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_peuserse",1,0,0,0
+"access_wizard_emails_generats_model_w","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_peusersi",1,1,1,0
+"access_wizard_emails_generats_model_u","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_pemanager",1,1,1,1

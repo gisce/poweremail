@@ -16,7 +16,7 @@ class poweremail_preview(osv.osv_memory):
         if not context:
             context = {}
 
-        template_ids = context['active_ids']
+        template_ids = context.get('active_ids', [])
 
         if not isinstance(template_ids, (list, tuple)):
             template_ids = [template_ids]
