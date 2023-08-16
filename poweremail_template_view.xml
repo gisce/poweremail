@@ -7,8 +7,7 @@
     -->
 <openerp>
     <data>
-        <wizard id="wizard_poweremail_preview" menu="False" model="poweremail.templates" name="project.poweremail.preview" string="Power Email Preview"/>
-    	<record model="ir.ui.view" id="poweremail_template_attachment_form">
+        <record model="ir.ui.view" id="poweremail_template_attachment_form">
             <field name="name">poweremail.template.attachment.form</field>
             <field name="model">poweremail.template.attachment</field>
             <field name="type">form</field>
