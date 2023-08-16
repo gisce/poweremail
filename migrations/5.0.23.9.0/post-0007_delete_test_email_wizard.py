@@ -18,10 +18,25 @@ def up(cursor, installed_version):
         pool = pooler.get_pool(cursor.dbname)
         irmd_o = pool.get('ir.model.data')
 
+        # DELETE PERMISSIONS
         irmd_names_to_delete = [
             'access_wizard_generate_test_email_r',
             'access_wizard_generate_test_email_w',
             'access_wizard_generate_test_email_u',
+        ]
+        irmd_ids = irmd_o.search(
+            cursor, 1, [('name', 'in', irmd_names_to_delete)]
+        )
+        irmd_vs = irmd_o.read(cursor, 1, irmd_ids, ['id', 'res_id', 'model', 'name'])
+        for irmd_v in irmd_vs:
+            pool.get(irmd_v['model']).unlink(cursor, 1, [int(irmd_v['res_id'])])
+            q_delete_irmd = """
+                DELETE FROM ir_model_data WHERE id = %s
+            """
+            cursor.execute(q_delete_irmd, (irmd_v['id'], ))
+
+        # DELETE MODEL
+        irmd_names_to_delete = [
             'model_wizard_generate_test_email'
         ]
         irmd_ids = irmd_o.search(
@@ -29,11 +44,14 @@ def up(cursor, installed_version):
         )
         irmd_vs = irmd_o.read(cursor, 1, irmd_ids, ['id', 'res_id', 'model'])
         for irmd_v in irmd_vs:
-            pool.get(irmd_v['model']).unlink(cursor, 1, [int(irmd_v['res_id'])])
             q_delete_irmd = """
                 DELETE FROM ir_model_data WHERE id = %s
             """
             cursor.execute(q_delete_irmd, (irmd_v['id'], ))
+            q_delete_model = """
+                DELETE FROM ir_model WHERE name = 'wizard.generate.test.email'
+            """
+            cursor.execute(q_delete_model)
 
 
 def down(cursor, installed_version):
