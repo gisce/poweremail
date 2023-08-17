@@ -47,29 +47,37 @@ class poweremail_preview(osv.osv_memory):
         'state': lambda *a: 'init',
     }
 
+    def render_body_text(self, cursor, uid, template, record_id, context=None):
+        return get_value(cursor, uid, record_id, template.def_body_text, template, context)
+
     def on_change_ref(self, cr, uid, ids, model_ref, context=None):
         if context is None:
             context = {}
         if not model_ref:
             return {}
+        template_o = self.pool.get('poweremail.templates')
         vals = {}
         model_name, record_id = model_ref.split(',')
         record_id = int(record_id)
-        template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], context=context)
-        # Search translated template
-        lang = get_value(cr, uid, record_id, template.lang, template, context)
-        if lang:
-            ctx = context.copy()
-            ctx.update({'lang':lang})
-            template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
-        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, context)
-        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, context)
-        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, context)
-        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, context)
-        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, context)
-        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, context)
-        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, context)
-        return {'value': vals}
+        res = {}
+        if record_id:
+            template_id = context.get('active_id')
+            if not template_id:
+                raise osv.except_osv('Error !', 'active_id missing from context')
+
+            mailbox_values = template_o.get_mailbox_values(
+                cr, uid, template_id, record_id, context=context
+            )
+
+            vals['to'] = mailbox_values['pem_to']
+            vals['cc'] = mailbox_values['pem_cc']
+            vals['bcc'] = mailbox_values['pem_bcc']
+            vals['subject'] = mailbox_values['pem_subject']
+            vals['body_text'] = mailbox_values['pem_body_text']
+            # vals['report'] = get_value(cr, uid, record_id, template.file_name, template, context)
+            res = {'value': vals}
+
+        return res
 
     def action_generate_static_mail(self, cursor, uid, ids, context=None):
         if context is None:
@@ -95,41 +103,10 @@ class poweremail_preview(osv.osv_memory):
 
         mailbox_ids = []
         for template_id in template_ids:
-            template = template_obj.browse(cursor, uid, template_id,
-                                           context=context)
-            if not template:
-                raise Exception("The requested template could not be loaded")
-
-            from_account = template_obj.get_from_account_id_from_template(
-                cursor, uid, template.id, context=context
+            template = template_obj.browse(cursor, uid, template_id, context=context)
+            mailbox_id = template_obj._generate_mailbox_item_from_template(
+                cursor, uid, template, model_id, context=context
             )
-
-            # Evaluates an expression and returns its value
-            # recid: ID of the target record under evaluation
-            # message: The expression to be evaluated
-            # template: BrowseRecord object of the current template
-            # return: Computed message (unicode) or u""
-            body_text = get_value(
-                cursor, uid, model_id, message=template.def_body_text,
-                template=template, context=context
-            )
-
-            mail_vals = {
-                'pem_from': tools.ustr(from_account['name']) + \
-                            "<" + tools.ustr(from_account['email_id']) + ">",
-                'pem_to': template.def_to,
-                'pem_cc': False,
-                'pem_bcc': False,
-                'pem_subject': template.name,
-                'pem_body_text': body_text,
-                'pem_account_id': from_account['id'],
-                'priority': '1',
-                'state': 'na',
-                'mail_type': 'multipart/alternative',
-                'template_id': template_id
-            }
-
-            mailbox_id = mailbox_obj.create(cursor, uid, mail_vals)
             mailbox_ids.append(mailbox_id)
 
         wizard.write({'state': 'end'}, context=context)

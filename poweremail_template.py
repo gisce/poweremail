@@ -222,6 +222,55 @@ class poweremail_templates(osv.osv):
     _name = "poweremail.templates"
     _description = 'Power Email Templates for Models'
 
+    def get_value_from_report_template(self, cursor, uid, template, record_id, context=None):
+        return get_value(cursor, uid, record_id, template.def_body_text, template, context=context),
+
+    def get_mailbox_values(self, cursor, uid, template_id, record_id, context=None):
+        if context is None:
+            context = {}
+
+        user_o = self.pool.get('res.users')
+
+        ctx = context.copy()
+        ctx['prefetch'] = False
+
+        template = self.browse(cursor, uid, template_id, context=ctx)
+        lang = get_value(cursor, uid, record_id, template.lang, template, context=context)
+        if lang:
+            ctx = context.copy()
+            ctx.update({'lang': lang})
+            template = self.browse(cursor, uid, template_id, context=ctx)
+
+        from_account = self.get_from_account_id_from_template(
+            cursor, uid, template_id, context=context
+        )
+        res = {
+            'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
+            'pem_to': get_value(cursor, uid, record_id, template.def_to, template, context=context),
+            'pem_cc': get_value(cursor, uid, record_id, template.def_cc, template, context=context),
+            'pem_bcc': get_value(cursor, uid, record_id, template.def_bcc, template, context=context),
+            'pem_subject': get_value(cursor, uid, record_id, template.def_subject, template, context=context),
+            'pem_body_text': self.get_value_from_report_template(cursor, uid, template, record_id, context=context),
+            'pem_account_id': from_account['id'],
+            # This is a mandatory field when automatic emails are sent
+            'state': 'na',
+            'folder': 'drafts',
+            'mail_type': 'multipart/alternative',
+            'priority': template.def_priority,
+            'template_id': template.id,
+        }
+        # Use signatures if allowed
+        if template.use_sign:
+            sign = user_o.read(cursor, uid, uid, ['signature'], context=context)['signature']
+            if sign:
+                if res['pem_body_text']:
+                    res['pem_body_text'] += "\n--\n"+sign
+                if res['pem_body_html']:
+                    res['pem_body_html'] += sign
+        res.update(context.get("extra_vals", {}))
+
+        return res
+
     def _get_model_name(
             self, cursor, uid, template_ids, field_name, arg, context=None):
         res = {}
@@ -950,40 +999,7 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
         mailbox_obj = self.pool.get('poweremail.mailbox')
-        users_obj = self.pool.get('res.users')
-
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
-
-        lang = get_value(cursor, user, record_id, template.lang, template, context=context)
-        if lang:
-            ctx = context.copy()
-            ctx.update({'lang': lang})
-            template = self.browse(cursor, user, template.id, context=ctx)
-        mailbox_values = {
-            'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=context),
-            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=context),
-            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=context),
-            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=context),
-            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=context),
-            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=context),
-            'pem_account_id': from_account['id'],
-            #This is a mandatory field when automatic emails are sent
-            'state': 'na',
-            'folder': 'drafts',
-            'mail_type': 'multipart/alternative',
-            'priority': template.def_priority,
-            'template_id': template.id,
-        }
-        #Use signatures if allowed
-        if template.use_sign:
-            sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']
-            if sign:
-                if mailbox_values['pem_body_text']:
-                    mailbox_values['pem_body_text'] += "\n--\n"+sign
-                if mailbox_values['pem_body_html']:
-                    mailbox_values['pem_body_html'] += sign
-        mailbox_values.update(context.get("extra_vals", {}))
+        mailbox_values = self.get_mailbox_values(cursor, user, template.id, record_id, context=context)
         mailbox_id = mailbox_obj.create(cursor, user, mailbox_values, context=context)
         return mailbox_id
 
