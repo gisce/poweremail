@@ -228,6 +228,46 @@ class poweremail_templates(osv.osv):
     def get_mailbox_values(self, cursor, uid, template_id, record_id, context=None):
         if context is None:
             context = {}
+        mailbox_template_fieldmap = {
+            'def_to': 'pem_to',
+            'def_cc': 'pem_cc',
+            'def_bcc': 'pem_bcc',
+            'def_subject': 'pem_subject',
+            'def_priority': 'priority',
+            'def_body_text': 'pem_body_text',
+        }
+        res = self.get_values_from_template(
+            cursor, uid, template_id, record_id, template_fields=mailbox_template_fieldmap.keys(),
+            context=context
+        )
+        for tmpl_field, pem_field in mailbox_template_fieldmap.items():
+            res[pem_field] = res.pop(tmpl_field)
+
+        from_account = self.get_from_account_id_from_template(
+            cursor, uid, template_id, context=context
+        )
+
+        res.update({
+            'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
+            'pem_account_id': from_account['id'],
+            'state': 'na',
+            'folder': 'drafts',
+            'mail_type': 'multipart/alternative',
+            'template_id': template_id,
+        })
+        res.update(context.get("extra_vals", {}))
+        return res
+
+    def get_values_from_template(self, cursor, uid, template_id, record_id, template_fields=None, context=None):
+        if context is None:
+            context = {}
+        if template_fields is None:
+            template_fields = [
+                'def_to', 'def_cc', 'def_bcc', 'def_subject',
+                'def_body_text', 'def_account_id', 'file_name', 'partner_event',
+                # TODO
+                # 'report', 'partner_event', 'single_email'
+            ]
 
         user_o = self.pool.get('res.users')
 
@@ -241,33 +281,23 @@ class poweremail_templates(osv.osv):
             ctx.update({'lang': lang})
             template = self.browse(cursor, uid, template_id, context=ctx)
 
-        from_account = self.get_from_account_id_from_template(
-            cursor, uid, template_id, context=context
-        )
-        res = {
-            'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, uid, record_id, template.def_to, template, context=context),
-            'pem_cc': get_value(cursor, uid, record_id, template.def_cc, template, context=context),
-            'pem_bcc': get_value(cursor, uid, record_id, template.def_bcc, template, context=context),
-            'pem_subject': get_value(cursor, uid, record_id, template.def_subject, template, context=context),
-            'pem_body_text': self.get_value_from_report_template(cursor, uid, template, record_id, context=context),
-            'pem_account_id': from_account['id'],
-            # This is a mandatory field when automatic emails are sent
-            'state': 'na',
-            'folder': 'drafts',
-            'mail_type': 'multipart/alternative',
-            'priority': template.def_priority,
-            'template_id': template.id,
-        }
-        # Use signatures if allowed
-        if template.use_sign:
-            sign = user_o.read(cursor, uid, uid, ['signature'], context=context)['signature']
-            if sign:
-                if res['pem_body_text']:
-                    res['pem_body_text'] += "\n--\n"+sign
-                if res['pem_body_html']:
-                    res['pem_body_html'] += sign
-        res.update(context.get("extra_vals", {}))
+        res = {}
+        for field in template_fields:
+            if field == 'def_body_text':
+                res[field] = self.get_value_from_report_template(cursor, uid, template, record_id, context=context)
+            else:
+                res[field] = get_value(
+                    cursor, uid, record_id, getattr(template, field), template,
+                    context=context
+                )
+            # Use signatures if allowed
+            if template.use_sign and field in ('def_body_text', 'def_body_html'):
+                sign = user_o.read(cursor, uid, uid, ['signature'], context=context)['signature']
+                if sign:
+                    if res['def_body_text']:
+                        res['def_body_text'] += "\n--\n"+sign
+                    if res['def_body_html']:
+                        res['def_body_html'] += sign
 
         return res
 
