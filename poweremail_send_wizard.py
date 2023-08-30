@@ -133,12 +133,17 @@ class poweremail_send_wizard(osv.osv_memory):
 
     def _get_template_value(self, cr, uid, field, context=None):
         template = self._get_template(cr, uid, context)
-        if not template:
-            return False
-        if len(context['src_rec_ids']) > 1: # Multiple Mail: Gets original template values for multiple email change
-            return getattr(template, field)
-        else: # Simple Mail: Gets computed template values
-            return self.get_value(cr, uid, template, getattr(template, field), context)
+        res = False
+        if template:
+            if len(context['src_rec_ids']) > 1: # Multiple Mail: Gets original template values for multiple email change
+                res = getattr(template, field)
+            else: # Simple Mail: Gets computed template values
+                template_o = self.pool.get('poweremail.templates')
+                record_id = context['src_rec_ids'][0]
+                res = template_o.get_values_from_template(
+                    cr, uid, template.id, record_id, [field], context=context
+                )[field]
+        return res
 
     _columns = {
         'state':fields.selection([
@@ -177,14 +182,15 @@ class poweremail_send_wizard(osv.osv_memory):
         'bcc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_bcc', ctx)),
         'subject':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_subject', ctx),
         'body_text':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_text', ctx),
-        'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
+        # 'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
         'report': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'file_name', ctx),
         'signature': lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).use_sign,
         'ref_template':lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).id,
         'requested':lambda self,cr,uid,ctx: len(ctx['src_rec_ids']),
         'full_success': lambda *a: False,
-        'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
-        'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_priority', ctx),
+        # TODO
+        # 'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
+        'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'priority', ctx),
     }
 
 
@@ -212,7 +218,8 @@ class poweremail_send_wizard(osv.osv_memory):
             'subject': self._get_template_value(cr, uid, 'def_subject', ctx),
             'body_text': self._get_template_value(cr, uid, 'def_body_text', ctx),
             'body_html': self._get_template_value(cr, uid, 'def_body_html', ctx),
-            'report': self._get_template_value(cr, uid, 'file_name', ctx),
+            # TODO
+            # 'report': self._get_template_value(cr, uid, 'file_name', ctx),
             'signature': self._get_template(cr, uid, ctx).use_sign,
             'ref_template': self._get_template(cr, uid, ctx).id,
             'state': 'single',
