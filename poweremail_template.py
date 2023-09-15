@@ -954,11 +954,15 @@ class poweremail_templates(osv.osv):
 
         from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
 
-        lang = get_value(cursor, user, record_id, template.lang, template, context=context)
-        if lang:
-            ctx = context.copy()
-            ctx.update({'lang': lang})
-            template = self.browse(cursor, user, template.id, context=ctx)
+        ctx = context.copy()
+        ctx.update({
+            'prefetch': False,
+            'lang': get_value(cursor, user, record_id, template.lang, template, context=context)
+        })
+        if not ctx['lang']:
+            ctx['lang'] = tools.config.get('lang', tools.config.get('default_lang', 'en_US'))
+        template = self.browse(cursor, user, template.id, context=ctx)
+
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
             'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=context),
