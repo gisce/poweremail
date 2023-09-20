@@ -28,7 +28,6 @@ import netsvc
 import base64
 import time
 from tools.translate import _
-from .poweremail_core import get_email_default_lang
 import tools
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
@@ -298,20 +297,6 @@ class poweremail_send_wizard(osv.osv_memory):
         mail_id = mailbox_obj.create(cr, uid, vals, context=ctx)
         return mail_id
 
-    def get_lang(self, cr, uid, template, src_rec_id, context=None):
-        if context is None:
-            context = {}
-
-        res_lang_obj = self.pool.get('res.lang')
-        res = False
-        if template.lang:
-            res = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
-            if not res_lang_obj.search(cr, uid, [('name', '=', res)], context=context):
-                res = False
-        if not res:
-            res = get_email_default_lang()
-        return res
-
     def create_report_attachment(self, cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=None):
         if context is None:
             context = {}
@@ -477,7 +462,7 @@ class poweremail_send_wizard(osv.osv_memory):
 
         core_accounts_obj = self.pool.get('poweremail.core_accounts')
         mailbox_obj = self.pool.get('poweremail.mailbox')
-        res_users_obj = self.pool.get('res.users')
+        template_o = self.pool.get('poweremail.templates')
 
         mail_ids = []
         template = self._get_template(cr, uid, context)
@@ -514,7 +499,7 @@ class poweremail_send_wizard(osv.osv_memory):
             mail_ids.append(mail_id)
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
-            ctx['lang'] = self.get_lang(cr, uid, template, src_rec_id, context=ctx)
+            ctx['lang'] = template_o.get_email_lang(cr, uid, template, src_rec_id, context=ctx)
             attachment_id = self.create_report_attachment(
                 cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
             )
