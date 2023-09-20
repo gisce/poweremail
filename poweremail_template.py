@@ -70,6 +70,7 @@ import tools
 import report
 import pooler
 from .poweremail_mailbox import _priority_selection
+from .poweremail_core import get_email_default_lang
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -933,6 +934,20 @@ class poweremail_templates(osv.osv):
             }
         return from_account
 
+    def get_email_lang(self, cursor, uid, template, src_rec_id, context=None):
+        if context is None:
+            context = {}
+
+        res_lang_obj = self.pool.get('res.lang')
+        res = False
+        if template.lang:
+            res = get_value(cursor, uid, template, template.lang, context, src_rec_id)
+            if not res_lang_obj.search(cursor, uid, [('name', '=', res)], context=context):
+                res = False
+        if not res:
+            res = get_email_default_lang()
+            return res
+
     def _generate_mailbox_item_from_template(self, cursor, user, template, record_id, context=None):
         """
         Generates an email from the template for
@@ -954,11 +969,13 @@ class poweremail_templates(osv.osv):
 
         from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
 
-        lang = get_value(cursor, user, record_id, template.lang, template, context=context)
-        if lang:
-            ctx = context.copy()
-            ctx.update({'lang': lang})
-            template = self.browse(cursor, user, template.id, context=ctx)
+        ctx = context.copy()
+        ctx.update({
+            'prefetch': False,
+            'lang': self.get_email_lang(cursor, user, template, record_id, context=context)
+        })
+        template = self.browse(cursor, user, template.id, context=ctx)
+
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
             'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=context),

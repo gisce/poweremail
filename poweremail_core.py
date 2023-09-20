@@ -57,6 +57,11 @@ _priority_selection = [('0', 'Low'),
                        ('1', 'Normal'),
                        ('2', 'High')]
 
+
+def get_email_default_lang():
+    return config.get('lang', config.get('default_lang', 'en_US'))
+
+
 class poweremail_core_accounts(osv.osv):
     """
     Object to store email account settings
