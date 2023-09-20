@@ -28,6 +28,7 @@ import netsvc
 import base64
 import time
 from tools.translate import _
+from .poweremail_core import get_email_default_lang
 import tools
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
@@ -297,20 +298,19 @@ class poweremail_send_wizard(osv.osv_memory):
         mail_id = mailbox_obj.create(cr, uid, vals, context=ctx)
         return mail_id
 
-    def check_lang(self, cr, uid, template, src_rec_id, context=None):
+    def get_lang(self, cr, uid, template, src_rec_id, context=None):
         if context is None:
             context = {}
 
         res_lang_obj = self.pool.get('res.lang')
-        res_users_obj = self.pool.get('res.users')
-
+        res = False
         if template.lang:
-            context['lang'] = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
-            lang = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
-            if len(res_lang_obj.search(cr, uid, [('name', '=', lang)], context=context)):
-                return lang
-        if not context.get('lang', False) or context['lang'] == 'False':
-            return res_users_obj.read(cr, uid, uid, ['context_lang'], context=context)['context_lang']
+            res = self.get_value(cr, uid, template, template.lang, context, src_rec_id)
+            if not res_lang_obj.search(cr, uid, [('name', '=', res)], context=context):
+                res = False
+        if not res:
+            res = get_email_default_lang()
+        return res
 
     def create_report_attachment(self, cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=None):
         if context is None:
@@ -514,7 +514,7 @@ class poweremail_send_wizard(osv.osv_memory):
             mail_ids.append(mail_id)
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
-            self.check_lang(cr, uid, template, src_rec_id, context=ctx)
+            ctx['lang'] = self.get_lang(cr, uid, template, src_rec_id, context=ctx)
             attachment_id = self.create_report_attachment(
                 cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
             )
