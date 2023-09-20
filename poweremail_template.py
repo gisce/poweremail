@@ -941,7 +941,7 @@ class poweremail_templates(osv.osv):
         res_lang_obj = self.pool.get('res.lang')
         res = False
         if template.lang:
-            res = self.get_value(cursor, uid, template, template.lang, context, src_rec_id)
+            res = get_value(cursor, uid, template, template.lang, context, src_rec_id)
             if not res_lang_obj.search(cursor, uid, [('name', '=', res)], context=context):
                 res = False
         if not res:
