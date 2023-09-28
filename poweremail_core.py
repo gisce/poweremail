@@ -48,6 +48,8 @@ from qreu.sendcontext import Sender, SMTPSender
 from html2text import html2text
 
 
+_MAIL_COUNT_MARGIN = 4
+
 def filter_send_emails(emails_str):
     if not emails_str:
         emails_str = ''
@@ -965,6 +967,10 @@ class poweremail_core_accounts(osv.osv):
                             self.write(cr, uid, id, {
                                 'last_mail_id': msg_count
                             }, context)
+
+                        elif rec.last_mail_id > msg_count:
+                            self.write(cr, uid, id, {'last_mail_id': msg_count - _MAIL_COUNT_MARGIN})
+
                         serv.close()
                         serv.logout()
                     elif rec.iserver_type == 'pop3':
