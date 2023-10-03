@@ -28,8 +28,6 @@ jobs:
     runs-on: [self-hosted, Keroberos]
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: repo
       - name: Update packages
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
@@ -49,7 +47,7 @@ jobs:
 
       - name: Deploy PR
         env:
-          WORKSPACE: ${{github.workspace}}/repos
+          WORKSPACE: ${{github.workspace}}/..
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
           pyenv activate deploy
