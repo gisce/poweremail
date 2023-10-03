@@ -27,7 +27,7 @@ jobs:
   deploy:
     runs-on: [self-hosted, Keroberos]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Update packages
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
@@ -51,6 +51,8 @@ jobs:
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
           pyenv activate deploy
+          git config user.name Release Bot
+          git config user.email github-actions@github.com
           pr_number=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.number' )
           pr_url=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.url' )
           pr_title=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.title' )
