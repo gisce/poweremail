@@ -34,6 +34,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         cursor = self.cursor
         uid = self.uid
+
         acc_id = self.create_account()
 
         model_partner = imd_obj.get_object_reference(
