@@ -1,0 +1,76 @@
+name: Deploy branches
+
+on:
+  push:
+    branches: [ v5_backport, ci_deploy_versions ]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  HOME: /home/ci_repos
+  SCRIPTS_PATH: /home/ci_repos/ci_scripts
+  USER: ci_repos
+
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: write
+  issues: write
+  pull-requests: write
+  repository-projects: write
+  statuses: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Keroberos]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update packages
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate deploy
+          pip install --upgrade apply_pr
+          pip install --upgrade giscemultitools
+
+      - name: Get projects and commits info
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate deploy
+          echo 'PROJECTS_INFO<<EOF' >> $GITHUB_ENV
+          gisce_github get-commits-sha-from-merge-commit --owner ${{ github.repository_owner }} --repository ${{ github.event.repository.name }} --sha ${{ github.sha }} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Deploy PR
+        env:
+          WORKSPACE: ${{github.workspace}}/..
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate deploy
+          git config user.name Release Bot
+          git config user.email github-actions@github.com
+          pr_number=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.number' )
+          pr_url=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.url' )
+          pr_title=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.title' )
+          pr_base_branch=$( echo '${{ env.PROJECTS_INFO }}' | jq -r '.pullRequest.baseRefName' )
+          ex_code=0
+          for row in $( echo '${{ env.PROJECTS_INFO }}' | jq -r '.projectItems[] | @base64' ); do
+            _jq() {
+             echo "${row}" | base64 --decode | jq -r "${1}"
+            }
+            done_opt=$(_jq '.field_column_options.Done')
+            error_opt=$(_jq '.field_column_options.Error')
+            if [[ $(_jq '.card_state') == 'Todo' ]];
+            then
+              (git remote set-branches --add origin $(_jq '.project_name') && git fetch origin $(_jq '.project_name') && git checkout $(_jq '.project_name') && (printf '$USER\n' | sastre deploy --host=ssh://$USER@localhost --sudo_user=$USER --src=$WORKSPACE --force-hostname=$(_jq '.project_name') --pr=$pr_number --repository=${{ github.event.repository.name }} --environ test --skip-rolling-check --exit-code-failure --no-set-label) && git push origin $(_jq '.project_name') && gisce_github update-projectv2-card-from-id --owner ${{ github.repository_owner }} --repository ${{ github.event.repository.name }} --project-id $(_jq '.project_id') --item-id $(_jq '.card_id') --field-id $(_jq '.field_column_id') --value $done_opt) || (gisce_github update-projectv2-card-from-id --owner ${{ github.repository_owner }}  --repository ${{ github.event.repository.name }} --project-id $(_jq '.project_id') --item-id $(_jq '.card_id') --field-id $(_jq '.field_column_id') --value $error_opt && gisce_slack slack-notify --hook ${{ secrets.RELEASE_MASTER_WEBHOOK }} --title "Failed release" --icon "🔥" --message "Error deploying: $pr_url Into: https://github.com/${{ github.repository }}/tree/$(_jq '.project_name') Project: $(_jq '.project_url')" --origin "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" && ex_code=1)
+            fi
+          done
+          exit $ex_code
+          
+          
+          
+
