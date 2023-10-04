@@ -29,6 +29,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         return acc_id
 
     def create_template(self, extra_vals=None):
+
         imd_obj = self.openerp.pool.get('ir.model.data')
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         cursor = self.cursor
