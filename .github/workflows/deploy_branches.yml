@@ -48,6 +48,7 @@ jobs:
       - name: Deploy PR
         env:
           WORKSPACE: ${{github.workspace}}/..
+          GITHUB_TOKEN: ${{github.token}}
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
           pyenv activate deploy
