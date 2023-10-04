@@ -49,6 +49,7 @@ jobs:
         env:
           WORKSPACE: ${{github.workspace}}/..
           GITHUB_TOKEN: ${{github.token}}
+          APPLY_PR_NO_SUDO_MODE: 1
         run: |
           . $SCRIPTS_PATH/load_pyenv.sh
           pyenv activate deploy
