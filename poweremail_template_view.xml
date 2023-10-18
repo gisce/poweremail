@@ -147,6 +147,13 @@
                                 attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"
                                 icon="gtk-execute"
                             />
+                            <button
+                                string="Remove action and value"
+                                colspan="1" name="remove_action_reference"
+                                type="object"
+                                attrs="{'readonly':[('ref_ir_act_window', '!=', True), ('ref_ir_value', '!=', True)]}"
+                                icon="gtk-execute"
+                            />
                             <separator string="Expression builder" colspan="4"/>
                             <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" colspan="4"/>
                             <notebook colspan="4">
