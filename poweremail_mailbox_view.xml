@@ -113,6 +113,7 @@
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
 					<field name="state" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -131,6 +132,7 @@
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
 					<field name="state" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -148,6 +150,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -165,6 +168,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -182,6 +186,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -199,6 +204,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -216,6 +222,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
@@ -233,6 +240,7 @@
 					<field name="pem_attachments_ids" select="2" />
 					<field name="date_mail" select="2" />
 					<field name="pem_recd" colspan="2" />
+					<field name="create_date" select="1"/>
 				</tree>
 			</field>
 		</record>
