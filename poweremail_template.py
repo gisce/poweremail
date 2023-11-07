@@ -1131,6 +1131,18 @@ class poweremail_templates(osv.osv):
                 'ref_ir_value': ref_ir_value,
             }, context)
 
+    def delete_action_reference(self, cursor, uid, ids, context):
+        template = self.pool.get('poweremail.templates').browse(
+            cursor, uid, ids[0]
+        )
+        if template:
+            if template.ref_ir_act_window:
+                self.write(cursor, uid, template.id, {
+                    'ref_ir_act_window': None,
+                    'ref_ir_value': None,
+                })
+
+
 
 poweremail_templates()
 
