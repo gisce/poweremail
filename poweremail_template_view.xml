@@ -149,7 +149,7 @@
                             />
                             <button
                                 string="Delete action and value"
-                                colspan="2" name="delete_action_reference"
+                                colspan="1" name="delete_action_reference"
                                 type="object"
                                 attrs="{'invisible':[('ref_ir_act_window', '==', False), ('ref_ir_value', '==', False)]}"
                                 icon="gtk-delete"
