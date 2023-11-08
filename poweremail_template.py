@@ -942,7 +942,7 @@ class poweremail_templates(osv.osv):
         res = False
         if template.lang:
             res = get_value(cursor, uid, src_rec_id, template.lang, template=template, context=context)
-            if not res_lang_obj.search(cursor, uid, [('name', '=', res)], context=context):
+            if not res_lang_obj.search(cursor, uid, [('code', '=', res)], context=context):
                 res = False
         if not res:
             res = get_email_default_lang()
