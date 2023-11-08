@@ -947,6 +947,7 @@ class poweremail_templates(osv.osv):
         if not res:
             res = get_email_default_lang()
             return res
+        return res
 
     def _generate_mailbox_item_from_template(self, cursor, user, template, record_id, context=None):
         """
