@@ -7,6 +7,7 @@ from oopgrade.oopgrade import load_data, load_data_records
 def up(cursor, installed_version):
     if not installed_version:
         return
+    return
 
     logger = logging.getLogger('openerp.migration')
     model = 'wizard.generate.test.email'
