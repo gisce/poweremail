@@ -290,13 +290,25 @@ class poweremail_templates(osv.osv):
         if not arg:
             return [('id', '=', 0)]
         else:
-            model_data_obj = self.pool.get('ir.model.data')
-            ids_model_data = model_data_obj.search(cursor, uid, [
-                ('name', 'ilike', arg[0][2])
-            ], context=context)
-            records = model_data_obj.read(cursor, uid, ids_model_data, ['id', 'res_id'], context=context)
-            res_ids = [record['res_id'] for record in records]
-            return [('id', 'in', res_ids)]
+            if arg[0][2]:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('name', 'ilike', arg[0][2]),
+                    ('model',  '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'in', res_ids)]
+            else:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('model', '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'not in', res_ids)]
 
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
