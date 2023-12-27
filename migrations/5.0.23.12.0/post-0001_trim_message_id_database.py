@@ -22,7 +22,6 @@ def up(cursor, installed_version):
         cursor.execute("SELECT count(id) FROM poweremail_mailbox where pem_message_id ilike ' %'")
         remaining_to_migrate = cursor.fetchone()[0]
         t.update(1000)
-        t.display()
     t.close()
 
 
