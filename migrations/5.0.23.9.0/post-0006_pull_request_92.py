@@ -29,9 +29,9 @@ def up(cursor, installed_version):
         #     cursor, 'poweremail', 'security/ir.model.access.csv', mode='update'
         # )
         logger.info("Creating views...")
-        load_data(
-            cursor, 'poweremail', "wizard/wizard_generate_test_email.xml", mode='init'
-        )
+        # load_data(
+        #     cursor, 'poweremail', "wizard/wizard_generate_test_email.xml", mode='init'
+        # )
         load_data_records(
             cursor, 'poweremail', "poweremail_template_view.xml", [
                 'poweremail_basic_template_form',
