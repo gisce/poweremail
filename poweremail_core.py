@@ -600,7 +600,7 @@ class poweremail_core_accounts(osv.osv):
                 host=account.smtpserver,
                 port=account.smtpport,
                 user=account.smtpuname,
-                passwd=account.smtppass,
+                passwd=str(account.smtppass),
                 tls=account.smtptls,
                 ssl=account.smtpssl
             ):
