@@ -273,6 +273,43 @@ class poweremail_templates(osv.osv):
                 attach_obj.unlink(cursor, uid, [attach_id], context=context)
         return True
 
+    def _get_model_data_name(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        res = {}
+        for template_id in template_ids:
+            cursor.execute("SELECT name FROM ir_model_data WHERE model = 'poweremail.templates' AND res_id = %s",(template_id,))
+            sql_res = cursor.fetchone()
+            if sql_res:
+                res[template_id] = sql_res[0]
+        return res
+
+    def _get_model_data_name_search(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        if not context:
+            context = {}
+        if not arg:
+            return [('id', '=', 0)]
+        else:
+            if arg[0][2]:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('name', 'ilike', arg[0][2]),
+                    ('model',  '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'in', res_ids)]
+            else:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('model', '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'not in', res_ids)]
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -471,7 +508,13 @@ class poweremail_templates(osv.osv):
                                              method=True, type='one2many',
                                              relation='ir.attachment',
                                              string='Attachments'),
-        'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email.")
+        'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
+        'model_data_name': fields.function(
+            _get_model_data_name, string='Code',
+            type='char', size=250, method=True,
+            help="Model Data Name.",
+            fnct_search=_get_model_data_name_search,
+        ),
     }
 
     _defaults = {
