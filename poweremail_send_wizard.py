@@ -61,7 +61,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 res.append(
                     (account_for_company.id, '%s (%s)' % (account_for_company.name, account_for_company.email_id))
                 )
-                return res
+            return res
         elif template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
         elif (context.get('from', False) and
