@@ -62,13 +62,13 @@ class poweremail_preview(osv.osv_memory):
             ctx = context.copy()
             ctx.update({'lang':lang})
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
-        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, context)
-        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, context)
-        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, context)
-        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, context)
-        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, context)
-        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, context)
-        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, context)
+        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, ctx)
+        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, ctx)
+        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, ctx)
+        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, ctx)
+        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, ctx)
+        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, ctx)
+        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, ctx)
         return {'value': vals}
 
     def action_generate_static_mail(self, cursor, uid, ids, context=None):

@@ -1022,12 +1022,12 @@ class poweremail_templates(osv.osv):
 
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=context),
-            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=context),
-            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=context),
-            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=context),
-            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=context),
-            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=context),
+            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=ctx),
+            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=ctx),
+            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=ctx),
+            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=ctx),
+            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=ctx),
+            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=ctx),
             'pem_account_id': from_account['id'],
             #This is a mandatory field when automatic emails are sent
             'state': 'na',
