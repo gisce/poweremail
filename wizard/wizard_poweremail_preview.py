@@ -62,8 +62,8 @@ class poweremail_preview(osv.osv_memory):
         template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], context=context)
         # Search translated template
         lang = get_value(cr, uid, record_id, template.lang, template, context)
+        ctx = context.copy()
         if lang:
-            ctx = context.copy()
             ctx.update({'lang':lang})
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
         vals['to'] = get_value(cr, uid, record_id, template.def_to, template, ctx)
