@@ -77,9 +77,9 @@ class poweremail_preview(osv.osv_memory):
             import traceback
             tb=traceback.format_tb(sys.exc_info()[2])
             vals['body_text'] = ''.join(tb)
+            vals['state'] = 'error'
         vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, ctx)
         vals['report'] = get_value(cr, uid, record_id, template.file_name, template, ctx)
-        vals['state'] = 'error'
         self.write(cr, uid, ids, vals, context=context)
 
 
