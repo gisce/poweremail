@@ -273,6 +273,43 @@ class poweremail_templates(osv.osv):
                 attach_obj.unlink(cursor, uid, [attach_id], context=context)
         return True
 
+    def _get_model_data_name(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        res = {}
+        for template_id in template_ids:
+            cursor.execute("SELECT name FROM ir_model_data WHERE model = 'poweremail.templates' AND res_id = %s",(template_id,))
+            sql_res = cursor.fetchone()
+            if sql_res:
+                res[template_id] = sql_res[0]
+        return res
+
+    def _get_model_data_name_search(
+            self, cursor, uid, template_ids, field_name, arg, context=None):
+        if not context:
+            context = {}
+        if not arg:
+            return [('id', '=', 0)]
+        else:
+            if arg[0][2]:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('name', 'ilike', arg[0][2]),
+                    ('model',  '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'in', res_ids)]
+            else:
+                model_data_obj = self.pool.get('ir.model.data')
+                ids_model_data = model_data_obj.search(cursor, uid, [
+                    ('model', '=', 'poweremail.templates')
+                ], context=context)
+                records = model_data_obj.read(cursor, uid, ids_model_data,
+                                              ['id', 'res_id'], context=context)
+                res_ids = [record['res_id'] for record in records]
+                return [('id', 'not in', res_ids)]
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -471,7 +508,13 @@ class poweremail_templates(osv.osv):
                                              method=True, type='one2many',
                                              relation='ir.attachment',
                                              string='Attachments'),
-        'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email.")
+        'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
+        'model_data_name': fields.function(
+            _get_model_data_name, string='Code',
+            type='char', size=250, method=True,
+            help="Model Data Name.",
+            fnct_search=_get_model_data_name_search,
+        ),
     }
 
     _defaults = {
@@ -941,12 +984,13 @@ class poweremail_templates(osv.osv):
         res_lang_obj = self.pool.get('res.lang')
         res = False
         if template.lang:
-            res = get_value(cursor, uid, template, template.lang, context, src_rec_id)
-            if not res_lang_obj.search(cursor, uid, [('name', '=', res)], context=context):
+            res = get_value(cursor, uid, src_rec_id, template.lang, template=template, context=context)
+            if not res_lang_obj.search(cursor, uid, [('code', '=', res)], context=context):
                 res = False
         if not res:
             res = get_email_default_lang()
             return res
+        return res
 
     def _generate_mailbox_item_from_template(self, cursor, user, template, record_id, context=None):
         """
@@ -978,12 +1022,12 @@ class poweremail_templates(osv.osv):
 
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=context),
-            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=context),
-            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=context),
-            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=context),
-            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=context),
-            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=context),
+            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=ctx),
+            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=ctx),
+            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=ctx),
+            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=ctx),
+            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=ctx),
+            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=ctx),
             'pem_account_id': from_account['id'],
             #This is a mandatory field when automatic emails are sent
             'state': 'na',

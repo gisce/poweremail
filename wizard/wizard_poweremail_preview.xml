@@ -15,6 +15,7 @@
                     <field name="subject" colspan="4"/>
                     <field name="body_text" colspan="4"/>
                     <field name="report" colspan="4"/>
+                    <field name="save_to_drafts_prev" colspan="4"/>
                     <button icon="gtk-close" special="cancel" string="Close" />
                     <button name="action_generate_static_mail" icon="gtk-ok" string="Generate Email" type="object"/>
                 </form>

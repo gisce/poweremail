@@ -41,6 +41,7 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Power Email Templates">
+                    <field name="model_data_name" colspan="4" select="1"/>
                     <field name="name" />
                     <field name="object_name" required="1"/>
                     <field name="model_int_name" invisible="1" />

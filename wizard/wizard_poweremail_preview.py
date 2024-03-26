@@ -28,6 +28,16 @@ class poweremail_preview(osv.osv_memory):
 
         return res
 
+    def get_save_to_draft(self, cursor, uid, context=None):
+        template_obj = self.pool.get('poweremail.templates')
+
+        if not context:
+            context = {}
+        template_ids = context.get('active_ids', [])
+
+        res = template_obj.read(cursor, uid, template_ids, ['save_to_drafts'])[0]['save_to_drafts']
+        return res
+
     _columns = {
         'model_ref': fields.reference(
             "Template reference", selection=_ref_models,
@@ -40,11 +50,16 @@ class poweremail_preview(osv.osv_memory):
         'body_text': fields.text('Body', readonly=True),
         'body_html': fields.text('Body', readonly=True),
         'report': fields.char('Report Name', size=100, readonly=True),
+        'save_to_drafts_prev': fields.boolean('Save to Drafts',
+                                         help="When automatically sending emails generated from"
+                                              " this template, save them into the Drafts folder rather"
+                                              " than sending them immediately."),
         'state': fields.selection([('init', 'Init'), ('end', 'End')], 'State'),
     }
 
     _defaults = {
         'state': lambda *a: 'init',
+        'save_to_drafts_prev': get_save_to_draft
     }
 
     def on_change_ref(self, cr, uid, ids, model_ref, context=None):
@@ -62,13 +77,13 @@ class poweremail_preview(osv.osv_memory):
             ctx = context.copy()
             ctx.update({'lang':lang})
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
-        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, context)
-        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, context)
-        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, context)
-        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, context)
-        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, context)
-        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, context)
-        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, context)
+        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, ctx)
+        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, ctx)
+        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, ctx)
+        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, ctx)
+        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, ctx)
+        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, ctx)
+        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, ctx)
         return {'value': vals}
 
     def action_generate_static_mail(self, cursor, uid, ids, context=None):
@@ -109,6 +124,16 @@ class poweremail_preview(osv.osv_memory):
             # message: The expression to be evaluated
             # template: BrowseRecord object of the current template
             # return: Computed message (unicode) or u""
+
+            pem_too = get_value(
+                cursor, uid, model_id, message=template.def_to,
+                template=template, context=context
+            )
+            def_subject = get_value(
+                cursor, uid, model_id, message=template.def_subject,
+                template=template, context=context
+            )
+
             body_text = get_value(
                 cursor, uid, model_id, message=template.def_body_text,
                 template=template, context=context
@@ -117,10 +142,10 @@ class poweremail_preview(osv.osv_memory):
             mail_vals = {
                 'pem_from': tools.ustr(from_account['name']) + \
                             "<" + tools.ustr(from_account['email_id']) + ">",
-                'pem_to': template.def_to,
+                'pem_to': pem_too,
                 'pem_cc': False,
                 'pem_bcc': False,
-                'pem_subject': template.name,
+                'pem_subject': def_subject,
                 'pem_body_text': body_text,
                 'pem_account_id': from_account['id'],
                 'priority': '1',
@@ -130,6 +155,9 @@ class poweremail_preview(osv.osv_memory):
             }
 
             mailbox_id = mailbox_obj.create(cursor, uid, mail_vals)
+            if wizard.save_to_drafts_prev:
+                mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
+
             mailbox_ids.append(mailbox_id)
 
         wizard.write({'state': 'end'}, context=context)

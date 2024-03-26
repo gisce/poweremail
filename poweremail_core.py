@@ -775,10 +775,11 @@ class poweremail_core_accounts(osv.osv):
         logger = netsvc.Logger()
         mail_obj = self.pool.get('poweremail.mailbox')
         # Check for existing mails
+        message_id = mail['Message-ID'].strip()
         existing_mails = mail_obj.search(
             cr, uid, [
                 ('pem_account_id', '=', coreaccountid),
-                ('pem_message_id', '=', mail['Message-Id'])
+                ('pem_message_id', '=', message_id)
             ]
         )
         if existing_mails:
@@ -805,7 +806,7 @@ class poweremail_core_accounts(osv.osv):
             'pem_body_text': parsed_mail['text'],
             'pem_body_html': parsed_mail['html'],
             'pem_account_id':coreaccountid,
-            'pem_message_id': mail['Message-Id'],
+            'pem_message_id': message_id,
             'pem_mail_orig': six.text_type(parsed.mime_string, errors='ignore')
         }
         #Create the mailbox item now
