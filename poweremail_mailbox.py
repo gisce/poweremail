@@ -247,9 +247,13 @@ class PoweremailMailbox(osv.osv):
                     self.historise(cr, uid, [id], result, context, error=True)
             except Exception as exc:
                 error = traceback.format_exc()
-                logger = netsvc.Logger()
-                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
-                self.historise(cr, uid, [id], error, context, error=True)
+                if error == 'None' or error == 'none':
+                    self.write(cr, uid, id, {'state': 'na', 'folder': 'outbox'}, context)
+                    self.historise(cr, uid, [id], _("Email will be sent again"), context)
+                else:
+                    logger = netsvc.Logger()
+                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
+                    self.historise(cr, uid, [id], error, context, error=True)
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
 
