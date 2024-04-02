@@ -247,7 +247,7 @@ class PoweremailMailbox(osv.osv):
                     self.historise(cr, uid, [id], result, context, error=True)
             except Exception as exc:
                 error = traceback.format_exc()
-                if error == 'None' or error == 'none':
+                if 'none' in error.lower():
                     self.write(cr, uid, id, {'state': 'na', 'folder': 'outbox'}, context)
                     self.historise(cr, uid, [id], _("Email will be sent again"), context)
                 else:
