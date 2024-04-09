@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-import pooler
-from oopgrade.oopgrade import load_data, load_data_records
+from oopgrade.oopgrade import load_data
 
 
 def up(cursor, installed_version):
@@ -9,9 +8,6 @@ def up(cursor, installed_version):
         return
 
     logger = logging.getLogger('openerp.migration')
-
-    logger.info("Creating pooler")
-    pool = pooler.get_pool(cursor.dbname)
 
     ##UPATAR UN XML SENCER##
     logger.info("Updating XML poweremail_mailbox_cronjobs.xml")
