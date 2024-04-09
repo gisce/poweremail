@@ -13,11 +13,6 @@ def up(cursor, installed_version):
     logger.info("Creating pooler")
     pool = pooler.get_pool(cursor.dbname)
 
-    ##UPDATAR UN MODUL NOU AL CREAR-LO O AFEGIR UNA COLUMNA##
-    logger.info("Creating table: poweremail.mailbox")
-    pool.get("poweremail.mailbox")._auto_init(cursor, context={'module': 'poweremail'})
-    logger.info("Table created succesfully.")
-
     ##UPATAR UN XML SENCER##
     logger.info("Updating XML poweremail_mailbox_cronjobs.xml")
     load_data(

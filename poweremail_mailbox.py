@@ -522,9 +522,8 @@ class PoweremailMailbox(osv.osv):
 
         emails_ids = self.search(cursor, uid, [('history', 'like', '%None%')])
 
-        for email_id in emails_ids:
-            self.write(cursor, uid, email_id, {'state': 'na', 'folder': 'outbox'}, context)
-            self.historise(cursor, uid, [email_id], _("Email will be sent again"), context)
+        self.write(cursor, uid, emails_ids, {'state': 'na', 'folder': 'outbox'}, context)
+        self.historise(cursor, uid, emails_ids, _("Email will be sent again"), context)
 
 
 PoweremailMailbox()
