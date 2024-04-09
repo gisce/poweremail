@@ -247,13 +247,9 @@ class PoweremailMailbox(osv.osv):
                     self.historise(cr, uid, [id], result, context, error=True)
             except Exception as exc:
                 error = traceback.format_exc()
-                if 'none' in error.lower():
-                    self.write(cr, uid, id, {'state': 'na', 'folder': 'outbox'}, context)
-                    self.historise(cr, uid, [id], _("Email will be sent again"), context)
-                else:
-                    logger = netsvc.Logger()
-                    logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
-                    self.historise(cr, uid, [id], error, context, error=True)
+                logger = netsvc.Logger()
+                logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("Sending of Mail %s failed. Probable Reason: Could not login to server\nError: %s") % (id, exc))
+                self.historise(cr, uid, [id], error, context, error=True)
             self.write(cr, uid, id, {'state':'na'}, context)
         return True
 
@@ -519,6 +515,17 @@ class PoweremailMailbox(osv.osv):
             args.append(('pem_account_id', 'in', users_company_accounts))
         return super(osv.osv, self).search(cr, uid, args, offset, limit,
                 order, context=context, count=count)
+
+    def _cronjob_resend_emails_error(self, cursor, uid, ids, context=None):
+        if context is None:
+            context = {}
+
+        emails_ids = self.search(cursor, uid, [('history', 'like', '%None%')])
+
+        for email_id in emails_ids:
+            self.write(cursor, uid, email_id, {'state': 'na', 'folder': 'outbox'}, context)
+            self.historise(cursor, uid, [email_id], _("Email will be sent again"), context)
+
 
 PoweremailMailbox()
 
