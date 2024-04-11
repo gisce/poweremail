@@ -516,7 +516,7 @@ class PoweremailMailbox(osv.osv):
         return super(osv.osv, self).search(cr, uid, args, offset, limit,
                 order, context=context, count=count)
 
-    def _cronjob_resend_emails_error(self, cursor, uid, ids, context=None):
+    def _cronjob_resend_emails_error(self, cursor, uid, context=None):
         if context is None:
             context = {}
 
