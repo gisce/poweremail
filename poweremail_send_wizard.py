@@ -38,6 +38,17 @@ class poweremail_send_wizard(osv.osv_memory):
     _description = 'This is the wizard for sending mail'
     _rec_name = "subject"
 
+    def module_installed(self, cursor, uid, module, context=None):
+        if context is None:
+            context = {}
+        ir_obj = self.pool.get('ir.module.module')
+        id_module = ir_obj.search(cursor, uid, [('name', '=', module)], context=context)
+        if id_module:
+            return ir_obj.read(
+                cursor, uid, id_module, ['state'])[0]['state'] == 'installed'
+        else:
+            return False
+
     def _get_accounts(self, cr, uid, context=None):
         if context is None:
             context = {}
@@ -55,7 +66,11 @@ class poweremail_send_wizard(osv.osv_memory):
         )
         logger = netsvc.Logger()
 
-        if template.enforce_from_account_by_company:
+        multicompany_installed = self.module_installed(
+            cursor, uid, 'poweremail_multicompany', context=context
+        )
+
+        if multicompany_installed and template.enforce_from_account_by_company:
             res = []
             for account_for_company in template.enforce_from_account_by_company:
                 res.append(
