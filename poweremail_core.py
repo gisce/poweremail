@@ -43,7 +43,7 @@ import tools
 import six
 
 from qreu import Email
-from qreu.address import Address, parseaddr
+from qreu.address import Address, parseaddr, getaddresses
 from qreu.sendcontext import Sender, SMTPSender
 from html2text import html2text
 
@@ -53,7 +53,8 @@ _MAIL_COUNT_MARGIN = 4
 def filter_send_emails(emails_str):
     if not emails_str:
         emails_str = ''
-    return ', '.join(set([e.strip() for e in emails_str.split(',') if e.strip()]))
+    emails = getaddresses([emails_str])
+    return ", ".join(Address(*mail).display for mail in emails)
 
 _priority_selection = [('0', 'Low'),
                        ('1', 'Normal'),
