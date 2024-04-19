@@ -397,7 +397,6 @@ class TestPoweremailMailbox(testing.OOTestCase):
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
-        self.openerp.install_module('giscedata_facturacio')
         with Transaction().start(self.database) as txn:
             uid = txn.user
             cursor = txn.cursor
@@ -408,7 +407,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
             pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
             send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
 
-            fact_id = imd_obj.get_object_reference(cursor, uid, 'giscedata_facturacio', 'factura_0006')[1]
+            # Dummy value for an invoice id
+            fact_id = 6
             # Agafem un template de prova per posar a l'attachment
             template_id = imd_obj.get_object_reference(
                 cursor, uid, 'poweremail', 'default_template_poweremail'
