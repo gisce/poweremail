@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+      <!-- Definicio del dashboard -->
+    <data>
+        <record model="ir.actions.act_window" id="action_menu_poweremail_dashboard">
+            <field name="name">Poweremail</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">dashboard</field>
+            <field name="view_mode">dashboard,form</field>
+            <field name="res_model">board.board</field>
+        </record>
+        <menuitem
+            id="menu_poweremail_dashboard"
+            name="Dashboard Poweremail"
+            parent="board.dashboard_menu"
+            action="action_menu_poweremail_dashboard"
+            icon="terp-project"
+            string="Dashboard Poweremail"/>
+        <record model="board.board" id="poweremail_dashboard">
+            <field name="name">Poweremail Dashboard</field>
+            <field name="menu_id" ref="menu_poweremail_dashboard"/>
+        </record>
+        <record model="ir.actions.act_window" id="action_menu_poweremail_dashboard">
+            <field name="context" eval="{b'active_id': ref('poweremail_dashboard')}"/>
+        </record>
+    </data>
+    <!-- FI Definicio del dashboard -->
+    <!-- Total emails enviats -->
+<data>
+        <record model="ir.ui.view" id="view_poweremail_total_emails_enviats">
+            <field name="name">Total Email enviats</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="indicator"
+                        icon="mail">
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_total_emails_enviats">
+            <field name="name">Total Emails enviats</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[('folder', '=', 'sent')]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_total_emails_enviats">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_total_emails_enviats"/>
+            <field name="act_window_id" ref="action_total_emails_enviats"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_action_total_emails_enviats">
+            <field name="name">Total Emails enviats</field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_total_emails_enviats"/>
+        </record>
+    </data>
+    <!-- FI Total emails enviats -->
+    <!-- Emails en error -->
+    <data>
+        <record model="ir.ui.view" id="view_poweremail_emails_en_error">
+            <field name="name">Emails en error</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="indicator" color="green:value==0;red:value&gt;0;"
+                   icon="check-circle:value==0;exclamation-circle:value>0;">
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_poweremail_emails_en_error">
+            <field name="name">Emails en error</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[('folder','=','error')]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_en_error">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_emails_en_error"/>
+            <field name="act_window_id" ref="action_poweremail_emails_en_error"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_emails_en_error">
+            <field name="name">Emails en error</field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_poweremail_emails_en_error"/>
+        </record>
+    </data>
+     <!-- FI emails en error -->
+    <!-- Email enviats avui -->
+    <data>
+        <record model="ir.ui.view" id="view_poweremail_total_enviats">
+            <field name="name">Email enviats avui</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="indicator"
+                        icon="mail">
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_poweremail_total_enviats">
+            <field name="name">Email enviats avui</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[('folder', '=', 'sent')]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_total_enviats">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_total_enviats"/>
+            <field name="act_window_id" ref="action_poweremail_total_enviats"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_total_enviats">
+            <field name="name">Emails enviats avui</field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_poweremail_total_enviats"/>
+        </record>
+    </data>
+    <!-- FI Email enviats avui-->
+    <!-- Emails rebuts avui -->
+    <data>
+        <record model="ir.ui.view" id="view_poweremail_emails_rebuts_avui">
+            <field name="name">Email Rebuts avui</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="indicator"
+                        icon="mail">
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_poweremail_emails_rebuts_avui">
+            <field name="name">Emails rebuts avui</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('folder','=','sent')]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_rebuts_avui">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_emails_rebuts_avui"/>
+            <field name="act_window_id" ref="action_poweremail_emails_rebuts_avui"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_emails_rebuts_avui">
+            <field name="name">Emails rebuts avui</field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_poweremail_emails_rebuts_avui"/>
+        </record>
+    </data>
+    <!-- FI mails rebuts avui -->
+    <!-- Emails per enviar-->
+    <data>
+        <record model="ir.ui.view" id="view_poweremail_emails_per_enviar">
+            <field name="name">Email per enviar</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="indicator"
+                        icon="mail">
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_poweremail_emails_per_enviar">
+            <field name="name">Email per enviar</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[('folder', '=', 'outbox')]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_per_enviar">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_emails_per_enviar"/>
+            <field name="act_window_id" ref="action_poweremail_emails_per_enviar"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_emails_per_enviar">
+            <field name="name">Emails per enviar</field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_poweremail_emails_per_enviar"/>
+        </record>
+    </data>
+    <!-- FI mails per enviar -->
+    <!-- Emails enviats els últims 60 dies -->
+        <data>
+        <record model="ir.ui.view" id="view_poweremail_emails_ultims_60_dies">
+            <field name="name">Emails enviats/rebuts els últims 60 dies </field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="type">graph</field>
+            <field name="version" eval="2"/>
+            <field name="arch" type="xml">
+                <graph type="bar">
+                        <field name="create_date" axis="x"/>
+                        <field name="num" label="folder" operator="+" axis="y"/>
+                    <field name="id"/>
+                </graph>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_poweremail_emails_ultims_60_dies">
+            <field name="name">Emails enviats/rebuts els últims 60 dies</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">graph,tree,form</field>
+            <field name="limit" eval="0"/>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="domain">[]</field>
+        </record>
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_ultims_60_dies">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">graph</field>
+            <field name="view_id" ref="view_poweremail_emails_ultims_60_dies"/>
+            <field name="act_window_id" ref="action_poweremail_emails_ultims_60_dies"/>
+        </record>
+        <record model="board.board.line" id="board_poweremail_emails_ultims_60_dies">
+            <field name="name">Emails enviats/rebuts els últims 60 dies </field>
+            <field name="board_id" ref="poweremail_dashboard"/>
+            <field name="sequence" eval="0"/>
+            <field name="action_id" ref="action_poweremail_emails_ultims_60_dies"/>
+        </record>
+    </data>
+    <!-- Fi Emails enviats els últims 60 dies -->
+</openerp>

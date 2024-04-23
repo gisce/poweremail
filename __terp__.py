@@ -65,6 +65,7 @@
         'poweremail_send_wizard.xml',
         'poweremail_mailbox_view.xml',
         'poweremail_serveraction_view.xml',
+        'poweremail_dashboard.xml',
         'security/ir.model.access.csv',
     ],
     "installable": True,
