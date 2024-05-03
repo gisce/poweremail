@@ -101,7 +101,7 @@
      <!-- FI emails en error -->
     <!-- Email enviats avui -->
     <data>
-        <record model="ir.ui.view" id="view_poweremail_total_enviats">
+        <record model="ir.ui.view" id="view_poweremail_enviats_avui">
             <field name="name">Email enviats avui</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
@@ -113,26 +113,26 @@
                 </graph>
             </field>
         </record>
-        <record model="ir.actions.act_window" id="action_poweremail_total_enviats">
+        <record model="ir.actions.act_window" id="action_poweremail_enviats_avui">
             <field name="name">Email enviats avui</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('folder', '=', 'sent')]</field>
+            <field name="domain">[('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('folder','=','sent')]</field>
         </record>
-        <record model="ir.actions.act_window.view" id="action_view_poweremail_total_enviats">
+        <record model="ir.actions.act_window.view" id="action_poweremail_enviats_avui">
             <field name="sequence" eval="1"/>
             <field name="view_mode">graph</field>
-            <field name="view_id" ref="view_poweremail_total_enviats"/>
-            <field name="act_window_id" ref="action_poweremail_total_enviats"/>
+            <field name="view_id" ref="view_poweremail_enviats_avui"/>
+            <field name="act_window_id" ref="action_poweremail_enviats_avui"/>
         </record>
-        <record model="board.board.line" id="board_poweremail_total_enviats">
+        <record model="board.board.line" id="board_poweremail_enviats_avui">
             <field name="name">Emails enviats avui</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
-            <field name="action_id" ref="action_poweremail_total_enviats"/>
+            <field name="action_id" ref="action_poweremail_enviats_avui"/>
         </record>
     </data>
     <!-- FI Email enviats avui-->
@@ -157,7 +157,7 @@
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('folder','=','sent')]</field>
+            <field name="domain">[('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('folder','=','inbox')]</field>
         </record>
         <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_rebuts_avui">
             <field name="sequence" eval="1"/>
@@ -211,17 +211,16 @@
     </data>
     <!-- FI mails per enviar -->
     <!-- Emails enviats els últims 60 dies -->
-        <data>
+    <data>
         <record model="ir.ui.view" id="view_poweremail_emails_ultims_60_dies">
             <field name="name">Emails enviats/rebuts els últims 60 dies </field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
-                <graph type="bar">
-                        <field name="create_date" axis="x"/>
-                        <field name="num" label="folder" operator="+" axis="y"/>
-                    <field name="id"/>
+                <graph type="bar" timerange="day">
+                    <field name="date_mail" axis="x"/>
+                    <field name="pem_message_id"  label="folder" operator="+" stacked="folder" axis="y"/>
                 </graph>
             </field>
         </record>
@@ -232,7 +231,7 @@
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[]</field>
+            <field name="domain">[('folder','in',['sent','inbox']),('date_mail','>=',((datetime.datetime.today()-datetime.timedelta(days=60)).strftime('%Y-%m-%d')))]</field>
         </record>
         <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_ultims_60_dies">
             <field name="sequence" eval="1"/>
