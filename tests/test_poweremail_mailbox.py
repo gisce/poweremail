@@ -391,17 +391,12 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 5)
 
-
-
-
-
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
-    def test_save_to_mailbox(self, mock_function_2, mock_function_3, mock_function_4, mock_function_5, mock_function_6):
-        self.openerp.install_module('giscedata_facturacio')
+    def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
         with Transaction().start(self.database) as txn:
             uid = txn.user
             cursor = txn.cursor
@@ -412,7 +407,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
             pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
             send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
 
-            fact_id = imd_obj.get_object_reference(cursor, uid, 'giscedata_facturacio', 'factura_0006')[1]
+            # Dummy value for an invoice id
+            fact_id = 6
             # Agafem un template de prova per posar a l'attachment
             template_id = imd_obj.get_object_reference(
                 cursor, uid, 'poweremail', 'default_template_poweremail'
@@ -520,13 +516,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
             }
             attachment_report_id = ir_attachment_obj.create(cursor, uid, attach_vals)
 
-            mock_function_2.return_value = mail_id
-            mock_function_3.return_value = attachment_report_id
+            mock_function.return_value = mail_id
+            mock_function_2.return_value = attachment_report_id
+            mock_function_3.return_value = []
             mock_function_4.return_value = []
-            mock_function_5.return_value = []
-            mock_function_6.return_value = [attachment_id]
-
-
+            mock_function_5.return_value = [attachment_id]
 
             context = {}
             context['template_id'] = template_id
@@ -544,8 +538,3 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(len(mail_created_vals['pem_attachments_ids']), 2)
             self.assertIn(attachment_report_id, mail_created_vals['pem_attachments_ids'])
             self.assertIn(attachment_id, mail_created_vals['pem_attachments_ids'])
-
-
-
-
-
