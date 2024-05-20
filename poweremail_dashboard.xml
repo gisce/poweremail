@@ -220,7 +220,7 @@
             <field name="arch" type="xml">
                 <graph type="bar" timerange="day">
                     <field name="date_mail" axis="x"/>
-                    <field name="pem_message_id"  label="folder" operator="+" stacked="folder" axis="y"/>
+                    <field name="folder"  label="folder" operator="count" stacked="folder" axis="y"/>
                 </graph>
             </field>
         </record>
