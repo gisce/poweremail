@@ -8,7 +8,8 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Power Email Preview">
-                    <field name="model_ref" on_change="on_change_ref(model_ref, context)" colspan="4"/>
+                    <field name="state" invisible="1"/>
+                    <field name="model_ref" colspan="4"/>
                     <field name="to" colspan="4"/>
                     <field name="cc" colspan="4"/>
                     <field name="bcc" colspan="4"/>
@@ -17,7 +18,9 @@
                     <field name="report" colspan="4"/>
                     <field name="save_to_drafts_prev" colspan="4"/>
                     <button icon="gtk-close" special="cancel" string="Close" />
-                    <button name="action_generate_static_mail" icon="gtk-ok" string="Generate Email" type="object"/>
+                    <button name="action_generate_static_mail" icon="gtk-refresh" string="Preview Email" type="object"/>
+                    <button name="action_send_static_mail" icon="send" string="Send Email" type="object"
+                            attrs="{'invisible':[('state','=','error')]}"/>
                 </form>
             </field>
         </record>
