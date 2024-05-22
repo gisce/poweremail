@@ -516,6 +516,19 @@ class PoweremailMailbox(osv.osv):
         return super(osv.osv, self).search(cr, uid, args, offset, limit,
                 order, context=context, count=count)
 
+    def _cronjob_resend_emails_error(self, cursor, uid, context=None):
+        if context is None:
+            context = {}
+
+        emails_ids = self.search(cursor, uid, [
+            ('history', 'like', '%None%'),
+            ('folder', '=', 'error')
+        ], context=context)
+
+        self.write(cursor, uid, emails_ids, {'state': 'na', 'folder': 'outbox'}, context=context)
+        self.historise(cursor, uid, emails_ids, _("Email will be sent again"), context=context)
+
+
 PoweremailMailbox()
 
 
