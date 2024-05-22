@@ -57,13 +57,6 @@ class poweremail_send_wizard(osv.osv_memory):
 
         if template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
-        elif template.enforce_from_account_by_company:
-            res = []
-            for account_for_company in template.enforce_from_account_by_company:
-                res.append(
-                    (account_for_company.id, '%s (%s)' % (account_for_company.name, account_for_company.email_id))
-                )
-                return res
         elif (context.get('from', False) and
               isinstance(context.get('from'), int)):
             # If account provided from context, check availability

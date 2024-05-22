@@ -1,5 +1,8 @@
 from __future__ import absolute_import
 
+import sys
+import traceback
+
 from osv import osv, fields
 from ..poweremail_template import get_value
 from tools.translate import _
@@ -28,6 +31,16 @@ class poweremail_preview(osv.osv_memory):
 
         return res
 
+    def get_save_to_draft(self, cursor, uid, context=None):
+        template_obj = self.pool.get('poweremail.templates')
+
+        if not context:
+            context = {}
+        template_ids = context.get('active_ids', [])
+
+        res = template_obj.read(cursor, uid, template_ids, ['save_to_drafts'])[0]['save_to_drafts']
+        return res
+
     _columns = {
         'model_ref': fields.reference(
             "Template reference", selection=_ref_models,
@@ -40,38 +53,58 @@ class poweremail_preview(osv.osv_memory):
         'body_text': fields.text('Body', readonly=True),
         'body_html': fields.text('Body', readonly=True),
         'report': fields.char('Report Name', size=100, readonly=True),
-        'state': fields.selection([('init', 'Init'), ('end', 'End')], 'State'),
+        'state': fields.selection([('init', 'Init'), ('end', 'End'), ('error', 'Error')], 'State'),
+        'save_to_drafts_prev': fields.boolean('Save to Drafts',
+                                         help="When automatically sending emails generated from"
+                                              " this template, save them into the Drafts folder rather"
+                                              " than sending them immediately."),
     }
 
     _defaults = {
         'state': lambda *a: 'init',
+        'save_to_drafts_prev': get_save_to_draft
     }
 
-    def on_change_ref(self, cr, uid, ids, model_ref, context=None):
+    def action_generate_static_mail(self, cr, uid, ids, context=None):
+        wizard_values = self.read(cr, uid, ids, ['model_ref'], context=context)
+
         if context is None:
             context = {}
-        if not model_ref:
+        if not wizard_values:
             return {}
+
         vals = {}
-        model_name, record_id = model_ref.split(',')
+        model_name, record_id = wizard_values[0]['model_ref'].split(',')
         record_id = int(record_id)
         template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], context=context)
         # Search translated template
         lang = get_value(cr, uid, record_id, template.lang, template, context)
-        if lang:
-            ctx = context.copy()
-            ctx.update({'lang':lang})
-            template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
-        vals['to'] = get_value(cr, uid, record_id, template.def_to, template, context)
-        vals['cc'] = get_value(cr, uid, record_id, template.def_cc, template, context)
-        vals['bcc'] = get_value(cr, uid, record_id, template.def_bcc, template, context)
-        vals['subject'] = get_value(cr, uid, record_id, template.def_subject, template, context)
-        vals['body_text'] = get_value(cr, uid, record_id, template.def_body_text, template, context)
-        vals['body_html'] = get_value(cr, uid, record_id, template.def_body_html, template, context)
-        vals['report'] = get_value(cr, uid, record_id, template.file_name, template, context)
-        return {'value': vals}
+        ctx = context.copy()
 
-    def action_generate_static_mail(self, cursor, uid, ids, context=None):
+        if lang:
+            ctx.update({'lang': lang})
+            template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
+
+        mail_fields = ['to', 'cc', 'bcc', 'subject', 'body_text', 'body_html', 'report']
+        ctx.update({'raise_exception': True})
+        for field in mail_fields:
+            try:
+                if field == 'report':
+                    field_value = template.file_name
+                else:
+                    field_value = getattr(template, "def_{}".format(field))
+                vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
+            except Exception as e:
+                import traceback
+                tb = traceback.format_tb(sys.exc_info()[2])
+                vals[field] = ''.join(tb)
+                vals['state'] = 'error'
+
+        self.write(cr, uid, ids, vals, context=context)
+        return True
+
+
+    def action_send_static_mail(self, cursor, uid, ids, context=None):
         if context is None:
             context = {}
 
@@ -86,9 +119,8 @@ class poweremail_preview(osv.osv_memory):
                 _('Error'),
                 _('No model reference defined')
             )
-        model_ref = wizard.model_ref.split(',')
-        model_name = model_ref[0]
-        model_id = int(model_ref[1])
+        model_name, model_id = wizard.model_ref.split(',')
+        model_id = int(model_id)
 
         if not isinstance(template_ids, (list, tuple)):
             template_ids = [template_ids]
@@ -109,6 +141,16 @@ class poweremail_preview(osv.osv_memory):
             # message: The expression to be evaluated
             # template: BrowseRecord object of the current template
             # return: Computed message (unicode) or u""
+
+            pem_too = get_value(
+                cursor, uid, model_id, message=template.def_to,
+                template=template, context=context
+            )
+            def_subject = get_value(
+                cursor, uid, model_id, message=template.def_subject,
+                template=template, context=context
+            )
+
             body_text = get_value(
                 cursor, uid, model_id, message=template.def_body_text,
                 template=template, context=context
@@ -117,10 +159,10 @@ class poweremail_preview(osv.osv_memory):
             mail_vals = {
                 'pem_from': tools.ustr(from_account['name']) + \
                             "<" + tools.ustr(from_account['email_id']) + ">",
-                'pem_to': template.def_to,
+                'pem_to': pem_too,
                 'pem_cc': False,
                 'pem_bcc': False,
-                'pem_subject': template.name,
+                'pem_subject': def_subject,
                 'pem_body_text': body_text,
                 'pem_account_id': from_account['id'],
                 'priority': '1',
@@ -130,6 +172,9 @@ class poweremail_preview(osv.osv_memory):
             }
 
             mailbox_id = mailbox_obj.create(cursor, uid, mail_vals)
+            if wizard.save_to_drafts_prev:
+                mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
+
             mailbox_ids.append(mailbox_id)
 
         wizard.write({'state': 'end'}, context=context)

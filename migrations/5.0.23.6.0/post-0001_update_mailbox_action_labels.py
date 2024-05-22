@@ -4,6 +4,7 @@ from oopgrade.oopgrade import load_data_records
 from oopgrade.oopgrade import load_data
 from tools.translate import trans_load
 from tools import config
+import pooler
 
 
 def up(cursor, installed_version):
@@ -11,6 +12,18 @@ def up(cursor, installed_version):
         return
 
     logger = logging.getLogger('openerp.migration')
+    pool = pooler.get_pool(cursor.dbname)
+
+    models = [
+        "poweremail.templates",
+        "wizard.emails.generats.model"
+    ]
+
+    for model in models:
+        # Crear les diferents taules
+        logger.info("Creating table: {}".format(model))
+        pool.get(model)._auto_init(cursor, context={'module': 'poweremail'})
+        logger.info("Table created succesfully.")
 
     record_names = [
         'action_poweremail_inbox_tree',
@@ -29,9 +42,9 @@ def up(cursor, installed_version):
         'action_poweremail_error_tree_company'
     ]
     load_data_records(cursor, 'poweremail', 'poweremail_mailbox_view.xml', record_names, mode='update')
-    load_data(
-        cursor, 'poweremail', 'security/ir.model.access.csv', idref=None, mode='update'
-    )
+    # load_data(
+    #     cursor, 'poweremail', 'security/ir.model.access.csv', idref=None, mode='update'
+    # )
     logger.info("XMLs succesfully updatd.")
     trans_load(cursor, '{}/poweremail/i18n/ca_ES.po'.format(config['addons_path']), 'ca_ES')
     trans_load(cursor, '{}/poweremail/i18n/es_ES.po'.format(config['addons_path']), 'es_ES')

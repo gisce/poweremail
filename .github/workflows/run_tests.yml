@@ -1,0 +1,136 @@
+name: Run tests
+
+on:
+  pull_request:
+    branches: [ v5_backport ]
+    types: [ labeled ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{  github.event.label.name || github.ref }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VENVS_PATH: /home/ci_replicante/ci_virtualenvs
+  REPOSITORY_PATH: /home/ci_replicante/src
+  SCRIPTS_PATH: /home/ci_replicante/ci_scripts
+  HELP_PATH: /home/ci_replicante/help
+  CI_REPO: ${{ github.repository }}
+  CI_PULL_REQUEST: ${{ github.event.number }}
+
+jobs:
+  tests:
+    if: ${{ (github.event_name == 'pull_request' && github.event.label.name == 'to be merged') }}
+    runs-on: [self-hosted, Buda]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "2.7.18", "3.11.4" ]
+    steps:
+      - name: 'Set build id'
+        id: build_id
+        run: echo "id=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Update repositories
+        run: |
+          . $SCRIPTS_PATH/update_branches.sh
+
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+            path: custom_modules/${{ github.event.repository.name }}
+
+      - name: Checkout erp
+        uses: actions/checkout@v4
+        with:
+          path: src/erp
+          repository: gisce/erp
+          token: ${{ secrets.RO_GITHUB_ACTIONS_REPOS }}
+
+      - name: Prepare virtualenv Python ${{ matrix.python-version }}
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.id }}
+          ROOT_DIR_SRC: ${{ github.workspace }}/src
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv virtualenv ${{ matrix.python-version }} $BUILD_ID
+          pyenv activate $BUILD_ID
+          . $SCRIPTS_PATH/install_packages.sh $ROOT_DIR_SRC
+          cd $REPOSITORY_PATH/smmwebstg
+          pip install -e .
+          cd $REPOSITORY_PATH/twobeatstg
+          pip install -e .
+
+      - name: Update mamba for Python 3
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.id }}
+        if: matrix.python-version == '3.11.4'
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate $BUILD_ID
+          pip install --upgrade mamba
+
+      - name: Link Addons
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.id }}
+          CUSTOM_MODULES_PATH: ${{ github.workspace }}/custom_modules/
+          ROOT_DIR_SRC: ${{ github.workspace }}/src
+          ADDONS_PATH: ${{ github.workspace }}/src/erp/server/bin/addons
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate $BUILD_ID
+          cd $ROOT_DIR_SRC/erp
+          git apply $HELP_PATH/link_addons.diff
+          python tools/link_addons.py --skip-relative --base-path $REPOSITORY_PATH/,$CUSTOM_MODULES_PATH
+          rm $ADDONS_PATH/poweremail
+          cd $ADDONS_PATH
+          ln -s $CUSTOM_MODULES_PATH/${{ github.event.repository.name }} ./poweremail
+
+      - name: Run Tests
+        id: run_tests
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.id }}
+          GITHUB_TOKEN: ${{ secrets.RO_GITHUB_ACTIONS_REPOS }}
+          ROOT_DIR_SRC: ${{ github.workspace }}/src
+          ADDONS_PATH: ${{ github.workspace }}/src/erp/server/bin/addons
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv activate $BUILD_ID
+          . $SCRIPTS_PATH/export_env_vars.sh $ROOT_DIR_SRC
+          . $SCRIPTS_PATH/run_tests_custom.sh $BUILD_ID $ROOT_DIR_SRC $ADDONS_PATH ${{ github.event.repository.name }}
+
+      - name: Remove virtualenv
+        if: success() || failure()
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.id }}
+        run: |
+          . $SCRIPTS_PATH/load_pyenv.sh
+          pyenv virtualenv-delete -f $BUILD_ID
+
+      - name: Publish Unit Test Results 2
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() && matrix.python-version == '2.7.18'
+        with:
+          check_name: "PY2TestsResults"
+          junit_files: "src/${{ steps.build_id.outputs.id }}/*.xml"
+
+      - name: Publish Unit Test Results 3
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() && matrix.python-version == '3.11.4'
+        with:
+          check_name: "PY3TestsResults"
+          junit_files: "src/${{ steps.build_id.outputs.id }}/*.xml"
+
+      - name: Clean workspace
+        if: success() || failure()
+        run: |
+          cd ${{ github.workspace }}
+          rm -r *
+
+      - name: Set mergeable check
+        if: steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
+        uses: ouzi-dev/commit-status-updater@v2
+        with:
+          name: "Mergeable"
+          status: "${{ steps.run_tests.outcome }}"
+          url: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
