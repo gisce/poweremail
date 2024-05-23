@@ -512,6 +512,7 @@ class poweremail_templates(osv.osv):
                                              relation='ir.attachment',
                                              string='Attachments'),
         'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
+        'inline': fields.boolean('Inline HTML', help=u"Si es marca aquesta opcio, l'html passara per un proces d'inline"),
         'model_data_name': fields.function(
             _get_model_data_name, string='Code',
             type='char', size=250, method=True,
@@ -523,7 +524,8 @@ class poweremail_templates(osv.osv):
     _defaults = {
         'ref_ir_act_window': False,
         'ref_ir_value': False,
-        'def_priority': lambda *a: '1'
+        'def_priority': lambda *a: '1',
+        'inline': lambda *a: False
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
@@ -1039,6 +1041,10 @@ class poweremail_templates(osv.osv):
             'priority': template.def_priority,
             'template_id': template.id,
         }
+
+        if template.inline:
+            mailbox_values['pem_body_text'] = transform(mailbox_values['pem_body_text'])
+
         #Use signatures if allowed
         if template.use_sign:
             sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']
