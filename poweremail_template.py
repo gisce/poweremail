@@ -69,6 +69,7 @@ except:
 import tools
 import report
 import pooler
+from premailer import transform
 from .poweremail_mailbox import _priority_selection
 from .poweremail_core import get_email_default_lang
 
