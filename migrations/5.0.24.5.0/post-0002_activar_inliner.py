@@ -1,7 +1,6 @@
 # coding=utf-8
 import logging
 import pooler
-from tools import pip_install
 
 from oopgrade.oopgrade import load_data_records
 
@@ -29,10 +28,6 @@ def up(cursor, installed_version):
         list_of_records, mode="update"
     )
     logger.info("poweremail_template_view.xml successfully updated")
-
-    logger.info('Installing premailer package...')
-    pip_install('premailer==2.9.6', '--force')
-    logger.info('Premailer package installed successfully!')
 
 
 def down(cursor, installed_version):
