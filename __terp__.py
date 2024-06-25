@@ -29,7 +29,7 @@
     "author" : "Sharoon Thomas, Openlabs",
     "website" : "http://openlabs.co.in/blog/post/poweremail/",
     "category" : "Added functionality",
-    "depends" : ['base'],
+    "depends" : ['base_extended'],
     "description": """
     Power Email - extends the most Power ful open source ERP with email which powers the world today.
 
