@@ -97,3 +97,165 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         })
         wiz = send_obj.browse(cursor, uid, wiz_id)
         self.assertEqual(wiz.priority, '2')
+
+    def test_inliner_from_template_send_wizard(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
+
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        tmpl_id = self.create_template()
+
+        example_html = """
+<html>
+<style type="text/css">
+h1 { border:1px solid black }
+p { color:red;}
+</style>
+<h1 style="font-weight:bolder">Peter</h1>
+<p>Hej</p>
+</html>
+        """
+
+        write_vals = {
+            'def_body_text': example_html,
+            'inline': True
+        }
+
+        tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
+
+        wiz_id = send_obj.create(cursor, uid, {}, context={
+            'active_id': partner_id,
+            'active_ids': [partner_id],
+            'src_rec_ids': [partner_id],
+            'src_model': 'res.partner',
+            'template_id': tmpl_id
+        })
+
+        wiz = send_obj.browse(cursor, uid, wiz_id)
+
+        inlined_html = '<html>\n<head></head>\n<body>\n<h1 style="border:1px solid black; font-weight:bolder">Peter</h1>\n<p style="color:red">Hej</p>\n</body>\n</html>\n'
+
+        self.assertEqual(wiz.body_text, inlined_html)
+
+    def test_no_inliner_from_template_send_wizard(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
+
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        tmpl_id = self.create_template()
+
+        example_html = """
+<html>
+<style type="text/css">
+h1 { border:1px solid black }
+p { color:red;}
+</style>
+<h1 style="font-weight:bolder">Peter</h1>
+<p>Hej</p>
+</html>
+        """
+
+        write_vals = {
+            'def_body_text': example_html,
+            'inline': False
+        }
+
+        tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
+
+        wiz_id = send_obj.create(cursor, uid, {}, context={
+            'active_id': partner_id,
+            'active_ids': [partner_id],
+            'src_rec_ids': [partner_id],
+            'src_model': 'res.partner',
+            'template_id': tmpl_id
+        })
+
+        wiz = send_obj.browse(cursor, uid, wiz_id)
+
+        self.assertEqual(wiz.body_text, example_html)
+
+    def test_no_inliner_from_template(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        tmpl_id = self.create_template()
+
+        example_html = """
+<html>
+<style type="text/css">
+h1 { border:1px solid black }
+p { color:red;}
+</style>
+<h1 style="font-weight:bolder">Peter</h1>
+<p>Hej</p>
+</html>
+        """
+
+        write_vals = {
+            'def_body_text': example_html,
+            'inline': False
+        }
+
+        tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
+
+        mail_id = tmpl_obj.generate_mail(cursor, uid, tmpl_id, [partner_id])
+        pem_body_text = mailbox_obj.read(cursor, uid, mail_id, ['pem_body_text'])['pem_body_text']
+
+        self.assertEqual(pem_body_text, example_html)
+
+    def test_inliner_from_template(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        tmpl_id = self.create_template()
+
+        example_html = """
+<html>
+<style type="text/css">
+h1 { border:1px solid black }
+p { color:red;}
+</style>
+<h1 style="font-weight:bolder">Peter</h1>
+<p>Hej</p>
+</html>
+        """
+
+        write_vals = {
+            'def_body_text': example_html,
+            'inline': True
+        }
+
+        tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
+
+        mail_id = tmpl_obj.generate_mail(cursor, uid, tmpl_id, [partner_id])
+        pem_body_text = mailbox_obj.read(cursor, uid, mail_id, ['pem_body_text'])['pem_body_text']
+
+        inlined_html = '<html>\n<head></head>\n<body>\n<h1 style="border:1px solid black; font-weight:bolder">Peter</h1>\n<p style="color:red">Hej</p>\n</body>\n</html>\n'
+
+        self.assertEqual(pem_body_text, inlined_html)
