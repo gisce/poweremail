@@ -194,7 +194,7 @@
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('folder', '=', 'outbox')]</field>
+            <field name="domain">[('folder', '=', 'drafts')]</field>
         </record>
         <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_per_enviar">
             <field name="sequence" eval="1"/>
