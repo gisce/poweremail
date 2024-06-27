@@ -634,6 +634,8 @@ class poweremail_templates(osv.osv):
         if check:
             new_name = new_name + '_' + random.choice('abcdefghij') + random.choice('lmnopqrs') + random.choice('tuvwzyz')
         default.update({'name':new_name})
+        # Clean no to copy values
+        default.update({'ref_ir_act_window':False, 'ref_ir_value': False})
         return super(poweremail_templates, self).copy(cr, uid, id, default, context)
 
     def compute_pl(self,
