@@ -97,3 +97,19 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         })
         wiz = send_obj.browse(cursor, uid, wiz_id)
         self.assertEqual(wiz.priority, '2')
+
+    def test_remove_action_reference(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+        tmpl_id = self.create_template()
+        template = tmpl_obj.browse(cursor, uid, tmpl_id)
+        template.create_action_reference({})
+        template = tmpl_obj.browse(cursor, uid, tmpl_id)
+        self.assertTrue(template.ref_ir_act_window)
+        self.assertTrue(template.ref_ir_value)
+        template = tmpl_obj.browse(cursor, uid, tmpl_id)
+
+        template.remove_action_reference({})
+        self.assertFalse(template.ref_ir_act_window)
+        self.assertFalse(template.ref_ir_value)
