@@ -634,6 +634,8 @@ class poweremail_templates(osv.osv):
         if check:
             new_name = new_name + '_' + random.choice('abcdefghij') + random.choice('lmnopqrs') + random.choice('tuvwzyz')
         default.update({'name':new_name})
+        # Clean no to copy values
+        default.update({'ref_ir_act_window':False, 'ref_ir_value': False})
         return super(poweremail_templates, self).copy(cr, uid, id, default, context)
 
     def compute_pl(self,
@@ -1177,6 +1179,23 @@ class poweremail_templates(osv.osv):
             self.write(cursor, uid, ids, {
                 'ref_ir_value': ref_ir_value,
             }, context)
+
+    def remove_action_reference(self, cursor, uid, ids, context):
+        values_obj = self.pool.get('ir.values')
+        action_obj = self.pool.get('ir.actions.act_window')
+        template = self.pool.get('poweremail.templates').browse(
+            cursor, uid, ids[0]
+        )
+
+        if template.ref_ir_act_window:
+            action_id = template.ref_ir_act_window.id
+            template.write({'ref_ir_act_window': False})
+            action_obj.unlink(cursor, uid, action_id)
+
+        if template.ref_ir_value:
+            value_id = template.ref_ir_value.id
+            template.write({'ref_ir_value': False})
+            values_obj.unlink(cursor, uid, value_id)
 
 
 poweremail_templates()
