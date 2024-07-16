@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import sys
 import traceback
+from mako.exceptions import html_error_template
 
 from osv import osv, fields
 from ..poweremail_template import get_value
@@ -95,9 +96,11 @@ class poweremail_preview(osv.osv_memory):
                     field_value = getattr(template, "def_{}".format(field))
                 vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
             except Exception as e:
-                import traceback
-                tb = traceback.format_tb(sys.exc_info()[2])
-                vals[field] = ''.join(tb)
+                if field == 'body_text':
+                    vals[field] = html_error_template().render()
+                else:
+                    tb = traceback.format_tb(sys.exc_info()[2])
+                    vals[field] = '{}\n{}'.format(e.message, ''.join(tb))
                 vals['state'] = 'error'
 
         self.write(cr, uid, ids, vals, context=context)
