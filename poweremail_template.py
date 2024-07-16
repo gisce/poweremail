@@ -39,10 +39,12 @@ TEMPLATE_ENGINES = []
 from osv import osv, fields
 from tools.translate import _
 from tools.safe_eval import safe_eval
+from tools import config
 #Try and check the available templating engines
 from mako.template import Template  #For backward combatibility
 try:
     from mako.template import Template as MakoTemplate
+    from mako.lookup import TemplateLookup
     from mako import exceptions
     TEMPLATE_ENGINES.append(('mako', 'Mako Templates'))
 except:
@@ -193,13 +195,18 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 'db': cursor.dbname
             })
             if template.template_language == 'mako':
-                templ = MakoTemplate(message, input_encoding='utf-8')
+                addons_lookup = TemplateLookup(
+                    directories=[config['addons_path']], input_encoding='utf-8'
+                )
+                templ = MakoTemplate(message, input_encoding='utf-8', lookup=addons_lookup)
                 extra_render_values = env.get('extra_render_values', {}) or {}
                 values = {
                     'object': object,
                     'peobject': object,
                     'env': env,
                     'format_exceptions': True,
+                    'template': template,
+                    'lang': context.get('lang', config.get('default_lang', 'en_US')),
                 }
                 values.update(extra_render_values)
                 reply = templ.render_unicode(**values)
