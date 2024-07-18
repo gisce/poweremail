@@ -97,6 +97,24 @@
 			</field>
 		</record>
 
+		<record model="ir.ui.view" id="view_poweremail_mailbox_2_form">
+		    <field name="name">poweremail_mailbox.form_2</field>
+		    <field name="model">poweremail.mailbox</field>
+		    <field name="type">form</field>
+			<field name="version">2</field>
+			<field name="inherit_id" ref="poweremail_mailbox_form" />
+		    <field name="arch" type="xml">
+		       <data>
+				   <xpath expr="//field[@name='pem_body_text']" position="attributes">
+					   <attribute name="widget">html_preview</attribute>
+				   </xpath>
+				   <xpath expr="//field[@name='pem_body_html']" position="attributes">
+					   <attribute name="widget">html_preview</attribute>
+				   </xpath>
+			   </data>
+		    </field>
+		</record>
+
 		<!--8888888888888888888888888888888888 TREE VIEWS 8888888888888888888888888888888888888888-->
 		<!--ALL EMAILS-->
 		<record model="ir.ui.view" id="poweremail_all_emails_tree">
