@@ -122,7 +122,7 @@
             <field name="res_model">poweremail.mailbox</field>
             <field name="domain">[('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('folder','=','sent')]</field>
         </record>
-        <record model="ir.actions.act_window.view" id="action_poweremail_enviats_avui">
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_enviats_avui">
             <field name="sequence" eval="1"/>
             <field name="view_mode">graph</field>
             <field name="view_id" ref="view_poweremail_enviats_avui"/>
