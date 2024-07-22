@@ -73,6 +73,7 @@ import report
 import pooler
 from .poweremail_mailbox import _priority_selection
 from .poweremail_core import get_email_default_lang
+from .utils import Localizer
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -184,14 +185,12 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
             if not context:
                 context = {}
             ctx = context.copy()
-            ctx.update({'browse_reference': True})
-            object = pool.get(
-                template.object_name.model
-            ).browse(cursor, user, recid, ctx)
+            ctx['browse_reference'] = True
+            ctx['lang'] = context.get('lang', get_email_default_lang())
+            object = pool.get(template.object_name.model).simple_browse(cursor, user, recid, context=ctx)
             env = context.copy()
             env.update({
-                'user': pool.get('res.users').browse(cursor, user, user,
-                                                     context),
+                'user': pool.get('res.users').simple_browse(cursor, user, user, context=ctx),
                 'db': cursor.dbname
             })
             if template.template_language == 'mako':
@@ -201,12 +200,16 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 templ = MakoTemplate(message, input_encoding='utf-8', lookup=addons_lookup)
                 extra_render_values = env.get('extra_render_values', {}) or {}
                 values = {
+                    'pool': object.pool,
+                    'cursor': cursor,
+                    'uid': user,
                     'object': object,
                     'peobject': object,
                     'env': env,
                     'format_exceptions': True,
                     'template': template,
-                    'lang': context.get('lang', config.get('default_lang', 'en_US')),
+                    'lang': ctx['lang'],
+                    'localize': Localizer(cursor, user, ctx['lang'])
                 }
                 values.update(extra_render_values)
                 reply = templ.render_unicode(**values)
