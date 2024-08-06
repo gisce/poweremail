@@ -186,7 +186,9 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 context = {}
             ctx = context.copy()
             ctx['browse_reference'] = True
-            ctx['lang'] = context.get('lang', get_email_default_lang())
+            ctx['lang'] = context.get('lang', False)
+            if not ctx['lang']:
+                ctx['lang'] = get_email_default_lang()
             object = pool.get(template.object_name.model).simple_browse(cursor, user, recid, context=ctx)
             env = context.copy()
             env.update({

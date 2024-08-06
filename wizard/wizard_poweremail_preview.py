@@ -54,6 +54,7 @@ class poweremail_preview(osv.osv_memory):
         'body_text': fields.text('Body', readonly=True),
         'body_html': fields.text('Body', readonly=True),
         'report': fields.char('Report Name', size=100, readonly=True),
+        'env': fields.text('Extra scope variables'),
         'state': fields.selection([('init', 'Init'), ('end', 'End'), ('error', 'Error')], 'State'),
         'save_to_drafts_prev': fields.boolean('Save to Drafts',
                                          help="When automatically sending emails generated from"
@@ -67,7 +68,7 @@ class poweremail_preview(osv.osv_memory):
     }
 
     def action_generate_static_mail(self, cr, uid, ids, context=None):
-        wizard_values = self.read(cr, uid, ids, ['model_ref'], context=context)
+        wizard_values = self.read(cr, uid, ids, ['model_ref', 'env'], context=context)
 
         if context is None:
             context = {}
@@ -75,7 +76,8 @@ class poweremail_preview(osv.osv_memory):
             return {}
 
         vals = {}
-        model_name, record_id = wizard_values[0]['model_ref'].split(',')
+        wizard_values = wizard_values[0]
+        model_name, record_id = wizard_values['model_ref'].split(',')
         record_id = int(record_id)
         template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], context=context)
         # Search translated template
@@ -87,7 +89,9 @@ class poweremail_preview(osv.osv_memory):
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
 
         mail_fields = ['to', 'cc', 'bcc', 'subject', 'body_text', 'body_html', 'report']
-        ctx.update({'raise_exception': True})
+        ctx['raise_exception'] = True
+        if wizard_values['env']:
+            ctx.update(eval(wizard_values['env']))
         for field in mail_fields:
             try:
                 if field == 'report':

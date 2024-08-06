@@ -14,6 +14,7 @@
                     <field name="cc" colspan="2"/>
                     <field name="bcc" colspan="2"/>
                     <field name="subject" colspan="4"/>
+                    <field name="env" colspan="4" widget="codeeditor" widget_props="{'lang': 'json'}" height="100"/>
                     <notebook>
                         <page string="Body preview">
                             <field name="body_text" colspan="4" widget="html_preview" nolabel="1"/>
