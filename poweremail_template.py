@@ -215,6 +215,8 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 }
                 values.update(extra_render_values)
                 reply = templ.render_unicode(**values)
+                if reply == 'False':
+                    reply = False
             elif template.template_language == 'django':
                 templ = DjangoTemplate(message)
                 env['object'] = object
