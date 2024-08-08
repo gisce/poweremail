@@ -51,7 +51,7 @@ class poweremail_preview(osv.osv_memory):
         'cc': fields.char('CC', size=250, readonly=True),
         'bcc': fields.char('BCC', size=250, readonly=True),
         'subject': fields.char('Subject', size=200, readonly=True),
-        'lang': fields.char('Language', size=6, readonnly=True),
+        'lang': fields.char('Language', size=6, readonly=True),
         'body_text': fields.text('Body', readonly=True),
         'body_html': fields.text('Body', readonly=True),
         'report': fields.char('Report Name', size=100, readonly=True),
