@@ -94,7 +94,10 @@
                             <field name="file_name" colspan="2" />
                             <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]" />
                             <field name="attach_record_items" colspan="2"/>
-                            <field name="record_attachment_categories" attrs="{'invisible':[('attach_record_items', '=', False)]}"/>
+                            <group attrs="{'invisible':[('attach_record_items', '!=', True)]}" colspan="8">
+                                <newline/>
+                                <field name="record_attachment_categories" colspan="8"/>
+                            </group>
                             <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
                             <separator string="Static attachments" colspan="4"/>
                             <field name="ir_attachment_ids" colspan="4" nolabel="1"/>
