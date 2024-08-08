@@ -220,6 +220,8 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 env['object'] = object
                 env['peobject'] = object
                 reply = templ.render(Context(env))
+                if reply == 'False':
+                    reply = False
             return reply or False
         except Exception as e:
             if context.get('raise_exception', False):
