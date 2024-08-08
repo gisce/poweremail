@@ -960,7 +960,8 @@ class poweremail_templates(osv.osv):
                                  ('res_id', '=', record_id)]
 
                 if template.record_attachment_categories:
-                    attachment_sp.append([('category_id', 'in', template.record_attachment_categories)])
+                    template_categs = template.read(['record_attachment_categories'])[0]['record_attachment_categories']
+                    attachment_sp.append(('category_id', 'in', template_categs))
                 ids = attachment_obj.search(cursor, user, attachment_sp, context=context)
                 attachment_id.extend(ids)
 
