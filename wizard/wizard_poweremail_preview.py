@@ -88,7 +88,7 @@ class poweremail_preview(osv.osv_memory):
             ctx.update({'lang': lang})
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
 
-        vals = {'lang': lang}
+        vals = {'lang': str(lang)}
         mail_fields = ['to', 'cc', 'bcc', 'subject', 'body_text', 'body_html', 'report']
         ctx['raise_exception'] = True
         if wizard_values['env']:
