@@ -139,46 +139,8 @@ class poweremail_preview(osv.osv_memory):
             if not template:
                 raise Exception("The requested template could not be loaded")
 
-            from_account = template_obj.get_from_account_id_from_template(
-                cursor, uid, template.id, context=context
-            )
+            mailbox_id = template_obj.generate_mail(cursor, uid, template_id, model_id, context=context)
 
-            # Evaluates an expression and returns its value
-            # recid: ID of the target record under evaluation
-            # message: The expression to be evaluated
-            # template: BrowseRecord object of the current template
-            # return: Computed message (unicode) or u""
-
-            pem_too = get_value(
-                cursor, uid, model_id, message=template.def_to,
-                template=template, context=context
-            )
-            def_subject = get_value(
-                cursor, uid, model_id, message=template.def_subject,
-                template=template, context=context
-            )
-
-            body_text = get_value(
-                cursor, uid, model_id, message=template.def_body_text,
-                template=template, context=context
-            )
-
-            mail_vals = {
-                'pem_from': tools.ustr(from_account['name']) + \
-                            "<" + tools.ustr(from_account['email_id']) + ">",
-                'pem_to': pem_too,
-                'pem_cc': False,
-                'pem_bcc': False,
-                'pem_subject': def_subject,
-                'pem_body_text': body_text,
-                'pem_account_id': from_account['id'],
-                'priority': '1',
-                'state': 'na',
-                'mail_type': 'multipart/alternative',
-                'template_id': template_id
-            }
-
-            mailbox_id = mailbox_obj.create(cursor, uid, mail_vals)
             if wizard.save_to_drafts_prev:
                 mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
 

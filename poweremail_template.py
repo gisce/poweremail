@@ -524,6 +524,11 @@ class poweremail_templates(osv.osv):
                                              relation='ir.attachment',
                                              string='Attachments'),
         'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
+        'record_attachment_categories': fields.many2many('ir.attachment.category',
+                'template_attachment_category_rel',
+                'templ_id', 'categ_id',
+                string="Record attachment categories",
+                help="Only attach record attachments with the included categories in case there's any."),
         'model_data_name': fields.function(
             _get_model_data_name, string='Code',
             type='char', size=250, method=True,
@@ -951,10 +956,12 @@ class poweremail_templates(osv.osv):
         # vinculats als record_ids i afegirlos a la llista de attach_ids
         if template.attach_record_items:
             for record_id in record_ids:
-                ids = attachment_obj.search(cursor, user, [
-                    ('res_model', '=', template.object_name.model),
-                    ('res_id', '=', record_id)
-                ], context=context)
+                attachment_sp = [('res_model', '=', template.object_name.model),
+                                 ('res_id', '=', record_id)]
+
+                if template.record_attachment_categories:
+                    attachment_sp.append([('category_id', 'in', template.record_attachment_categories)])
+                ids = attachment_obj.search(cursor, user, attachment_sp, context=context)
                 attachment_id.extend(ids)
 
         attach_ids = attachment_obj.search(cursor, user, search_params, context=context)
