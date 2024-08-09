@@ -10,9 +10,10 @@
                 <form string="Power Email Preview">
                     <field name="state" invisible="1"/>
                     <field name="model_ref" colspan="4"/>
-                    <field name="to" colspan="4"/>
+                    <field name="to" colspan="2"/>
                     <field name="cc" colspan="2"/>
                     <field name="bcc" colspan="2"/>
+                    <field name="lang" colspan="2"/>
                     <field name="subject" colspan="4"/>
                     <field name="env" colspan="4" widget="codeeditor" widget_props="{'lang': 'json'}" height="100"/>
                     <notebook>

@@ -51,6 +51,7 @@ class poweremail_preview(osv.osv_memory):
         'cc': fields.char('CC', size=250, readonly=True),
         'bcc': fields.char('BCC', size=250, readonly=True),
         'subject': fields.char('Subject', size=200, readonly=True),
+        'lang': fields.char('Language', size=6, readonly=True),
         'body_text': fields.text('Body', readonly=True),
         'body_html': fields.text('Body', readonly=True),
         'report': fields.char('Report Name', size=100, readonly=True),
@@ -75,7 +76,6 @@ class poweremail_preview(osv.osv_memory):
         if not wizard_values:
             return {}
 
-        vals = {}
         wizard_values = wizard_values[0]
         model_name, record_id = wizard_values['model_ref'].split(',')
         record_id = int(record_id)
@@ -88,6 +88,7 @@ class poweremail_preview(osv.osv_memory):
             ctx.update({'lang': lang})
             template = self.pool.get('poweremail.templates').browse(cr, uid, context['active_id'], ctx)
 
+        vals = {'lang': str(lang)}
         mail_fields = ['to', 'cc', 'bcc', 'subject', 'body_text', 'body_html', 'report']
         ctx['raise_exception'] = True
         if wizard_values['env']:
