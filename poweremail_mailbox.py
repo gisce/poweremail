@@ -417,7 +417,7 @@ class PoweremailMailbox(osv.osv):
                             size=64),
             'pem_to':fields.char(
                             'Recepient (To)',
-                            size=250,),
+                            size=800,),
             'pem_cc':fields.char(
                             ' CC',
                             size=250),
