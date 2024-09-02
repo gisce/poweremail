@@ -71,8 +71,7 @@ except:
 import tools
 import report
 import pooler
-from .poweremail_mailbox import _priority_selection
-from .poweremail_core import get_email_default_lang
+from .poweremail_core import get_email_default_lang, _priority_selection
 from .utils import Localizer
 
 
@@ -1215,18 +1214,6 @@ class poweremail_templates(osv.osv):
 
 
 poweremail_templates()
-
-
-class PoweremailMailbox(osv.osv):
-    _inherit = 'poweremail.mailbox'
-    _columns = {
-        'template_id': fields.many2one(
-            'poweremail.templates', 'Template', readonly=True,
-        ),
-    }
-
-
-PoweremailMailbox()
 
 
 class poweremail_template_attachment(osv.osv):
