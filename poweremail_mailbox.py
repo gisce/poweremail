@@ -410,6 +410,9 @@ class PoweremailMailbox(osv.osv):
         return res_id
 
     _columns = {
+        'template_id': fields.many2one(
+            'poweremail.templates', 'Template', readonly=True,
+        ),
         'create_date': fields.datetime('Created date', readonly=True),
         'write_date': fields.datetime('Date modified', readonly=True),
             'pem_from':fields.char(
