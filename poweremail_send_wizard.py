@@ -55,14 +55,7 @@ class poweremail_send_wizard(osv.osv_memory):
         )
         logger = netsvc.Logger()
 
-        if template.enforce_from_account_by_company:
-            res = []
-            for account_for_company in template.enforce_from_account_by_company:
-                res.append(
-                    (account_for_company.id, '%s (%s)' % (account_for_company.name, account_for_company.email_id))
-                )
-            return res
-        elif template.enforce_from_account:
+        if template.enforce_from_account:
             return [(template.enforce_from_account.id, '%s (%s)' % (template.enforce_from_account.name, template.enforce_from_account.email_id))]
         elif (context.get('from', False) and
               isinstance(context.get('from'), int)):
@@ -421,6 +414,18 @@ class poweremail_send_wizard(osv.osv_memory):
             attachment_ids_templ.append(new_id)
         return attachment_ids_templ
 
+    def add_record_attachments(self, cursor, uid, template, src_rec_id, context=None):
+        attachment_ids = []
+        if template.attach_record_items:
+            attachment_o = self.pool.get('ir.attachment')
+            attachment_sp = [('res_model', '=', template.object_name.model),
+                             ('res_id', '=', src_rec_id)]
+
+            if template.record_attachment_categories:
+                attachment_sp.append(('category_id', 'in', [c.id for c in template.record_attachment_categories]))
+            attachment_ids = attachment_o.search(cursor, uid, attachment_sp, context=context)
+        return attachment_ids
+
     def create_partner_event(self, cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=None):
         if context is None:
             context = {}
@@ -523,6 +528,10 @@ class poweremail_send_wizard(osv.osv_memory):
             # Add template attachments
             attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
             attachment_ids.extend(attachment_ids_templ)
+            # Add record attachments
+            attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
+            attachment_ids.extend(attachment_ids_record)
+
             if attachment_ids:
                 mailbox_vals = {
                     'pem_attachments_ids': [[6, 0, attachment_ids]],

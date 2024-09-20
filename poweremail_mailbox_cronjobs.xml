@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data noupdate="1">
+        <!-- Totes les accions en mode bach en un sol cron -->
+        <record model="ir.cron" id="ir_cron_reenviar_emails_error" forcecreate="1">
+            <field name="name">Reenviar emails amb error</field>
+            <field name="active" eval="0"/>
+            <field name="user_id" ref="base.user_admin"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="0"/>
+            <field name="nextcall" eval="time.strftime('%Y-%m-%d 00:00:00')"/>
+            <field name="model" eval="'poweremail.mailbox'"/>
+            <field name="function" eval="'_cronjob_resend_emails_error'"/>
+            <field name="args" eval="()"/>
+        </record>
+    </data>
+</openerp>

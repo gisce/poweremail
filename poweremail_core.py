@@ -99,8 +99,7 @@ class poweremail_core_accounts(osv.osv):
         'smtpuname': fields.char('User Name',
                         size=120, required=False,
                         readonly=True, states={'draft':[('readonly', False)]}),
-        'smtppass': fields.char('Password',
-                        size=120, invisible=True,
+        'smtppass': fields.char('Password', size=120,
                         required=False, readonly=True,
                         states={'draft':[('readonly', False)]}),
         'smtptls': fields.boolean(
