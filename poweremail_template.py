@@ -538,6 +538,8 @@ class poweremail_templates(osv.osv):
             help="Model Data Name.",
             fnct_search=_get_model_data_name_search,
         ),
+        'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
+                                                                         " immediately without going throug outbox folder.")
     }
 
     _defaults = {
@@ -1125,14 +1127,26 @@ class poweremail_templates(osv.osv):
             # Generating email, attachments and event
             if not template.save_to_drafts:
                 pe_obj = self.pool.get('poweremail.mailbox')
+                send_immediately = template.send_immediately
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
-                    pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
+                    if send_immediately:
+                        pe_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
+                    else:
+                        pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         if len(mailbox_ids) > 1:
             return mailbox_ids
         elif mailbox_ids:
             return mailbox_ids[0]
         else:
             return False
+
+    def check_send_email_on_creation(self, cursor, uid, context=None):
+        if context is None:
+            context = {}
+        conf_o = self.pool.get('res.config')
+
+        send_on_creation = int(conf_o.get(cursor, uid, 'send_signature_email_on_creation', '0'))
+        return send_on_creation
 
     def create_action_reference(self, cursor, uid, ids, context):
         template = self.pool.get('poweremail.templates').browse(
