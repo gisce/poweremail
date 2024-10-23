@@ -1140,14 +1140,6 @@ class poweremail_templates(osv.osv):
         else:
             return False
 
-    def check_send_email_on_creation(self, cursor, uid, context=None):
-        if context is None:
-            context = {}
-        conf_o = self.pool.get('res.config')
-
-        send_on_creation = int(conf_o.get(cursor, uid, 'send_signature_email_on_creation', '0'))
-        return send_on_creation
-
     def create_action_reference(self, cursor, uid, ids, context):
         template = self.pool.get('poweremail.templates').browse(
             cursor, uid, ids[0]
