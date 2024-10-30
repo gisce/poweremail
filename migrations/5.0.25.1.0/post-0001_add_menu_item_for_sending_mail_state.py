@@ -12,7 +12,7 @@ def up(cursor, installed_version):
         "action_poweremail_sending_tree_company",
         "menu_action_poweremail_sending_tree_company",
         "menu_action_poweremail_sending_tree"
-    ], mode='update')
+    ], mode='init')
 
 
 def down(cursor, installed_version):
