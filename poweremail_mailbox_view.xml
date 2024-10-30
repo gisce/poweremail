@@ -324,6 +324,15 @@
 			<field name="view_id" ref="poweremail_sentbox_tree" />
 			<field name="domain">[('folder','=','sent'),('pem_user','=',uid)]</field>
 		</record>
+		<!--SENDING-->
+		<record model="ir.actions.act_window" id="action_poweremail_sending_tree">
+			<field name="name">Mailbox: Sending</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form,tree</field>
+			<field name="view_id" ref="poweremail_inbox_tree"/>
+			<field name="domain">[('state','=','sending')]</field>
+		</record>
 		<!--TRASH-->
 		<record model="ir.actions.act_window" id="action_poweremail_trash_tree">
 			<field name="name">Mailbox: Trash</field>
@@ -393,6 +402,16 @@
 			<field name="domain">[('folder','=','sent')]</field>
 			<field name="context">{'company':True}</field>
 		</record>
+		<!--SENDING-->
+		<record model="ir.actions.act_window" id="action_poweremail_sending_tree_company">
+			<field name="name">Mailbox: Sending</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form,tree</field>
+			<field name="view_id" ref="poweremail_inbox_tree"/>
+			<field name="domain">[('state','=','sending')]</field>
+			<field name="context">{'company':True}</field>
+		</record>
 		<!--TRASH-->
 		<record model="ir.actions.act_window" id="action_poweremail_trash_tree_company">
 			<field name="name">Mailbox: Trash</field>
@@ -423,6 +442,7 @@
 		<menuitem name="Outbox" id="menu_poweremail_outbox" parent="menu_poweremail_personal" action="action_poweremail_outbox_tree" />
 		<menuitem name="Follow-up" id="menu_poweremail_follow" parent="menu_poweremail_personal" action="action_poweremail_follow_tree" />
 		<menuitem name="Sent" id="menu_poweremail_sent" parent="menu_poweremail_personal" action="action_poweremail_sent_tree" />
+		<menuitem name="Sending" id="menu_action_poweremail_sending_tree" parent="poweremail.menu_poweremail_personal" action="action_poweremail_sending_tree" />
 		<menuitem name="Trash" id="menu_poweremail_trash" parent="menu_poweremail_personal" action="action_poweremail_trash_tree" />
 
 		<menuitem name="Company" id="menu_poweremail_company" parent="menu_poweremail_mailbox_all_main2" />
@@ -432,6 +452,7 @@
 		<menuitem name="Outbox" id="menu_poweremail_outbox_company" parent="menu_poweremail_company" action="action_poweremail_outbox_tree_company" />
 		<menuitem name="Follow-up" id="menu_poweremail_follow_company" parent="menu_poweremail_company" action="action_poweremail_follow_tree_company" />
 		<menuitem name="Sent" id="menu_poweremail_sent_company" parent="menu_poweremail_company" action="action_poweremail_sent_tree_company" />
+		<menuitem name="Sending" id="menu_action_poweremail_sending_tree_company" parent="poweremail.menu_poweremail_company" action="action_poweremail_sending_tree_company" />
 		<menuitem name="Trash" id="menu_poweremail_trash_company" parent="menu_poweremail_company" action="action_poweremail_trash_tree_company" />
 		<menuitem name="Error" id="menu_poweremail_error_company" parent="menu_poweremail_company" action="action_poweremail_error_tree_company" />
 
