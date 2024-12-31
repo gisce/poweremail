@@ -25,43 +25,6 @@
         </record>
     </data>
     <!-- FI Definicio del dashboard -->
-    <!-- Total emails enviats -->
-<data>
-        <record model="ir.ui.view" id="view_poweremail_total_emails_enviats">
-            <field name="name">Total Email enviats</field>
-            <field name="model">poweremail.mailbox</field>
-            <field name="type">graph</field>
-            <field name="version" eval="2"/>
-            <field name="arch" type="xml">
-                <graph type="indicator"
-                        icon="mail">
-                    <field name="id"/>
-                </graph>
-            </field>
-        </record>
-        <record model="ir.actions.act_window" id="action_total_emails_enviats">
-            <field name="name">Total Emails enviats</field>
-            <field name="type">ir.actions.act_window</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">graph,tree,form</field>
-            <field name="limit" eval="0"/>
-            <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('folder', '=', 'sent')]</field>
-        </record>
-        <record model="ir.actions.act_window.view" id="action_view_poweremail_total_emails_enviats">
-            <field name="sequence" eval="1"/>
-            <field name="view_mode">graph</field>
-            <field name="view_id" ref="view_poweremail_total_emails_enviats"/>
-            <field name="act_window_id" ref="action_total_emails_enviats"/>
-        </record>
-        <record model="board.board.line" id="board_poweremail_action_total_emails_enviats">
-            <field name="name">Total Emails enviats</field>
-            <field name="board_id" ref="poweremail_dashboard"/>
-            <field name="sequence" eval="0"/>
-            <field name="action_id" ref="action_total_emails_enviats"/>
-        </record>
-    </data>
-    <!-- FI Total emails enviats -->
     <!-- Emails en error -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_en_error">
@@ -176,7 +139,7 @@
     <!-- Emails per enviar-->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_per_enviar">
-            <field name="name">Email per enviar</field>
+            <field name="name">Emails per enviar</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
@@ -188,13 +151,13 @@
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_emails_per_enviar">
-            <field name="name">Email per enviar</field>
+            <field name="name">Emails per enviar</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('folder', '=', 'drafts')]</field>
+            <field name="domain">[('folder', '=', 'outbox')]</field>
         </record>
         <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_per_enviar">
             <field name="sequence" eval="1"/>
@@ -210,41 +173,41 @@
         </record>
     </data>
     <!-- FI mails per enviar -->
-    <!-- Emails enviats els últims 60 dies -->
+    <!-- Emails esborrany-->
     <data>
-        <record model="ir.ui.view" id="view_poweremail_emails_ultims_60_dies">
-            <field name="name">Emails enviats/rebuts els últims 60 dies </field>
+        <record model="ir.ui.view" id="view_poweremail_emails_esborrany">
+            <field name="name">Emails en esborrany</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
-                <graph type="bar" timerange="day">
-                    <field name="date_mail" axis="x"/>
-                    <field name="folder"  label="folder" operator="count" stacked="folder" axis="y"/>
+                <graph type="indicator"
+                        icon="mail">
+                    <field name="id"/>
                 </graph>
             </field>
         </record>
-        <record model="ir.actions.act_window" id="action_poweremail_emails_ultims_60_dies">
-            <field name="name">Emails enviats/rebuts els últims 60 dies</field>
+        <record model="ir.actions.act_window" id="action_poweremail_emails_esborrany">
+            <field name="name">Emails en esborrany</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
             <field name="limit" eval="0"/>
             <field name="res_model">poweremail.mailbox</field>
-            <field name="domain">[('folder','in',['sent','inbox']),('date_mail','>=',((datetime.datetime.today()-datetime.timedelta(days=60)).strftime('%Y-%m-%d')))]</field>
+            <field name="domain">[('folder', '=', 'drafts')]</field>
         </record>
-        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_ultims_60_dies">
+        <record model="ir.actions.act_window.view" id="action_view_poweremail_emails_esborrany">
             <field name="sequence" eval="1"/>
             <field name="view_mode">graph</field>
-            <field name="view_id" ref="view_poweremail_emails_ultims_60_dies"/>
-            <field name="act_window_id" ref="action_poweremail_emails_ultims_60_dies"/>
+            <field name="view_id" ref="view_poweremail_emails_esborrany"/>
+            <field name="act_window_id" ref="action_poweremail_emails_esborrany"/>
         </record>
-        <record model="board.board.line" id="board_poweremail_emails_ultims_60_dies">
-            <field name="name">Emails enviats/rebuts els últims 60 dies </field>
+        <record model="board.board.line" id="board_poweremail_emails_esborrany">
+            <field name="name">Emails en esborrany</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
-            <field name="action_id" ref="action_poweremail_emails_ultims_60_dies"/>
+            <field name="action_id" ref="action_poweremail_emails_esborrany"/>
         </record>
     </data>
-    <!-- Fi Emails enviats els últims 60 dies -->
+    <!-- Fi mails esborrany -->
 </openerp>
