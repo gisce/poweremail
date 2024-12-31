@@ -70,6 +70,7 @@
         'poweremail_serveraction_view.xml',
         'poweremail_dashboard.xml',
         'security/ir.model.access.csv',
+        'poweremail_mailbox_cronjobs.xml'
     ],
     "installable": True,
     "active": False,
