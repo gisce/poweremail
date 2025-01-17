@@ -311,7 +311,7 @@ class poweremail_templates(osv.osv):
             if arg[0][2]:
                 model_data_obj = self.pool.get('ir.model.data')
                 ids_model_data = model_data_obj.search(cursor, uid, [
-                    ('name', 'ilike', arg[0][2]),
+                    ('name', arg[0][1], arg[0][2]),
                     ('model',  '=', 'poweremail.templates')
                 ], context=context)
                 records = model_data_obj.read(cursor, uid, ids_model_data,
