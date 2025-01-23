@@ -39,10 +39,12 @@ TEMPLATE_ENGINES = []
 from osv import osv, fields
 from tools.translate import _
 from tools.safe_eval import safe_eval
+from tools import config
 #Try and check the available templating engines
 from mako.template import Template  #For backward combatibility
 try:
     from mako.template import Template as MakoTemplate
+    from mako.lookup import TemplateLookup
     from mako import exceptions
     TEMPLATE_ENGINES.append(('mako', 'Mako Templates'))
 except:
@@ -70,8 +72,8 @@ import tools
 import report
 import pooler
 from premailer import transform
-from .poweremail_mailbox import _priority_selection
-from .poweremail_core import get_email_default_lang
+from .poweremail_core import get_email_default_lang, _priority_selection
+from .utils import Localizer
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -183,32 +185,45 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
             if not context:
                 context = {}
             ctx = context.copy()
-            ctx.update({'browse_reference': True})
-            object = pool.get(
-                template.object_name.model
-            ).browse(cursor, user, recid, ctx)
+            ctx['browse_reference'] = True
+            ctx['lang'] = template._context.get('lang', context.get('lang', False))
+            if not ctx['lang']:
+                ctx['lang'] = get_email_default_lang()
+            object = pool.get(template.object_name.model).simple_browse(cursor, user, recid, context=ctx)
             env = context.copy()
             env.update({
-                'user': pool.get('res.users').browse(cursor, user, user,
-                                                     context),
+                'user': pool.get('res.users').simple_browse(cursor, user, user, context=ctx),
                 'db': cursor.dbname
             })
             if template.template_language == 'mako':
-                templ = MakoTemplate(message, input_encoding='utf-8')
+                addons_lookup = TemplateLookup(
+                    directories=[config['addons_path']], input_encoding='utf-8'
+                )
+                templ = MakoTemplate(message, input_encoding='utf-8', lookup=addons_lookup)
                 extra_render_values = env.get('extra_render_values', {}) or {}
                 values = {
+                    'pool': object.pool,
+                    'cursor': cursor,
+                    'uid': user,
                     'object': object,
                     'peobject': object,
                     'env': env,
                     'format_exceptions': True,
+                    'template': template,
+                    'lang': ctx['lang'],
+                    'localize': Localizer(cursor, user, ctx['lang'])
                 }
                 values.update(extra_render_values)
                 reply = templ.render_unicode(**values)
+                if reply == 'False':
+                    reply = False
             elif template.template_language == 'django':
                 templ = DjangoTemplate(message)
                 env['object'] = object
                 env['peobject'] = object
                 reply = templ.render(Context(env))
+                if reply == 'False':
+                    reply = False
             return reply or False
         except Exception as e:
             if context.get('raise_exception', False):
@@ -297,7 +312,7 @@ class poweremail_templates(osv.osv):
             if arg[0][2]:
                 model_data_obj = self.pool.get('ir.model.data')
                 ids_model_data = model_data_obj.search(cursor, uid, [
-                    ('name', 'ilike', arg[0][2]),
+                    ('name', arg[0][1], arg[0][2]),
                     ('model',  '=', 'poweremail.templates')
                 ], context=context)
                 records = model_data_obj.read(cursor, uid, ids_model_data,
@@ -514,6 +529,11 @@ class poweremail_templates(osv.osv):
                                              string='Attachments'),
         'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
         'inline': fields.boolean('Inline HTML', help=u"If the option is checked, the CSS will be inlined inside the HTML"),
+        'record_attachment_categories': fields.many2many('ir.attachment.category',
+                'template_attachment_category_rel',
+                'templ_id', 'categ_id',
+                string="Record attachment categories",
+                help="Only attach record attachments with the included categories in case there's any."),
         'model_data_name': fields.function(
             _get_model_data_name, string='Code',
             type='char', size=250, method=True,
@@ -637,6 +657,8 @@ class poweremail_templates(osv.osv):
         if check:
             new_name = new_name + '_' + random.choice('abcdefghij') + random.choice('lmnopqrs') + random.choice('tuvwzyz')
         default.update({'name':new_name})
+        # Clean no to copy values
+        default.update({'ref_ir_act_window':False, 'ref_ir_value': False})
         return super(poweremail_templates, self).copy(cr, uid, id, default, context)
 
     def compute_pl(self,
@@ -940,10 +962,12 @@ class poweremail_templates(osv.osv):
         # vinculats als record_ids i afegirlos a la llista de attach_ids
         if template.attach_record_items:
             for record_id in record_ids:
-                ids = attachment_obj.search(cursor, user, [
-                    ('res_model', '=', template.object_name.model),
-                    ('res_id', '=', record_id)
-                ], context=context)
+                attachment_sp = [('res_model', '=', template.object_name.model),
+                                 ('res_id', '=', record_id)]
+
+                if template.record_attachment_categories:
+                    attachment_sp.append(('category_id', 'in', [c.id for c in template.record_attachment_categories]))
+                ids = attachment_obj.search(cursor, user, attachment_sp, context=context)
                 attachment_id.extend(ids)
 
         attach_ids = attachment_obj.search(cursor, user, search_params, context=context)
@@ -1185,20 +1209,25 @@ class poweremail_templates(osv.osv):
                 'ref_ir_value': ref_ir_value,
             }, context)
 
+    def remove_action_reference(self, cursor, uid, ids, context):
+        values_obj = self.pool.get('ir.values')
+        action_obj = self.pool.get('ir.actions.act_window')
+        template = self.pool.get('poweremail.templates').browse(
+            cursor, uid, ids[0]
+        )
+
+        if template.ref_ir_act_window:
+            action_id = template.ref_ir_act_window.id
+            template.write({'ref_ir_act_window': False})
+            action_obj.unlink(cursor, uid, action_id)
+
+        if template.ref_ir_value:
+            value_id = template.ref_ir_value.id
+            template.write({'ref_ir_value': False})
+            values_obj.unlink(cursor, uid, value_id)
+
 
 poweremail_templates()
-
-
-class PoweremailMailbox(osv.osv):
-    _inherit = 'poweremail.mailbox'
-    _columns = {
-        'template_id': fields.many2one(
-            'poweremail.templates', 'Template', readonly=True,
-        ),
-    }
-
-
-PoweremailMailbox()
 
 
 class poweremail_template_attachment(osv.osv):
