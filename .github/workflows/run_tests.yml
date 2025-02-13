@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [ v5_backport ]
     types: [ labeled ]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request number"
+        required: true
 
 concurrency:
   group: ${{ github.workflow }}-${{  github.event.label.name || github.ref }}-${{ github.ref }}
@@ -15,11 +20,12 @@ env:
   SCRIPTS_PATH: /home/ci_replicante/ci_scripts
   HELP_PATH: /home/ci_replicante/help
   CI_REPO: ${{ github.repository }}
-  CI_PULL_REQUEST: ${{ github.event.number }}
+  CI_PULL_REQUEST: ${{ github.event.pull_request.number || inputs.pr_number }}
 
 jobs:
   tests:
-    if: ${{ (github.event_name == 'pull_request' && github.event.label.name == 'to be merged') }}
+    if: (github.event_name == 'pull_request' && github.event.label.name == 'to be merged') || github.event_name == 'workflow_dispatch'
+
     runs-on: [self-hosted, Buda]
     strategy:
       fail-fast: false
@@ -34,10 +40,19 @@ jobs:
         run: |
           . $SCRIPTS_PATH/update_branches.sh
 
+      - name: Get pr from workflow_dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          PR_JSON=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }})
+          echo "PR_HEAD_REF=$(echo $PR_JSON | jq -r '.head.ref')" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.RO_GITHUB_ACTIONS_REPOS }}
+
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v4
         with:
             path: custom_modules/${{ github.event.repository.name }}
+            ref: ${{ env.PR_HEAD_REF || github.ref }}
 
       - name: Checkout erp
         uses: actions/checkout@v4
