@@ -133,10 +133,18 @@ jobs:
           cd ${{ github.workspace }}
           rm -r *
 
+      - name: Obtener el SHA del último commit de la PR
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          PR_COMMIT_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/commits | jq -r '.[-1].sha')
+          echo "PR_COMMIT_SHA=$PR_COMMIT_SHA" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Set mergeable check (manual execution)
         if: github.event_name == 'workflow_dispatch' && steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
         run: |
-          gh api repos/${{ github.repository }}/statuses/${{ github.sha }} \
+          gh api repos/${{ github.repository }}/statuses/${{ env.PR_COMMIT_SHA }} \
             -f state="success" \
             -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             -f description="Tests passed - Mergeable" \
