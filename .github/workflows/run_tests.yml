@@ -11,7 +11,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{  github.event.label.name || github.ref }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{  github.event.label.name || inputs.pr_number }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
