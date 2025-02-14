@@ -32,6 +32,12 @@ jobs:
       matrix:
         python-version: [ "2.7.18", "3.11.4" ]
     steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          path: custom_modules/${{ github.event.repository.name }}
+          ref: refs/pull/${{ inputs.pr_number || github.event.pull_request.number }}/merge
+
       - name: 'Set build id'
         id: build_id
         run: echo "id=$(date +%s)" >> $GITHUB_OUTPUT
@@ -39,12 +45,6 @@ jobs:
       - name: Update repositories
         run: |
           . $SCRIPTS_PATH/update_branches.sh
-
-      - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
-        with:
-            path: custom_modules/${{ github.event.repository.name }}
-            ref: refs/pull/${{ inputs.pr_number || github.event.pull_request.number }}/merge
 
       - name: Checkout erp
         uses: actions/checkout@v4
