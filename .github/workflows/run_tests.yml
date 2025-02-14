@@ -40,19 +40,11 @@ jobs:
         run: |
           . $SCRIPTS_PATH/update_branches.sh
 
-#      - name: Get pr from workflow_dispatch
-#        if: github.event_name == 'workflow_dispatch'
-#        run: |
-#          PR_JSON=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }})
-#          echo "PR_HEAD_REF=$(echo $PR_JSON | jq -r '.head.ref')" >> $GITHUB_ENV
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.RO_GITHUB_ACTIONS_REPOS }}
-
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v4
         with:
             path: custom_modules/${{ github.event.repository.name }}
-            ref: refs/pull/${{ inputs.pr_number || github.event.pull_request.number }}/head
+            ref: refs/pull/${{ inputs.pr_number || github.event.pull_request.number }}/merge
 
       - name: Checkout erp
         uses: actions/checkout@v4
@@ -141,8 +133,19 @@ jobs:
           cd ${{ github.workspace }}
           rm -r *
 
+      - name: Set mergeable check (manual execution)
+        if: github.event_name == 'workflow_dispatch' && steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f state="success" \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f description="Tests passed - Mergeable" \
+            -f context="Mergeable"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Set mergeable check
-        if: steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
+        if: github.event_name != 'workflow_dispatch' && steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
         uses: ouzi-dev/commit-status-updater@v2
         with:
           name: "Mergeable"
