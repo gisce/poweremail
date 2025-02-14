@@ -71,6 +71,7 @@ except:
 import tools
 import report
 import pooler
+from premailer import transform
 from .poweremail_core import get_email_default_lang, _priority_selection
 from .utils import Localizer
 
@@ -527,6 +528,7 @@ class poweremail_templates(osv.osv):
                                              relation='ir.attachment',
                                              string='Attachments'),
         'attach_record_items': fields.boolean('Attach record items', select=2, help=u"Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots els adjunts del registre utilitzat per renderitzar el email."),
+        'inline': fields.boolean('Inline HTML', help=u"If the option is checked, the CSS will be inlined inside the HTML"),
         'record_attachment_categories': fields.many2many('ir.attachment.category',
                 'template_attachment_category_rel',
                 'templ_id', 'categ_id',
@@ -543,7 +545,8 @@ class poweremail_templates(osv.osv):
     _defaults = {
         'ref_ir_act_window': False,
         'ref_ir_value': False,
-        'def_priority': lambda *a: '1'
+        'def_priority': lambda *a: '1',
+        'inline': lambda *a: False
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
@@ -1063,6 +1066,10 @@ class poweremail_templates(osv.osv):
             'priority': template.def_priority,
             'template_id': template.id,
         }
+
+        if template.inline:
+            mailbox_values['pem_body_text'] = transform(mailbox_values['pem_body_text'])
+
         #Use signatures if allowed
         if template.use_sign:
             sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']

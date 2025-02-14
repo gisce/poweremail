@@ -134,6 +134,7 @@
                                 <field name="single_email" colspan="4"/>
                                 <field name="use_sign" colspan="4"/>
                                 <field name="save_to_drafts" colspan="4"/>
+                                <field name="inline" colspan="4"/>
                             </group>
                             <group>
                                 <separator colspan="4" string="Allowed User Groups" />

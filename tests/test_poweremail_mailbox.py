@@ -538,3 +538,105 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(len(mail_created_vals['pem_attachments_ids']), 2)
             self.assertIn(attachment_report_id, mail_created_vals['pem_attachments_ids'])
             self.assertIn(attachment_id, mail_created_vals['pem_attachments_ids'])
+
+    def test_save_to_mailbox_inlining(self):
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
+            send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
+
+            # Dummy value for an invoice id
+            fact_id = 6
+            # Agafem un template de prova per posar a l'attachment
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail'
+            )[1]
+
+            # Creem un wizard 'poweremail_send_wizard'
+            body_text = """
+<html>
+<style type="text/css">
+h1 { border:1px solid black }
+p { color:red;}
+</style>
+<h1 style="font-weight:bolder">Peter</h1>
+<p>Hej</p>
+</html>
+            """
+
+            wizard_vals = {
+                'rel_model_ref': fact_id,
+                'requested': 1,
+                'from': 1,
+                'attachment_ids': [],
+                'body_text': body_text,
+                'cc': False,
+                'body_html': False,
+                'bcc': False,
+                'priority': '1',
+                'to': 'example@example.org',
+                'state': 'single',
+                'ref_template': template_id,
+                'single_email': 0,
+                'rel_model': 301,
+                'signature': False,
+                'report': False,
+                'subject': 'Factura electricidad False',
+                'generated': False,
+                'full_success': False,
+            }
+
+            # Creem un mailbox
+            wizard_id = send_wizard_obj.create(cursor, uid, wizard_vals)
+
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@email',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            # Escribim el que necessitem als templates
+            template_vals = {
+                'enforce_from_account': pw_account_id,
+                'inline': True
+            }
+            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
+
+            mail_vals = {
+                'pem_from': 'test@email',
+                'pem_to': 'example@example.org',
+                'pem_cc': False,
+                'pem_bcc': False,
+                'pem_subject': 'Factura electricidad False',
+                'pem_body_text': body_text,
+                'pem_body_html': False,
+                'pem_account_id': 1,
+                'priority': '1',
+                'state': 'na',
+            }
+
+            mailbox_obj.create(cursor, uid, mail_vals)
+
+            context = {}
+            context['template_id'] = template_id
+            context['lang'] = False
+            context['src_rec_id'] = fact_id
+            context['tz'] = False
+            context['src_rec_ids'] = [fact_id]
+            context['active_ids'] = [fact_id]
+            context['type'] = 'out_invoice'
+            context['active_id'] = fact_id
+
+            inlined_html = '<html>\n<head></head>\n<body>\n<h1 style="border:1px solid black; font-weight:bolder">Peter</h1>\n<p style="color:red">Hej</p>\n</body>\n</html>\n'
+
+            mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
+            pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
+            self.assertEqual(pem_body_text, inlined_html)
