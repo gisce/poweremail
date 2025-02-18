@@ -364,7 +364,10 @@ class PoweremailMailbox(osv.osv):
         if not email:
             return False
 
-        emails = email.split(',')
+        emails = []
+        for mail in email.split(','):
+            emails += mail.split(';')
+
         if len(emails)>0:
             for email in emails:
                 if not get_validate_email(email.strip()):
@@ -407,12 +410,17 @@ class PoweremailMailbox(osv.osv):
         return res_id
 
     _columns = {
+        'template_id': fields.many2one(
+            'poweremail.templates', 'Template', readonly=True,
+        ),
+        'create_date': fields.datetime('Created date', readonly=True),
+        'write_date': fields.datetime('Date modified', readonly=True),
             'pem_from':fields.char(
                             'From',
                             size=64),
             'pem_to':fields.char(
                             'Recepient (To)',
-                            size=250,),
+                            size=800,),
             'pem_cc':fields.char(
                             ' CC',
                             size=250),
@@ -510,6 +518,19 @@ class PoweremailMailbox(osv.osv):
             args.append(('pem_account_id', 'in', users_company_accounts))
         return super(osv.osv, self).search(cr, uid, args, offset, limit,
                 order, context=context, count=count)
+
+    def _cronjob_resend_emails_error(self, cursor, uid, context=None):
+        if context is None:
+            context = {}
+
+        emails_ids = self.search(cursor, uid, [
+            ('history', 'like', '%None%'),
+            ('folder', '=', 'error')
+        ], context=context)
+
+        self.write(cursor, uid, emails_ids, {'state': 'na', 'folder': 'outbox'}, context=context)
+        self.historise(cursor, uid, emails_ids, _("Email will be sent again"), context=context)
+
 
 PoweremailMailbox()
 
