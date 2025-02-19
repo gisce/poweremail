@@ -926,6 +926,7 @@ class poweremail_templates(osv.osv):
         attachment_obj = self.pool.get('ir.attachment')
         mailbox_obj = self.pool.get('poweremail.mailbox')
         lang = get_value(cursor, user, record_ids[0], template.lang, template, context=context)
+        record_reference_ids = record_ids
         ctx = context.copy()
         if lang:
             ctx['lang'] = lang
@@ -934,7 +935,12 @@ class poweremail_templates(osv.osv):
             ctx['lang'] = tools.config.get('lang', 'en_US')
         attachment_id = []
         if template.report_template:
-            report_vals = self.create_report(cursor, user, template, record_ids, context=context)
+            if template.report_template_object_reference:
+                for record_id in record_ids:
+                    reference_ids = get_value(cursor, user, recid=record_id, message=template.report_template_object_reference, template=template, context=context)
+                    record_reference_ids += reference_ids
+
+            report_vals = self.create_report(cursor, user, template, record_reference_ids, context=context)
             result = report_vals[0]
             format = report_vals[1]
 
