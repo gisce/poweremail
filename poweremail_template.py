@@ -388,6 +388,7 @@ class poweremail_templates(osv.osv):
         'report_template':fields.many2one(
                 'ir.actions.report.xml',
                 'Report to send'),
+        'report_template_object_reference': fields.char('Reference of the report', size=300, required=False),
         #'report_template':fields.reference('Report to send',[('ir.actions.report.xml','Reports')],size=128),
         'allowed_groups':fields.many2many(
                 'res.groups',
