@@ -494,6 +494,31 @@ class poweremail_core_accounts(osv.osv):
             result['all'].extend(ids_as_list)
         return result
 
+    def get_not_debug_sender(self, account):
+        return SMTPSender(
+            host=account.smtpserver,
+            port=account.smtpport,
+            user=account.smtpuname,
+            passwd=account.smtppass,
+            tls=account.smtptls,
+            ssl=account.smtpssl
+        )
+
+    def get_sender(self, account):
+        sender = (
+            Sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass,
+                tls=account.smtptls,
+                ssl=account.smtpssl
+            )
+            if config.get('debug_mode', False)
+            else self.get_not_debug_sender(account)
+        )
+        return sender
+
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
         def create_qreu(headers, payload, **kwargs):
@@ -596,14 +621,7 @@ class poweremail_core_accounts(osv.osv):
                 extra_headers.pop('Organitzation')
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
-            with sender(
-                host=account.smtpserver,
-                port=account.smtpport,
-                user=account.smtpuname,
-                passwd=account.smtppass,
-                tls=account.smtptls,
-                ssl=account.smtpssl
-            ):
+            with self.get_sender(account): # Returns a Sender context from qreu
                 mail = Email()
                 try:
                     mail = create_qreu(
