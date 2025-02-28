@@ -937,6 +937,7 @@ class poweremail_templates(osv.osv):
         attachment_id = []
         if template.report_template:
             if template.report_template_object_reference:
+                record_reference_ids = []
                 for record_id in record_ids:
                     reference_ids = get_value(cursor, user, recid=record_id, message=template.report_template_object_reference, template=template, context=context)
                     record_reference_ids += reference_ids
