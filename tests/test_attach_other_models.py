@@ -11,7 +11,7 @@ class TestAttachOtherModels(testing.OOTestCase):
     """
 
     def setUp(self):
-        self.openerp.install_module('account_invoice_base')
+        self.openerp.install_module('giscedata_facturacio')
 
     def _create_account(self, cursor, uid, extra_vals=None):
         acc_obj = self.openerp.pool.get('poweremail.core_accounts')
@@ -40,7 +40,7 @@ class TestAttachOtherModels(testing.OOTestCase):
         conditions = extra_vals['conditions'] if 'conditions' in extra_vals else None
 
         if model and conditions:
-            report_template_object_reference_value = "get({model}).search({conditions})".format(
+            report_template_object_reference_value = "('{model}', {conditions})".format(
                 model=model,
                 conditions=conditions)
         else:
