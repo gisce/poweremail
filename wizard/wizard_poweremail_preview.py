@@ -140,7 +140,7 @@ class poweremail_preview(osv.osv_memory):
             if not template:
                 raise Exception("The requested template could not be loaded")
 
-            mailbox_id = template_obj.generate_mail(cursor, uid, template_id, model_id, context=context)
+            mailbox_id = template_obj.generate_mail_sync(cursor, uid, template_id, model_id, context=context)
 
             if wizard.save_to_drafts_prev:
                 mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
