@@ -547,7 +547,7 @@ class poweremail_templates(osv.osv):
         'ref_ir_value': False,
         'def_priority': lambda *a: '1',
         'inline': lambda *a: False,
-        'template_language': lambda *a: ('mako', 'Plantilles Mako'),
+        'template_language': lambda *a: 'mako',
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
