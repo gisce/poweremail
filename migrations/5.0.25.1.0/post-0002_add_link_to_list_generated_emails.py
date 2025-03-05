@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-
+
+from oopgrade.oopgrade import load_data_records
+from tools import config
+
+
+def up(cursor, installed_version):
+    if not installed_version or config.updating_all:
+        return
+
+    list_of_records = [
+        'link_all_same_templates', 'value_list_same_templates',
+    ]
+    load_data_records(
+        cursor, 'poweremail', 'poweremail_mailbox_view.xml',
+        list_of_records, mode='update')
+
+
+def down(cursor, installed_version):
+    pass
+
+
+migrate = up
