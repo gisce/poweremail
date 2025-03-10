@@ -455,25 +455,25 @@
 		<menuitem name="Sending" id="menu_action_poweremail_sending_tree_company" parent="poweremail.menu_poweremail_company" action="action_poweremail_sending_tree_company" />
 		<menuitem name="Trash" id="menu_poweremail_trash_company" parent="menu_poweremail_company" action="action_poweremail_trash_tree_company" />
 		<menuitem name="Error" id="menu_poweremail_error_company" parent="menu_poweremail_company" action="action_poweremail_error_tree_company" />
-	<!-- LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
-		<record model="ir.actions.act_window" id="link_all_same_templates">
-            <field name="name">List the mails generated with the same template</field>
-            <field name="src_model">poweremail.templates</field>
-            <field name="res_model">poweremail.mailbox</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('template_id', '=',active_id)]</field>
-            <field name="view_id" ref="poweremail_all_emails_tree"/>
-        </record>
-        <record id="value_list_same_templates" model="ir.values">
-            <field name="object" eval="1"/>
-            <field name="name">List the mails generated with the same template</field>
-            <field name="key2">client_action_relate</field>
-            <field name="key">action</field>
-            <field name="model">poweremail.templates</field>
-            <field name="value" eval="'ir.actions.act_window,'+str(ref('link_all_same_templates'))" />
-        </record>
-	<!-- END LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
+		<!-- LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
+		<record model="ir.actions.act_window" id="action_template_emails">
+			<field name="name">Template emails</field>
+			<field name="src_model">poweremail.templates</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+			<field name="domain">[('template_id', '=',active_id)]</field>
+			<field name="view_id" ref="poweremail_all_emails_tree"/>
+		</record>
+		<record id="value_list_same_templates" model="ir.values">
+			<field name="object" eval="1"/>
+			<field name="name">Template emails</field>
+			<field name="key2">client_action_relate</field>
+			<field name="key">action</field>
+			<field name="model">poweremail.templates</field>
+			<field name="value" eval="'ir.actions.act_window,'+str(ref('action_template_emails'))" />
+		</record>
+		<!-- END LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
 	</data>
 </openerp>
 
