@@ -31,6 +31,7 @@ import time
 import types
 import netsvc
 import six
+import sentry_sdk
 
 LOGGER = netsvc.Logger()
 
@@ -226,6 +227,8 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                     reply = False
             return reply or False
         except Exception as e:
+            msg = (_('An error occurred while rendering template id {}:  {}'.format(template.id, e.message)))
+            sentry_sdk.capture_message(msg, 'warning')
             if context.get('raise_exception', False):
                 raise
             else:
