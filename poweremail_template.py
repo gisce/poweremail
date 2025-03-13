@@ -78,14 +78,19 @@ from .utils import Localizer
 
 
 def send_on_create(self, cr, uid, vals, context=None):
+    if context is None:
+        context = {}
     oid = self.old_create(cr, uid, vals, context)
     for tid in set(self.template_hooks['soc']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on create
         if template.send_on_create:
+            ctx = context.copy()
+            ctx['src_rec_id'] = oid
+            ctx['src_model'] = template.object_name.model
             self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                [oid], context)
+                                                                [oid], context=ctx)
     return oid
 
 
