@@ -7,7 +7,7 @@
     -->
 <openerp>
     <data>
-        <record model="ir.ui.view" id="poweremail_template_attachment_form">
+    	<record model="ir.ui.view" id="poweremail_template_attachment_form">
             <field name="name">poweremail.template.attachment.form</field>
             <field name="model">poweremail.template.attachment</field>
             <field name="type">form</field>
@@ -72,7 +72,7 @@
                                 <!--
                                     I dont advice using the html widget
                                     because tinymce is interfering too
-                                    much with the html generated 
+                                    much with the html generated
 
                                     Sunday,30 May 2010:Enabling HTML as
                                     community votes for it
@@ -136,6 +136,16 @@
                                 <field name="save_to_drafts" colspan="4"/>
                                 <field name="inline" colspan="4"/>
                             </group>
+                            <field name="server_action" readonly="1" />
+                            <separator string="Attachments (Report to attach)"
+                                colspan="4" />
+                            <field name="file_name" colspan="2" />
+                            <field name="report_template" colspan="2"/>
+                            <field name="report_template_object_reference" colspan="2"/>
+                            <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
+                            <separator string="Log partner events"
+                                colspan="4" />
+                            <field name="partner_event" />
                             <group>
                                 <separator colspan="4" string="Allowed User Groups" />
                                 <field name="allowed_groups" string="Allowed User Groups" nolabel="1" colspan="4"/>
