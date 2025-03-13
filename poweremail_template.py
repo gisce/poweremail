@@ -391,6 +391,7 @@ class poweremail_templates(osv.osv):
         'report_template':fields.many2one(
                 'ir.actions.report.xml',
                 'Report to send'),
+        'report_template_object_reference': fields.char('Reference of the report', size=300, required=False),
         #'report_template':fields.reference('Report to send',[('ir.actions.report.xml','Reports')],size=128),
         'allowed_groups':fields.many2many(
                 'res.groups',
@@ -910,6 +911,30 @@ class poweremail_templates(osv.osv):
         (result, format) = service.create(cursor, user, record_ids, data, context=context)
         return (result, format)
 
+    def get_report_template_object_reference_ids(self, cursor, uid, record_id, value, context=None):
+        """
+        Evaluate the value of the field report_template_object_reference.
+        For example: ('giscedata.facturacio.factura', [('invoice_id', '=', record_id)]) from account.invoice template
+
+        :param cursor: DB cursor
+        :param uid: User ID
+        :param record_id: ID of the record to do the condition
+        :param value: Value of the field report_template_object_reference
+        :param context: Context
+
+        :return: rerturn the id from the condition in dmn
+        """
+        if context is None:
+            context = {}
+
+        value = eval(value)
+        dmn = value[1]
+        ref = value[0]
+        ref_obj = self.pool.get(ref)
+        res = ref_obj.search(cursor, uid, dmn, context=context)
+
+        return res
+
     def _generate_attach_reports(self, cursor, user, template, record_ids, mail, context=None):
         """
         Generate report to be attached and attach it
@@ -930,6 +955,7 @@ class poweremail_templates(osv.osv):
         attachment_obj = self.pool.get('ir.attachment')
         mailbox_obj = self.pool.get('poweremail.mailbox')
         lang = get_value(cursor, user, record_ids[0], template.lang, template, context=context)
+        record_reference_ids = record_ids
         ctx = context.copy()
         if lang:
             ctx['lang'] = lang
@@ -938,7 +964,13 @@ class poweremail_templates(osv.osv):
             ctx['lang'] = tools.config.get('lang', 'en_US')
         attachment_id = []
         if template.report_template:
-            report_vals = self.create_report(cursor, user, template, record_ids, context=context)
+            if template.report_template_object_reference:
+                record_reference_ids = []
+                for record_id in record_ids:
+                    reference_ids = self.get_report_template_object_reference_ids(cursor, user, record_id, template.report_template_object_reference, context=context)
+                    record_reference_ids += reference_ids
+
+            report_vals = self.create_report(cursor, user, template, record_reference_ids, context=context)
             result = report_vals[0]
             format = report_vals[1]
 
