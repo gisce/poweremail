@@ -540,6 +540,21 @@ class poweremail_send_wizard(osv.osv_memory):
             attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
             attachment_ids.extend(attachment_ids_record)
 
+            if context.get('attachment', False):
+                for attch in context['attachment']:
+                    attachment_obj = self.pool.get('ir.attachment')
+                    name = attch['name']
+                    content = attch['content']
+                    attach_id = attachment_obj.create(cr, uid, {
+                        'description': name,
+                        'name': name,
+                        'datas_fname': name,
+                        'datas': content,
+                        'res_model': 'poweremail.mailbox',
+                        'res_id': mail_id
+                    })
+                    attachment_ids.append(attach_id)
+
             if attachment_ids:
                 mailbox_vals = {
                     'pem_attachments_ids': [[6, 0, attachment_ids]],
