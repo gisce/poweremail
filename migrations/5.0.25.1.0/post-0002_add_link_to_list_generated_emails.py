@@ -9,7 +9,8 @@ def up(cursor, installed_version):
         return
 
     list_of_records = [
-        'action_template_emails', 'value_list_same_templates',
+        'action_template_emails',
+        'value_template_emails',
     ]
     load_data_records(
         cursor, 'poweremail', 'poweremail_mailbox_view.xml',

@@ -465,7 +465,7 @@
 			<field name="domain">[('template_id', '=',active_id)]</field>
 			<field name="view_id" ref="poweremail_all_emails_tree"/>
 		</record>
-		<record id="value_list_same_templates" model="ir.values">
+		<record id="value_template_emails" model="ir.values">
 			<field name="object" eval="1"/>
 			<field name="name">Template emails</field>
 			<field name="key2">client_action_relate</field>
