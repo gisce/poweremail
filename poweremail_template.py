@@ -1234,7 +1234,15 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
 
-        url = 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208'
+        lang_urls = {
+            'en': 'https://rfc.gisce.net/t/configure-email-template-poweremail-en/2209',
+            'es': 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208',
+        }
+
+        lang_code = context.get('lang', 'en').split('_')[0]
+
+        url = lang_urls.get(lang_code, lang_urls['en'])
+
         return {
             'type': 'ir.actions.act_url',
             'url': url,
