@@ -1230,6 +1230,16 @@ class poweremail_templates(osv.osv):
             template.write({'ref_ir_value': False})
             values_obj.unlink(cursor, uid, value_id)
 
+    def link_additional_info(self, cursor, uid, ids, context=None):
+        if context is None:
+            context = {}
+
+        url = 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208'
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
 
 poweremail_templates()
 
