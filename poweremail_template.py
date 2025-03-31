@@ -1239,7 +1239,11 @@ class poweremail_templates(osv.osv):
             'es': 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208',
         }
 
-        lang_code = context.get('lang', 'en').split('_')[0]
+        lang_code = context.get('lang', 'en')
+        if isinstance(lang_code, str):
+            lang_code = lang_code.split('_')[0]
+        else:
+            lang_code = 'en'
 
         url = lang_urls.get(lang_code, lang_urls['en'])
 
