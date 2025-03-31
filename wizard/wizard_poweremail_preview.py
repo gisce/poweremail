@@ -8,6 +8,7 @@ from osv import osv, fields
 from ..poweremail_template import get_value
 from tools.translate import _
 import tools
+from premailer import transform
 
 
 class poweremail_preview(osv.osv_memory):
@@ -99,7 +100,14 @@ class poweremail_preview(osv.osv_memory):
                     field_value = template.file_name
                 else:
                     field_value = getattr(template, "def_{}".format(field))
-                vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
+
+                if field == 'body_html':
+                    body_text = get_value(
+                        cr, uid, record_id, field_value, template, ctx
+                    )
+                    vals[field] = transform(body_text)
+                else:
+                    vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
             except Exception as e:
                 if field == 'body_text':
                     vals[field] = html_error_template().render()
