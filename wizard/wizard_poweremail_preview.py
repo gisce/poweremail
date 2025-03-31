@@ -101,11 +101,15 @@ class poweremail_preview(osv.osv_memory):
                 else:
                     field_value = getattr(template, "def_{}".format(field))
 
-                if field == 'body_html':
+                if field == 'body_text':
                     body_text = get_value(
                         cr, uid, record_id, field_value, template, ctx
                     )
-                    vals[field] = transform(body_text)
+
+                    if template.inline:
+                        vals[field] = transform(body_text)
+                    else:
+                        vals[field] = body_text
                 else:
                     vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
             except Exception as e:
