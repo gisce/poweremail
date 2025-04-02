@@ -143,7 +143,7 @@ class poweremail_preview(osv.osv_memory):
             ctx = context.copy()
             ctx['src_rec_id'] = model_id
             ctx['src_model'] = template.object_name.model
-            mailbox_id = template_obj.generate_mail(cursor, uid, template_id, model_id, context=ctx)
+            mailbox_id = template_obj.generate_mail_sync(cursor, uid, template_id, model_id, context=ctx)
 
             if wizard.save_to_drafts_prev:
                 mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
