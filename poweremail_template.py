@@ -78,14 +78,19 @@ from .utils import Localizer
 
 
 def send_on_create(self, cr, uid, vals, context=None):
+    if context is None:
+        context = {}
     oid = self.old_create(cr, uid, vals, context)
     for tid in set(self.template_hooks['soc']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on create
         if template.send_on_create:
+            ctx = context.copy()
+            ctx['src_rec_id'] = oid
+            ctx['src_model'] = template.object_name.model
             self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                [oid], context)
+                                                                [oid], context=ctx)
     return oid
 
 
@@ -1182,11 +1187,12 @@ class poweremail_templates(osv.osv):
             mailbox_id = self._generate_mailbox_item_from_template(cursor, user, template, record_id, context=context)
             mailbox_ids.append(mailbox_id)
             mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
-            if template.single_email and len(report_record_ids) > 1:
-                # The optional attachment will be generated as a single file for all these records
-                self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
-            else:
-                self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
+            if context.get('add_attachments', True):
+                if template.single_email and len(report_record_ids) > 1:
+                    # The optional attachment will be generated as a single file for all these records
+                    self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
+                else:
+                    self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
             # Create a partner event
             cursor.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
             mail_gateway = cursor.fetchall()
