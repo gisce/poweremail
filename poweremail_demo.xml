@@ -8,7 +8,7 @@
 			<field name="model_int_name">res.users</field>
 			<field eval="0" name="use_filter"/>
 			<field name="file_name">${object.number}</field>
-			<field name="def_to">${object.address_invoice_id.email}</field>
+			<field name="def_to">${object.address_id.email}</field>
 			<field eval="0" name="auto_email"/>
 			<field eval="0" name="single_email"/>
 			<field eval="0" name="use_sign"/>
