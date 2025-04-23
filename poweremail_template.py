@@ -232,7 +232,7 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                     reply = False
             return reply or False
         except Exception as e:
-            msg = (_('An error occurred while rendering template id {}:  {}'.format(template.id, e.message)))
+            msg = (_('An error occurred while rendering template id {}:  {}'.format(template.id, str(e))))
             sentry_sdk.capture_message(msg, 'warning')
             if context.get('raise_exception', False):
                 raise
