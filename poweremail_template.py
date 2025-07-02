@@ -1089,9 +1089,29 @@ class poweremail_templates(osv.osv):
         return res
 
     def get_mailbox_values(self, cursor, user, template, record_id, context=None):
+        if context is None:
+            context = {}
+
         users_obj = self.pool.get('res.users')
 
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
+        # Millor compatibilitat amb multicompany: si el objecte te el camp "company_id" o "company" el passem per context
+        # per decidir millor desde on enviem el correu
+        ctx_company = context.copy()
+        if not ctx_company.get("company_id") and template.object_name:
+            record_model = self.pool.get(template.object_name.model)
+            if record_model:
+                record_model_fields = record_model._columns.keys()
+                if 'company_id' in record_model_fields:
+                    company_field = 'company_id'
+                elif 'company' in record_model_fields:
+                    company_field = 'company'
+                else:
+                    company_field = False
+                if company_field:
+                    record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
+                    if record_company:
+                        ctx_company['company_id'] = record_company[0]
+        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
         ctx.update({
