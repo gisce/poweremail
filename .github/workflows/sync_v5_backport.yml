@@ -1,0 +1,25 @@
+name: Sync v5_backport with main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PUB_MASTER_PUSH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Push changes to v5_backport
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          git fetch --all
+          git checkout v5_backport
+          git reset --hard origin/main
+          git push --force origin v5_backport

@@ -2,7 +2,7 @@ name: Deploy branches
 
 on:
   push:
-    branches: [ v5_backport ]
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}

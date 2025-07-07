@@ -8,6 +8,7 @@ from osv import osv, fields
 from ..poweremail_template import get_value
 from tools.translate import _
 import tools
+from premailer import transform
 
 
 class poweremail_preview(osv.osv_memory):
@@ -99,7 +100,13 @@ class poweremail_preview(osv.osv_memory):
                     field_value = template.file_name
                 else:
                     field_value = getattr(template, "def_{}".format(field))
-                vals[field] = get_value(cr, uid, record_id, field_value, template, ctx)
+
+                vals[field] = get_value(
+                    cr, uid, record_id, field_value, template, ctx
+                )
+                if field == 'body_text' and template.inline:
+                    vals[field] = transform(vals[field])
+
             except Exception as e:
                 if field == 'body_text':
                     vals[field] = html_error_template().render()
@@ -140,7 +147,10 @@ class poweremail_preview(osv.osv_memory):
             if not template:
                 raise Exception("The requested template could not be loaded")
 
-            mailbox_id = template_obj.generate_mail(cursor, uid, template_id, model_id, context=context)
+            ctx = context.copy()
+            ctx['src_rec_id'] = model_id
+            ctx['src_model'] = template.object_name.model
+            mailbox_id = template_obj.generate_mail_sync(cursor, uid, template_id, model_id, context=ctx)
 
             if wizard.save_to_drafts_prev:
                 mailbox_obj.write(cursor, uid, mailbox_id, {'folder': 'drafts'}, context=context)
