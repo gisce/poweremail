@@ -1100,7 +1100,7 @@ class poweremail_templates(osv.osv):
         if not ctx_company.get("company_id") and template.object_name:
             record_model = self.pool.get(template.object_name.model)
             if record_model:
-                record_model_fields = record_model._columns.keys()
+                record_model_fields = record_model.fields_get(cursor, user).keys()
                 if 'company_id' in record_model_fields:
                     company_field = 'company_id'
                 elif 'company' in record_model_fields:
