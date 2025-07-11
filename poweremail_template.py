@@ -31,6 +31,7 @@ import time
 import types
 import netsvc
 import six
+import sentry_sdk
 
 LOGGER = netsvc.Logger()
 
@@ -77,14 +78,19 @@ from .utils import Localizer
 
 
 def send_on_create(self, cr, uid, vals, context=None):
+    if context is None:
+        context = {}
     oid = self.old_create(cr, uid, vals, context)
     for tid in set(self.template_hooks['soc']):
         template = self.pool.get('poweremail.templates').browse(cr, uid, tid,
                                                                 context)
         # Ensure it's still configured to send on create
         if template.send_on_create:
+            ctx = context.copy()
+            ctx['src_rec_id'] = oid
+            ctx['src_model'] = template.object_name.model
             self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                [oid], context)
+                                                                [oid], context=ctx)
     return oid
 
 
@@ -226,6 +232,8 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                     reply = False
             return reply or False
         except Exception as e:
+            msg = (_('An error occurred while rendering template id {}:  {}'.format(template.id, str(e))))
+            sentry_sdk.capture_message(msg, 'warning')
             if context.get('raise_exception', False):
                 raise
             else:
@@ -949,8 +957,6 @@ class poweremail_templates(osv.osv):
         """
         if context is None:
             context = {}
-        attachment_obj = self.pool.get('ir.attachment')
-        mailbox_obj = self.pool.get('poweremail.mailbox')
         lang = get_value(cursor, user, record_ids[0], template.lang, template, context=context)
         record_reference_ids = record_ids
         ctx = context.copy()
@@ -959,7 +965,16 @@ class poweremail_templates(osv.osv):
             template = self.browse(cursor, user, template.id, context=ctx)
         elif 'lang' not in ctx:
             ctx['lang'] = tools.config.get('lang', 'en_US')
-        attachment_id = []
+
+        if template.report_template:
+            self.set_dynamic_attachments(cursor, user, template, mail, record_ids, context=context)
+
+        self.set_static_attachments(cursor, user, template, mail, record_ids, ctx['lang'], context=context)
+
+        return True
+
+    def get_dynamic_attachment(self, cursor, user, template, record_ids, context=None):
+        res = {}
         if template.report_template:
             if template.report_template_object_reference:
                 record_reference_ids = []
@@ -968,54 +983,104 @@ class poweremail_templates(osv.osv):
                     record_reference_ids += reference_ids
 
             report_vals = self.create_report(cursor, user, template, record_reference_ids, context=context)
-            result = report_vals[0]
-            format = report_vals[1]
+            res = {
+                'file': base64.b64encode(report_vals[0]),
+                'extension': report_vals[1]
+            }
+        return res
 
+    def set_dynamic_attachments(self, cursor, user, template, mail, record_ids, context=None):
+        if context is None:
+            context = {}
+        attachment_obj = self.pool.get('ir.attachment')
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+
+        res = False
+        dynamic_attachment = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
+
+        if dynamic_attachment:
             new_att_vals = {
                 'name': mail.pem_subject + ' (Email Attachment)',
-                'datas': base64.b64encode(result),
+                'datas': dynamic_attachment['file'],
                 'datas_fname': tools.ustr(
                     get_value(cursor, user, record_ids[0], template.file_name, template, context=context) or 'Report'
-                ) + "." + format,
+                ) + "." + dynamic_attachment['extension'],
                 'description': mail.pem_subject or "No Description",
                 'res_model': 'poweremail.mailbox',
                 'res_id': mail.id
             }
-            attachment_id.append(
-                attachment_obj.create(cursor, user, new_att_vals, context=context)
-            )
+            attachment_id = attachment_obj.create(cursor, user, new_att_vals, context=context)
+            mailbox_vals = {
+                'pem_attachments_ids': [[6, 0, [attachment_id]]],
+                'mail_type': 'multipart/mixed'
+            }
+            res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
+        return res
+
+    def get_static_attachments_ids_from_record(self, cursor, user, template, record_ids, context=None):
+        # SI el template te el camp nou "enviar adjunts del regtistre per email" a True, s'ha de buscar els adjunts
+        # vinculats als record_ids i afegirlos a la llista de attach_ids
+        attachment_obj = self.pool.get('ir.attachment')
+        attachment_ids = []
+
+        for record_id in record_ids:
+            attachment_sp = [
+                ('res_model', '=', template.object_name.model),
+                ('res_id', '=', record_id)
+            ]
+            if template.record_attachment_categories:
+                attachment_sp.append(
+                    ('category_id', 'in', [c.id for c in template.record_attachment_categories])
+                )
+            attachment_ids = attachment_obj.search(cursor, user, attachment_sp, context=context)
+        return attachment_ids
+
+    def get_static_attachments_ids_from_template(self, cursor, user, template, lang, context=None):
+        if context is None:
+            context = {}
+        attachment_obj = self.pool.get('ir.attachment')
         search_params = [
             ('res_model', '=', 'poweremail.templates'),
             ('res_id', '=', template.id),
         ]
         if lang:
             search_params += [('datas_fname', 'ilike', '%%.%s.%%' % lang)]
+        res = attachment_obj.search(cursor, user, search_params, context=context)
+        return res
 
-        # SI el template te el camp nou "enviar adjunts del regtistre per email" a True, s'ha de buscar els adjunts
-        # vinculats als record_ids i afegirlos a la llista de attach_ids
+    def get_static_attachments_ids(self, cursor, user, template, record_ids, lang, context=None):
+        attachment_ids = []
         if template.attach_record_items:
-            for record_id in record_ids:
-                attachment_sp = [('res_model', '=', template.object_name.model),
-                                 ('res_id', '=', record_id)]
+            attachment_ids += self.get_static_attachments_ids_from_record(
+                cursor, user, template, record_ids, context=context
+            )
+        attachment_ids += self.get_static_attachments_ids_from_template(
+            cursor, user, template, lang, context=context
+        )
+        return attachment_ids
 
-                if template.record_attachment_categories:
-                    attachment_sp.append(('category_id', 'in', [c.id for c in template.record_attachment_categories]))
-                ids = attachment_obj.search(cursor, user, attachment_sp, context=context)
-                attachment_id.extend(ids)
+    def set_static_attachments(self, cursor, user, template, mail, record_ids, lang, context=None):
+        if context is None:
+            context = {}
+        attachment_obj = self.pool.get('ir.attachment')
+        mailbox_obj = self.pool.get('poweremail.mailbox')
 
-        attach_ids = attachment_obj.search(cursor, user, search_params, context=context)
-        for attach in attachment_obj.browse(cursor, user, attach_ids, context=context):
+        attachment_ids = self.get_static_attachments_ids(cursor, user, template, record_ids, lang, context=context)
+        attachments = attachment_obj.simple_browse(cursor, user, attachment_ids, context=context)
+
+        new_attachment_ids = []
+        for attachment in attachments:
             attachment_vals = {
                 'res_model': 'poweremail.mailbox',
                 'res_id': mail.id,
-                'name': attach.name.replace('.%s' % ctx['lang'], ''),
-                'datas_fname': attach.datas_fname.replace('.%s' % ctx['lang'], '')
+                'name': attachment.name.replace('.%s' % lang, ''),
+                'datas_fname': attachment.datas_fname.replace('.%s' % lang, '')
             }
-            new_id = attachment_obj.copy(cursor, user, attach.id, attachment_vals, context=context)
-            attachment_id.append(new_id)
-        if attachment_id:
+            new_id = attachment_obj.copy(cursor, user, attachment.id, attachment_vals, context=context)
+            new_attachment_ids.append(new_id)
+        if new_attachment_ids:
             mailbox_vals = {
-                'pem_attachments_ids': [[6, 0, attachment_id]],
+                'pem_attachments_ids': [[6, 0, new_attachment_ids]],
                 'mail_type': 'multipart/mixed'
             }
             mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
@@ -1055,26 +1120,30 @@ class poweremail_templates(osv.osv):
             return res
         return res
 
-    def _generate_mailbox_item_from_template(self, cursor, user, template, record_id, context=None):
-        """
-        Generates an email from the template for
-        record record_id of target object
-
-        @param cursor: Database Cursor
-        @param user: ID of User
-        @param template: Browse record of
-                         template
-        @param record_id: ID of the target model
-                          for which this mail has
-                          to be generated
-        @return: ID of created object
-        """
+    def get_mailbox_values(self, cursor, user, template, record_id, context=None):
         if context is None:
             context = {}
-        mailbox_obj = self.pool.get('poweremail.mailbox')
+
         users_obj = self.pool.get('res.users')
 
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
+        # Millor compatibilitat amb multicompany: si el objecte te el camp "company_id" o "company" el passem per context
+        # per decidir millor desde on enviem el correu
+        ctx_company = context.copy()
+        if not ctx_company.get("company_id") and template.object_name:
+            record_model = self.pool.get(template.object_name.model)
+            if record_model:
+                record_model_fields = record_model.fields_get(cursor, user).keys()
+                if 'company_id' in record_model_fields:
+                    company_field = 'company_id'
+                elif 'company' in record_model_fields:
+                    company_field = 'company'
+                else:
+                    company_field = False
+                if company_field:
+                    record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
+                    if record_company:
+                        ctx_company['company_id'] = record_company[0]
+        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
         ctx.update({
@@ -1111,6 +1180,27 @@ class poweremail_templates(osv.osv):
                     mailbox_values['pem_body_text'] += "\n--\n"+sign
                 if mailbox_values['pem_body_html']:
                     mailbox_values['pem_body_html'] += sign
+
+        return mailbox_values
+
+    def _generate_mailbox_item_from_template(self, cursor, user, template, record_id, context=None):
+        """
+        Generates an email from the template for
+        record record_id of target object
+
+        @param cursor: Database Cursor
+        @param user: ID of User
+        @param template: Browse record of
+                         template
+        @param record_id: ID of the target model
+                          for which this mail has
+                          to be generated
+        @return: ID of created object
+        """
+        if context is None:
+            context = {}
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        mailbox_values = self.get_mailbox_values(cursor, user, template, record_id, context=context)
         mailbox_values.update(context.get("extra_vals", {}))
         mailbox_id = mailbox_obj.create(cursor, user, mailbox_values, context=context)
         return mailbox_id
@@ -1149,11 +1239,12 @@ class poweremail_templates(osv.osv):
             mailbox_id = self._generate_mailbox_item_from_template(cursor, user, template, record_id, context=context)
             mailbox_ids.append(mailbox_id)
             mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
-            if template.single_email and len(report_record_ids) > 1:
-                # The optional attachment will be generated as a single file for all these records
-                self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
-            else:
-                self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
+            if context.get('add_attachments', True):
+                if template.single_email and len(report_record_ids) > 1:
+                    # The optional attachment will be generated as a single file for all these records
+                    self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
+                else:
+                    self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
             # Create a partner event
             cursor.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
             mail_gateway = cursor.fetchall()

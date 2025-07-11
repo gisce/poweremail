@@ -33,6 +33,90 @@
 			<field name="target">new</field>
 			<field name="context">{'ids':active_id}</field>
 		</record>
+		
+		<!-- Poweremail account indicators -->
+		<!-- Errors -->
+		<record model="ir.actions.act_window" id="action_poweremail_mailbox_error">
+		    <field name="name">Emails in error folder</field>
+		    <field name="type">ir.actions.act_window</field>
+		    <field name="res_model">poweremail.mailbox</field>
+		    <field name="view_type">form</field>
+			<field name="domain">[('folder','=','error'),('pem_account_id','=',active_id)]</field>
+			<field name="context">{}</field>
+		    <field name="view_mode">graph,tree,form</field>
+		</record>
+
+		<record model="ir.ui.view" id="view_poweremail_mailbox_error_graph">
+		    <field name="name">poweremail_mailbox_error.graph</field>
+		    <field name="model">poweremail.mailbox</field>
+		    <field name="type">graph</field>
+		    <field name="arch" type="xml">
+				<graph type="indicator" color="green:value==0;red:value&gt;0;" icon="check-circle:value==0;exclamation-circle:value>0;"/>
+		    </field>
+		</record>
+
+		<record model="ir.actions.act_window.view" id="action_view_poweremail_mailbox_error_graph">
+		    <field name="view_id" ref="view_poweremail_mailbox_error_graph" />
+			<field name="view_mode">graph</field>
+			<field name="act_window_id" ref="action_poweremail_mailbox_error" />
+		</record>
+
+		<!-- To sent -->
+		<record model="ir.actions.act_window" id="action_poweremail_mailbox_to_sent">
+		    <field name="name">Emails to sent</field>
+		    <field name="type">ir.actions.act_window</field>
+		    <field name="res_model">poweremail.mailbox</field>
+		    <field name="view_type">form</field>
+			<field name="domain">[('folder','=','outbox'),('pem_account_id','=',active_id)]</field>
+		    <field name="view_mode">graph,tree,form</field>
+		</record>
+
+		<record model="ir.ui.view" id="view_poweremail_mailbox_graph">
+		    <field name="name">poweremail_mailbox.graph</field>
+		    <field name="model">poweremail.mailbox</field>
+		    <field name="type">graph</field>
+		    <field name="arch" type="xml">
+				<graph type="indicator" icon="mail"/>
+		    </field>
+		</record>
+
+		<record model="ir.actions.act_window.view" id="action_view_poweremail_mailbox_to_sent_graph">
+		    <field name="view_id" ref="view_poweremail_mailbox_graph" />
+			<field name="view_mode">graph</field>
+			<field name="act_window_id" ref="action_poweremail_mailbox_to_sent" />
+		</record>
+
+		<!-- Sent -->
+		<record model="ir.actions.act_window" id="action_poweremail_mailbox_sent">
+		    <field name="name">Emails sent</field>
+		    <field name="type">ir.actions.act_window</field>
+		    <field name="res_model">poweremail.mailbox</field>
+		    <field name="view_type">form</field>
+			<field name="domain">[('folder','=','sent'),('pem_account_id','=',active_id)]</field>
+		    <field name="view_mode">graph,tree,form</field>
+		</record>
+
+		<record model="ir.actions.act_window.view" id="action_view_poweremail_mailbox_sent_graph">
+		    <field name="view_id" ref="view_poweremail_mailbox_graph" />
+			<field name="view_mode">graph</field>
+			<field name="act_window_id" ref="action_poweremail_mailbox_sent" />
+		</record>
+
+		<!-- Sent today -->
+		<record model="ir.actions.act_window" id="action_poweremail_mailbox_sent_today">
+		    <field name="name">Emails sent today</field>
+		    <field name="type">ir.actions.act_window</field>
+		    <field name="res_model">poweremail.mailbox</field>
+		    <field name="view_type">form</field>
+			<field name="domain">[('folder','=','sent'),('date_mail', '>=', datetime.datetime.today().strftime('%Y-%m-%d 00:00:00')), ('pem_account_id','=',active_id)]</field>
+		    <field name="view_mode">graph,tree,form</field>
+		</record>
+
+		<record model="ir.actions.act_window.view" id="action_view_poweremail_mailbox_sent_today_graph">
+		    <field name="view_id" ref="view_poweremail_mailbox_graph" />
+			<field name="view_mode">graph</field>
+			<field name="act_window_id" ref="action_poweremail_mailbox_sent_today" />
+		</record>
 
 
 		<record model="ir.ui.view" id="poweremail_core_accounts_form">
@@ -41,6 +125,12 @@
 			<field name="type">form</field>
 			<field name="arch" type="xml">
 				<form string="Power Email Configuration">
+					<group colspan="4" col="4">
+						<indicator action_id="%(action_poweremail_mailbox_error)s" />
+						<indicator action_id="%(action_poweremail_mailbox_to_sent)s" />
+						<indicator action_id="%(action_poweremail_mailbox_sent)s" />
+						<indicator action_id="%(action_poweremail_mailbox_sent_today)s" />
+					</group>
 					<group colspan="2">
 						<field name="name" select="1" />
 						<!--<field name="last_mail_id" select="1" />-->

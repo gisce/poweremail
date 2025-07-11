@@ -4,38 +4,12 @@
 		<record model="poweremail.templates" id="default_template_poweremail">
 			<field name="name">Plantilla poweremail test</field>
 			<field name="object_name" model="ir.model" search="[('model', '=', 'res.users')]"/>
-			<field eval="0" name="save_to_drafts"/>
 			<field name="model_int_name">res.users</field>
-			<field eval="0" name="use_filter"/>
-			<field name="file_name">${object.number}</field>
-			<field name="def_to">${object.address_invoice_id.email}</field>
-			<field eval="0" name="auto_email"/>
-			<field eval="0" name="single_email"/>
-			<field eval="0" name="use_sign"/>
-			<field name="def_subject">Factura ${object.number}</field>
 			<field name="template_language">mako</field>
-			<field eval="0" name="send_on_create"/>
-			<field name="lang">${object.partner_id.lang}</field>
-			<field name="copyvalue">${object.partner_id.lang}</field>
-			<field eval="0" name="send_on_write"/>
-			<field name="def_body_text">
-<![CDATA[
-<!doctype html>
-<html>
-<head></head>
-<body>
-Benvolgut/da ${object.login},
-
-Això és un email generic de prova per les poweremail_camapign.
-
-
-Atentament,
-
-un mort de gana.
-</body>
-</html>
-]]>
-			</field>
+			<field name="def_to">${object.address_id.email}</field>
+			<field name="def_subject">Demo email subject for user ${object.login}</field>
+			<field name="lang">${object.context_lang}</field>
+			<field name="def_body_text[en_US]" file="emails/default_template_poweremail/index.mako"/>
 		</record>
 
 		<record model="poweremail.templates" id="default_template_poweremail_2">

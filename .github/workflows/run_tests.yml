@@ -2,7 +2,7 @@ name: Run tests
 
 on:
   pull_request:
-    branches: [ v5_backport ]
+    branches: [ main ]
     types: [ labeled ]
   workflow_dispatch:
     inputs:
