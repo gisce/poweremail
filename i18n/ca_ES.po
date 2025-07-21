@@ -346,7 +346,7 @@ msgstr "Estat"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Email action and wizard"
-msgstr "Email action and wizard"
+msgstr "Acció del correo electrònic i de l'assistent"
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -1285,6 +1285,11 @@ msgid "Error receiving mail: %s"
 msgstr "Error rebent correu: %s"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Create send email wizard"
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid "Send mail Wizard"
 msgstr "Assistent envia correu"
@@ -1740,6 +1745,11 @@ msgstr "Camp"
 msgid "No of generated Mails"
 msgstr "Nº de correus generats"
 
+#: code:addons/poweremail/poweremail_core.py:753
+#, python-format
+msgid "Saving Header of unknown payload (%s) Account: %s."
+msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
+
 #. module: poweremail
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
@@ -1841,6 +1851,11 @@ msgstr "Cos del missatge (HTML)"
 #: field:poweremail.templates,attached_activity:0
 msgid "Activity"
 msgstr "Activitat"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Remove send email wizard"
+msgstr ""
 
 #. module: poweremail
 #: view:wizard.change.state.email:0
@@ -2024,6 +2039,11 @@ msgstr "seguretat"
 #: field:poweremail.templates,ref_ir_act_window:0
 msgid "Window Action"
 msgstr "Acció finestra"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Wizard send email"
+msgstr ""
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106

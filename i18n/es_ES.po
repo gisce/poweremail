@@ -1285,6 +1285,11 @@ msgid "Error receiving mail: %s"
 msgstr "Error recibiendo correo: %s"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Create send email wizard"
+msgstr "Crear asistente de enviar correo"
+
+#. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid "Send mail Wizard"
 msgstr "Asistente enviar correo"
@@ -1740,6 +1745,11 @@ msgstr "Campo"
 msgid "No of generated Mails"
 msgstr "Nº de correos generados"
 
+#: code:addons/poweremail/poweremail_core.py:753
+#, python-format
+msgid "Saving Header of unknown payload (%s) Account: %s."
+msgstr "Guardando cabecera de carga desconocida (%s). Cuenta: %s."
+
 #. module: poweremail
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
@@ -1841,6 +1851,11 @@ msgstr "Cuerpo del mensaje (HTML)"
 #: field:poweremail.templates,attached_activity:0
 msgid "Activity"
 msgstr "Actividad"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Remove send email wizard"
+msgstr "Eliminar asistente de enviar correo"
 
 #. module: poweremail
 #: view:wizard.change.state.email:0
@@ -2026,6 +2041,11 @@ msgid "Window Action"
 msgstr "Acción de ventana"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Wizard send email"
+msgstr "Asistente enviar correo"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106
 #, python-format
 msgid "No information on which mail should be fetched fully"
@@ -2172,6 +2192,7 @@ msgid "Create action and value"
 msgstr "Crear acción y valor"
 
 #. module: poweremail
+
 #: view:poweremail.preview:0
 msgid "Preview Email"
 msgstr "Vista previa del correo"
