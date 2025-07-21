@@ -100,6 +100,10 @@
                             </group>
                             <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
                             <separator string="Static attachments" colspan="4"/>
+                            <alert alert_type="info" title="Informational Note"
+                                    text="The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: extraordinary_meeting.en_EN.pdf) to identify the document by language.">
+                                <button string="External Link" type="object" name="link_additional_info" icon="link" />
+                            </alert>
                             <field name="ir_attachment_ids" colspan="4" nolabel="1"/>
                         </page>
                         <page string="Automatisms settings">
