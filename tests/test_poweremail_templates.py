@@ -217,7 +217,7 @@ p { color:red;}
 
         tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
 
-        mail_id = tmpl_obj.generate_mail(cursor, uid, tmpl_id, [partner_id])
+        mail_id = tmpl_obj.generate_mail_sync(cursor, uid, tmpl_id, [partner_id])
         pem_body_text = mailbox_obj.read(cursor, uid, mail_id, ['pem_body_text'])['pem_body_text']
 
         self.assertEqual(pem_body_text, example_html)
@@ -252,8 +252,7 @@ p { color:red;}
         }
 
         tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
-
-        mail_id = tmpl_obj.generate_mail(cursor, uid, tmpl_id, [partner_id])
+        mail_id = tmpl_obj.generate_mail_sync(cursor, uid, tmpl_id, [partner_id])
         pem_body_text = mailbox_obj.read(cursor, uid, mail_id, ['pem_body_text'])['pem_body_text']
 
         inlined_html = '<html>\n<head></head>\n<body>\n<h1 style="border:1px solid black; font-weight:bolder">Peter</h1>\n<p style="color:red">Hej</p>\n</body>\n</html>\n'

@@ -112,6 +112,7 @@
                                 attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
                             <field name="send_on_create" colspan="4"/>
                             <field name="send_on_write" colspan="4"/>
+                            <field name="send_immediately" colspan="4"/>
                             <field name="use_filter" colspan="4"/>
                             <group string="Filter" colspan="4" attrs="{'invisible':[('use_filter','=',False)]}">
                                 <group colspan="3" col="1">
