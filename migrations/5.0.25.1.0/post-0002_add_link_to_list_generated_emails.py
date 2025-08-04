@@ -14,7 +14,7 @@ def up(cursor, installed_version):
     ]
     load_data_records(
         cursor, 'poweremail', 'poweremail_mailbox_view.xml',
-        list_of_records, mode='update')
+        list_of_records, mode='init')
 
 
 def down(cursor, installed_version):
