@@ -43,6 +43,20 @@ class poweremail_preview(osv.osv_memory):
         res = template_obj.read(cursor, uid, template_ids, ['save_to_drafts'])[0]['save_to_drafts']
         return res
 
+    def _get_enforce_from_account_from_templat(self, cr, uid, context=None):
+        if context is None:
+            context = {}
+
+        res = ''
+        template_ids = context.get('active_ids', [])
+
+        if template_ids:
+            template_obj = self.pool.get('poweremail.templates')
+            templates_brw = template_obj.simple_browse(cr, uid, template_ids, context=context)
+            res = templates_brw[0].enforce_from_account.id
+
+        return res
+
     _columns = {
         'model_ref': fields.reference(
             "Template reference", selection=_ref_models,
@@ -62,10 +76,15 @@ class poweremail_preview(osv.osv_memory):
                                          help="When automatically sending emails generated from"
                                               " this template, save them into the Drafts folder rather"
                                               " than sending them immediately."),
+        'enforce_from_account': fields.many2one('poweremail.core_accounts',
+                                                "Email account",
+                                                help="Email will be sent from this account."),
     }
 
     _defaults = {
         'state': lambda *a: 'init',
+        'enforce_from_account': lambda self, cr, uid, context:
+            self._get_enforce_from_account_from_templat(cr, uid, context),
         'save_to_drafts_prev': get_save_to_draft
     }
 
