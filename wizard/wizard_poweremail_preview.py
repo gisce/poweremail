@@ -77,8 +77,8 @@ class poweremail_preview(osv.osv_memory):
                                               " this template, save them into the Drafts folder rather"
                                               " than sending them immediately."),
         'enforce_from_account': fields.many2one('poweremail.core_accounts',
-                                                "Enforce From Account",
-                                                help="Emails will be sent only from this account."),
+                                                "Email account",
+                                                help="Email will be sent from this account."),
     }
 
     _defaults = {
