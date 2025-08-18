@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GISCE-ERP\n"
 "Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"POT-Creation-Date: 2025-03-27 11:44\n"
-"PO-Revision-Date: 2025-03-27 12:15+0000\n"
+"POT-Creation-Date: 2025-08-18 09:59\n"
+"PO-Revision-Date: 2025-08-18 08:00+0000\n"
 "Last-Translator: destanyol <>\n"
 "Language-Team: Catalan (Spain) <erp@dev.gisce.net>\n"
 "MIME-Version: 1.0\n"
@@ -164,7 +164,7 @@ msgstr "POP3"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Remove action and value"
-msgstr "Remove action and value"
+msgstr "Elimina l'acció i el valor"
 
 #. module: poweremail
 #: help:poweremail.templates,model_data_name:0
@@ -346,7 +346,7 @@ msgstr "Estat"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Email action and wizard"
-msgstr "Acció del correo electrònic i de l'assistent"
+msgstr "Acció de l'email i l'assistent"
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -1285,11 +1285,6 @@ msgid "Error receiving mail: %s"
 msgstr "Error rebent correu: %s"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "Create send email wizard"
-msgstr ""
-
-#. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid "Send mail Wizard"
 msgstr "Assistent envia correu"
@@ -1745,11 +1740,6 @@ msgstr "Camp"
 msgid "No of generated Mails"
 msgstr "Nº de correus generats"
 
-#: code:addons/poweremail/poweremail_core.py:753
-#, python-format
-msgid "Saving Header of unknown payload (%s) Account: %s."
-msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
-
 #. module: poweremail
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
@@ -1851,11 +1841,6 @@ msgstr "Cos del missatge (HTML)"
 #: field:poweremail.templates,attached_activity:0
 msgid "Activity"
 msgstr "Activitat"
-
-#. module: poweremail
-#: view:poweremail.templates:0
-msgid "Remove send email wizard"
-msgstr ""
 
 #. module: poweremail
 #: view:wizard.change.state.email:0
@@ -2039,11 +2024,6 @@ msgstr "seguretat"
 #: field:poweremail.templates,ref_ir_act_window:0
 msgid "Window Action"
 msgstr "Acció finestra"
-
-#. module: poweremail
-#: view:poweremail.templates:0
-msgid "Wizard send email"
-msgstr ""
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106

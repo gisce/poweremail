@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GISCE-ERP\n"
 "Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"POT-Creation-Date: 2025-03-27 11:44\n"
-"PO-Revision-Date: 2025-03-27 12:11+0000\n"
+"POT-Creation-Date: 2025-08-18 09:59\n"
+"PO-Revision-Date: 2025-08-18 07:57+0000\n"
 "Last-Translator: destanyol <>\n"
 "Language-Team: Spanish (Spain) <erp@dev.gisce.net>\n"
 "MIME-Version: 1.0\n"
@@ -346,7 +346,7 @@ msgstr "Estado"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Email action and wizard"
-msgstr "Acción de correo electrónico y asistente"
+msgstr "Acción del email y asistente"
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -1604,7 +1604,7 @@ msgstr "SERVIDOR SMTP o PUERTO no especificado"
 msgid ""
 "The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: "
 "extraordinary_meeting.en_EN.pdf) to identify the document by language."
-msgstr "El nombre del archivo debe seguir el formato TEXTO.IDIOMA.EXTENSION (por ejemplo: reunion_extraordinaria.es_ES.pdf) para identificar el documento por idioma."
+msgstr "El nombre del archivo debe seguir el formato: TEXTO.IDIOMA.EXTENSION (por ejemplo: reunión_extraordinaria.es_ES.pdf) para identificar el documento por idioma."
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -2423,7 +2423,7 @@ msgstr "Previsualización de la plantilla"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Informational Note"
-msgstr "Nota informativa"
+msgstr "Nota Informativa"
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_state_email_form
