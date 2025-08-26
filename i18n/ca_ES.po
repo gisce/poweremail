@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GISCE-ERP\n"
 "Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"POT-Creation-Date: 2025-03-12 18:53\n"
-"PO-Revision-Date: 2025-03-12 17:51+0000\n"
-"Last-Translator: lcbautista <>\n"
+"POT-Creation-Date: 2025-08-18 09:59\n"
+"PO-Revision-Date: 2025-08-18 08:00+0000\n"
+"Last-Translator: destanyol <>\n"
 "Language-Team: Catalan (Spain) <erp@dev.gisce.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -162,6 +162,11 @@ msgid "POP3"
 msgstr "POP3"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Remove action and value"
+msgstr "Elimina l'acció i el valor"
+
+#. module: poweremail
 #: help:poweremail.templates,model_data_name:0
 msgid "Model Data Name."
 msgstr "Nom de les dades del model."
@@ -279,9 +284,10 @@ msgid "Server Information"
 msgstr "Informació del servidor"
 
 #. module: poweremail
-#: field:poweremail.send.wizard,generated:0
-msgid "No of generated Mails"
-msgstr "Nº de correus generats"
+#: code:addons/poweremail/poweremail_core.py:753
+#, python-format
+msgid "Saving Header of unknown payload (%s) Account: %s."
+msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:348
@@ -336,6 +342,11 @@ msgstr "%s (adjunt correu electrònic)"
 #: field:poweremail.mailbox,state:0 field:poweremail.send.wizard,state:0
 msgid "Status"
 msgstr "Estat"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Email action and wizard"
+msgstr "Acció de l'email i l'assistent"
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -1274,11 +1285,6 @@ msgid "Error receiving mail: %s"
 msgstr "Error rebent correu: %s"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "Create send email wizard"
-msgstr ""
-
-#. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid "Send mail Wizard"
 msgstr "Assistent envia correu"
@@ -1428,6 +1434,11 @@ msgstr "Insereix camp simple"
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_sent_tree_company
 msgid "Mailbox: Sent"
 msgstr "Safata: Enviats"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "External Link"
+msgstr "Enllaç Extern"
 
 #. module: poweremail
 #: field:poweremail.mailbox,priority:0 field:poweremail.send.wizard,priority:0
@@ -1584,6 +1595,13 @@ msgid "SMTP SERVER or PORT not specified"
 msgstr "SERVIDOR SMTP o PORT no especificat"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid ""
+"The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: "
+"extraordinary_meeting.en_EN.pdf) to identify the document by language."
+msgstr "El nom de l'arxiu ha de seguir el format TEXT.IDIOMA.EXTENSIO (per exemple: reunio_extraordinaria.ca_ES.pdf) per a identificar el document per idioma."
+
+#. module: poweremail
 #: view:poweremail.core_accounts:0
 msgid "Power Email Configuration"
 msgstr "Configuració"
@@ -1718,10 +1736,9 @@ msgid "Field"
 msgstr "Camp"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_core.py:753
-#, python-format
-msgid "Saving Header of unknown payload (%s) Account: %s."
-msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
+#: field:poweremail.send.wizard,generated:0
+msgid "No of generated Mails"
+msgstr "Nº de correus generats"
 
 #. module: poweremail
 #: help:poweremail.templates,enforce_from_account:0
@@ -1824,11 +1841,6 @@ msgstr "Cos del missatge (HTML)"
 #: field:poweremail.templates,attached_activity:0
 msgid "Activity"
 msgstr "Activitat"
-
-#. module: poweremail
-#: view:poweremail.templates:0
-msgid "Remove send email wizard"
-msgstr ""
 
 #. module: poweremail
 #: view:wizard.change.state.email:0
@@ -2014,11 +2026,6 @@ msgid "Window Action"
 msgstr "Acció finestra"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "Wizard send email"
-msgstr ""
-
-#. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106
 #, python-format
 msgid "No information on which mail should be fetched fully"
@@ -2158,6 +2165,11 @@ msgstr "Usuari relacionat"
 #: selection:poweremail.core_accounts,company:0
 msgid "No"
 msgstr "No"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Create action and value"
+msgstr "Crea acció i valor"
 
 #. module: poweremail
 #: view:poweremail.preview:0
@@ -2386,6 +2398,11 @@ msgstr "Nom informe"
 #: model:ir.actions.act_window,name:poweremail.wizard_poweremail_preview
 msgid "Template Preview"
 msgstr "Previsualització de la plantilla"
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Informational Note"
+msgstr "Nota informativa"
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_state_email_form
