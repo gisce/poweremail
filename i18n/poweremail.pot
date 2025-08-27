@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 5.0.14\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2025-08-18 09:28\n"
-"PO-Revision-Date: 2025-08-18 09:28\n"
+"POT-Creation-Date: 2025-08-18 10:42\n"
+"PO-Revision-Date: 2025-08-18 10:42\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -322,6 +322,11 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.mailbox,mail_type:0
 msgid "Mail Contents"
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "More information"
 msgstr ""
 
 #. module: poweremail
@@ -1578,6 +1583,11 @@ msgid "SMTP SERVER or PORT not specified"
 msgstr ""
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: extraordinary_meeting.en_EN.pdf) to identify the document by language."
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.core_accounts:0
 msgid "Power Email Configuration"
 msgstr ""
@@ -2225,7 +2235,8 @@ msgstr ""
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_template.py:1258
-#: code:addons/poweremail/poweremail_template.py:1272
+#: code:addons/poweremail/poweremail_template.py:1278
+#: code:addons/poweremail/poweremail_template.py:1292
 #, python-format
 msgid "Send Mail (%s)"
 msgstr ""

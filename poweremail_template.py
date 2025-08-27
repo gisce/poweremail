@@ -548,6 +548,8 @@ class poweremail_templates(osv.osv):
             help="Model Data Name.",
             fnct_search=_get_model_data_name_search,
         ),
+        'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
+                                                                         " immediately without going throug outbox folder.")
     }
 
     _defaults = {
@@ -1089,9 +1091,29 @@ class poweremail_templates(osv.osv):
         return res
 
     def get_mailbox_values(self, cursor, user, template, record_id, context=None):
+        if context is None:
+            context = {}
+
         users_obj = self.pool.get('res.users')
 
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=context)
+        # Millor compatibilitat amb multicompany: si el objecte te el camp "company_id" o "company" el passem per context
+        # per decidir millor desde on enviem el correu
+        ctx_company = context.copy()
+        if not ctx_company.get("company_id") and template.object_name:
+            record_model = self.pool.get(template.object_name.model)
+            if record_model:
+                record_model_fields = record_model.fields_get(cursor, user).keys()
+                if 'company_id' in record_model_fields:
+                    company_field = 'company_id'
+                elif 'company' in record_model_fields:
+                    company_field = 'company'
+                else:
+                    company_field = False
+                if company_field:
+                    record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
+                    if record_company:
+                        ctx_company['company_id'] = record_company[0]
+        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
         ctx.update({
@@ -1204,8 +1226,12 @@ class poweremail_templates(osv.osv):
             # Generating email, attachments and event
             if not template.save_to_drafts:
                 pe_obj = self.pool.get('poweremail.mailbox')
+                send_immediately = template.send_immediately
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
-                    pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
+                    if send_immediately:
+                        pe_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
+                    else:
+                        pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
         if len(mailbox_ids) > 1:
             return mailbox_ids
         elif mailbox_ids:
@@ -1298,6 +1324,23 @@ class poweremail_templates(osv.osv):
             template.write({'ref_ir_value': False})
             values_obj.unlink(cursor, uid, value_id)
 
+    def link_additional_info(self, cursor, uid, ids, context=None):
+        if context is None:
+            context = {}
+
+        lang_urls = {
+            'en_US': 'https://rfc.gisce.net/t/configure-email-template-poweremail-en/2209',
+            'es_ES': 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208',
+        }
+
+        lang_code = context.get('lang', 'en')
+        url = lang_urls.get(lang_code, lang_urls['en'])
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
 
 poweremail_templates()
 
