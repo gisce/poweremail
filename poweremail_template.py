@@ -918,29 +918,6 @@ class poweremail_templates(osv.osv):
         (result, format) = service.create(cursor, user, record_ids, data, context=context)
         return (result, format)
 
-    def get_report_template_object_reference_ids(self, cursor, uid, record_id, value, context=None):
-        """
-        Evaluate the value of the field report_template_object_reference.
-        For example: ('giscedata.facturacio.factura', [('invoice_id', '=', record_id)]) from account.invoice template
-
-        :param cursor: DB cursor
-        :param uid: User ID
-        :param record_id: ID of the record to do the condition
-        :param value: Value of the field report_template_object_reference
-        :param context: Context
-
-        :return: rerturn the id from the condition in dmn
-        """
-        if context is None:
-            context = {}
-
-        value = eval(value)
-        dmn = value[1]
-        ref = value[0]
-        ref_obj = self.pool.get(ref)
-        res = ref_obj.search(cursor, uid, dmn, context=context)
-
-        return res
 
     def _generate_attach_reports(self, cursor, user, template, record_ids, mail, context=None):
         """
@@ -980,9 +957,12 @@ class poweremail_templates(osv.osv):
         if template.report_template:
             if template.report_template_object_reference:
                 record_reference_ids = []
-                for record_id in record_ids:
-                    reference_ids = self.get_report_template_object_reference_ids(cursor, user, record_id, template.report_template_object_reference, context=context)
-                    record_reference_ids += reference_ids
+                report_attachments = template.report_template_object_reference
+                report_attachments.replace('object', template.object_name.name)
+                if not isinstance(report_attachments, list): # Pel cas que apunti a un many2one
+                    report_attachments = [report_attachments]
+
+                record_reference_ids += report_attachments
 
             report_vals = self.create_report(cursor, user, template, record_reference_ids, context=context)
             res = {

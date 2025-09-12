@@ -36,17 +36,6 @@ class TestAttachOtherModels(testing.OOTestCase):
         if extra_vals is None:
             extra_vals = {}
 
-        model = extra_vals['model'] if 'model' in extra_vals else None
-        conditions = extra_vals['conditions'] if 'conditions' in extra_vals else None
-
-        if model and conditions:
-            report_template_object_reference_value = "('{model}', {conditions})".format(
-                model=model,
-                conditions=conditions)
-        else:
-            report_template_object_reference_value = None
-
-
         imd_obj = self.openerp.pool.get('ir.model.data')
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         acc_id = False
@@ -75,7 +64,7 @@ class TestAttachOtherModels(testing.OOTestCase):
             'def_body_text': 'Test body text',
             'def_priority': '2',
             'report_template': report_id,
-            'report_template_object_reference': report_template_object_reference_value
+            'report_template_object_reference': extra_vals['report_template_object_reference'] if 'report_template_object_reference' in extra_vals else '',
         }
 
         if extra_vals:
@@ -100,8 +89,8 @@ class TestAttachOtherModels(testing.OOTestCase):
             acc1_id = self._create_account(cursor, uid, extra_vals={'name': 'acc1', 'email_id': 'test1@example.com'})
             tmpl_id = self._create_template(cursor, uid, extra_vals={'enforce_from_account': acc1_id,
                                                                         'name': 'Test template 1',
-                                                                        'model': 'giscedata.facturacio.factura',
-                                                                        'conditions': [('invoice_id', '=', 1)]})
+                                                                        'report_template_object_reference': 'object.invoice_id',
+                                                                        })
 
             mailbox_id = pm_tmp_obj.generate_mail(cursor, uid, tmpl_id, [1], context={'raise_exception': True})
             mail = mailbox_obj.simple_browse(cursor, uid, mailbox_id)
@@ -149,8 +138,8 @@ class TestAttachOtherModels(testing.OOTestCase):
             acc1_id = self._create_account(cursor, uid, extra_vals={'name': 'acc1', 'email_id': 'test1@example.com'})
             tmpl_id = self._create_template(cursor, uid, extra_vals={'enforce_from_account': acc1_id,
                                                                      'name': 'Test template 1',
-                                                                     'model': 'account.invoice',
-                                                                     'conditions': [('partner_id', '=', 1)]}) # Tiny partner
+                                                                     'report_template_object_reference': 'object.invoice_id',
+                                                                     })
 
             mailbox_id = pm_tmp_obj.generate_mail(cursor, uid, tmpl_id, [1], context={'raise_exception': True})
             mail = mailbox_obj.simple_browse(cursor, uid, mailbox_id)
