@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <openerp>
-	<data>
+    <data>
 		<record model="poweremail.templates" id="default_template_poweremail">
 			<field name="name">Plantilla poweremail test</field>
 			<field name="object_name" model="ir.model" search="[('model', '=', 'res.users')]"/>
@@ -58,5 +58,29 @@ un mort de gana.
             <field name="state">approved</field>
             <field name="smtpport">587</field>
         </record>
-	</data>
+        <record model="poweremail.conversation" id="poweremail_conversation_1">
+            <field name="name">Assumpte de la presunció de l'assumpció</field>
+        </record>
+        <record model="poweremail.mailbox" id="poweremail_mailbox_1">
+            <field name="pem_account_id" ref="info_energia_from_email"/>
+            <field name="pem_message_id">333</field>
+            <field name="state">read</field>
+            <field name="folder">inbox</field>
+            <field name="conversation_id" ref="poweremail_conversation_1"/>
+        </record>
+
+        <!-- Attachments demo -->
+        <record model="ir.attachment" id="attachment_associated_to_filter_1">
+            <field name="name">Attachment associated to history filter</field>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="res_id" ref="poweremail_mailbox_1"/>
+            <field name="datas" file="tests/fixtures/dispensable_image.jpg" type="binary"/>
+        </record>
+        <record model="ir.attachment" id="attachment_associated_to_filter_2">
+            <field name="name">Dixselia</field>
+            <field name="res_model">poweremail.mailbox</field>
+            <field name="res_id" ref="poweremail_mailbox_1"/>
+            <field name="datas" file="tests/fixtures/text_error_deployments.png" type="binary"/>
+        </record>
+    </data>
 </openerp>

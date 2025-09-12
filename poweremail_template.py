@@ -1336,6 +1336,23 @@ class poweremail_templates(osv.osv):
             template.write({'ref_ir_value': False})
             values_obj.unlink(cursor, uid, value_id)
 
+    def link_additional_info(self, cursor, uid, ids, context=None):
+        if context is None:
+            context = {}
+
+        lang_urls = {
+            'en_US': 'https://rfc.gisce.net/t/configure-email-template-poweremail-en/2209',
+            'es_ES': 'https://rfc.gisce.net/t/configurar-una-plantilla-de-correo-electronico-poweremail-es/2208',
+        }
+
+        lang_code = context.get('lang', 'en')
+        url = lang_urls.get(lang_code, lang_urls['en'])
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
 
 poweremail_templates()
 

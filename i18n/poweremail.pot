@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 5.0.14\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2025-03-12 18:53\n"
-"PO-Revision-Date: 2025-03-12 18:53\n"
+"POT-Creation-Date: 2025-08-18 10:42\n"
+"PO-Revision-Date: 2025-08-18 10:42\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -92,7 +92,7 @@ msgid "Un-Read"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:556
+#: code:addons/poweremail/poweremail_template.py:561
 #, python-format
 msgid "The template name must be unique!"
 msgstr ""
@@ -246,7 +246,7 @@ msgid "Sub-model"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:128
+#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:154
 #, python-format
 msgid "No model reference defined"
 msgstr ""
@@ -305,6 +305,11 @@ msgid "IMAP Folder Statistics for Account: %s: %s"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_sent
+msgid "Emails sent"
+msgstr ""
+
+#. module: poweremail
 #: constraint:poweremail.core_accounts:0
 msgid "Error: You are not allowed to have more than 1 account."
 msgstr ""
@@ -317,6 +322,11 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.mailbox,mail_type:0
 msgid "Mail Contents"
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "More information"
 msgstr ""
 
 #. module: poweremail
@@ -422,7 +432,7 @@ msgid "No recipient: Email cannot be sent"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:659
+#: code:addons/poweremail/poweremail_template.py:664
 #, python-format
 msgid "Copy of template "
 msgstr ""
@@ -1052,7 +1062,7 @@ msgid "Enter port number, eg: SMTP-587 "
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1169
+#: code:addons/poweremail/poweremail_template.py:1237
 #, python-format
 msgid "%s Mail Form"
 msgstr ""
@@ -1080,6 +1090,11 @@ msgstr ""
 #: code:addons/poweremail/poweremail_core.py:1078
 #, python-format
 msgid "IMAP Folder selected successfully Account: %s."
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_to_sent
+msgid "Emails to sent"
 msgstr ""
 
 #. module: poweremail
@@ -1347,6 +1362,11 @@ msgid "Mailbox: Sending"
 msgstr ""
 
 #. module: poweremail
+#: model:poweremail.templates,def_subject:poweremail.default_template_poweremail
+msgid "Demo email subject for user ${object.login}"
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.mailbox:0
 msgid "Power Email All Emails"
 msgstr ""
@@ -1373,7 +1393,6 @@ msgid "Use SSL"
 msgstr ""
 
 #. module: poweremail
-#: model:poweremail.templates,file_name:poweremail.default_template_poweremail
 #: model:poweremail.templates,file_name:poweremail.default_template_poweremail_2
 msgid "${object.number}"
 msgstr ""
@@ -1400,6 +1419,17 @@ msgstr ""
 #: field:poweremail.mailbox,priority:0
 #: field:poweremail.send.wizard,priority:0
 msgid "Priority"
+msgstr ""
+
+#. module: poweremail
+#: model:poweremail.templates,def_body_text:poweremail.default_template_poweremail
+msgid "<!doctype html>\n"
+"<html>\n"
+"<head></head>\n"
+"<body>\n"
+"This is a demo email\n"
+"</body>\n"
+"</html>"
 msgstr ""
 
 #. module: poweremail
@@ -1553,6 +1583,11 @@ msgid "SMTP SERVER or PORT not specified"
 msgstr ""
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: extraordinary_meeting.en_EN.pdf) to identify the document by language."
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.core_accounts:0
 msgid "Power Email Configuration"
 msgstr ""
@@ -1661,7 +1696,7 @@ msgid "Email Configuration"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:230
+#: code:addons/poweremail/poweremail_template.py:235
 #, python-format
 msgid "An error occurred while rendering template id {}:  {}"
 msgstr ""
@@ -1694,6 +1729,7 @@ msgid "Saving Header of unknown payload (%s) Account: %s."
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.preview,enforce_from_account:0
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
 msgstr ""
@@ -1761,7 +1797,7 @@ msgid "Partner ID who an email event is logged.\n"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:154
+#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:183
 #, python-format
 msgid "Generated Email"
 msgstr ""
@@ -1809,6 +1845,7 @@ msgid "Save Mail -> Mailbox write error Account: %s, Mail: %s"
 msgstr ""
 
 #. module: poweremail
+#: field:poweremail.preview,enforce_from_account:0
 #: field:poweremail.templates,enforce_from_account:0
 msgid "Enforce From Account"
 msgstr ""
@@ -1850,7 +1887,7 @@ msgid "Plain Text & HTML with no attachments"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:651
+#: code:addons/poweremail/poweremail_template.py:656
 #, python-format
 msgid "Deletion of Record failed"
 msgstr ""
@@ -1958,7 +1995,7 @@ msgid "Both HTML & Text"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:651
+#: code:addons/poweremail/poweremail_template.py:656
 #, python-format
 msgid "Warning"
 msgstr ""
@@ -1991,7 +2028,6 @@ msgid "No information on which mail should be fetched fully"
 msgstr ""
 
 #. module: poweremail
-#: model:poweremail.templates,def_body_text:poweremail.default_template_poweremail
 #: model:poweremail.templates,def_body_text:poweremail.default_template_poweremail_2
 msgid "\n"
 "\n"
@@ -2066,6 +2102,11 @@ msgid "Incoming Test Connection Was Successful"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_sent_today
+msgid "Emails sent today"
+msgstr ""
+
+#. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_configuration_server
 msgid "Configuration"
 msgstr ""
@@ -2123,6 +2164,11 @@ msgid "No"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_error
+msgid "Emails in error folder"
+msgstr ""
+
+#. module: poweremail
 #: view:poweremail.preview:0
 msgid "Preview Email"
 msgstr ""
@@ -2173,7 +2219,6 @@ msgid "User"
 msgstr ""
 
 #. module: poweremail
-#: model:poweremail.templates,def_subject:poweremail.default_template_poweremail
 #: model:poweremail.templates,def_subject:poweremail.default_template_poweremail_2
 msgid "Factura ${object.number}"
 msgstr ""
@@ -2189,8 +2234,9 @@ msgid "File Name Pattern"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1190
-#: code:addons/poweremail/poweremail_template.py:1204
+#: code:addons/poweremail/poweremail_template.py:1258
+#: code:addons/poweremail/poweremail_template.py:1278
+#: code:addons/poweremail/poweremail_template.py:1292
 #, python-format
 msgid "Send Mail (%s)"
 msgstr ""
@@ -2200,7 +2246,7 @@ msgstr ""
 #: code:addons/poweremail/poweremail_mailbox.py:218
 #: code:addons/poweremail/poweremail_mailbox.py:223
 #: code:addons/poweremail/poweremail_serveraction.py:89
-#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:127
+#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:153
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_error_company
 #: selection:poweremail.preview,state:0
 #, python-format
