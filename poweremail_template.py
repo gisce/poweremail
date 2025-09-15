@@ -1112,7 +1112,10 @@ class poweremail_templates(osv.osv):
                 if company_field:
                     record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
                     if record_company:
-                        ctx_company['company_id'] = record_company[0]
+                        if isinstance(record_company, list):
+                            ctx_company['company_id'] = record_company[0]
+                        else:
+                            ctx_company['company_id'] = record_company
         from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
