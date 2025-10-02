@@ -6,7 +6,7 @@ def up(cursor, installed_version):
     if not installed_version or config.updating_all:
         return
 
-    cursor.execute("UPDATE res_partner_address SET email = REPLACE(email, ';', ',') WHERE email LIKE '%;%';")
+    cursor.execute("UPDATE res_partner_address SET email = REPLACE(email, ';', ',') WHERE email LIKE '%;%'")
 
 def down(cursor, installed_version):
     pass
