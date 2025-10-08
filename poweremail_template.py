@@ -241,7 +241,7 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 traceback.print_exc()
                 return u""
     else:
-        return message
+        return message or ''
 
 
 class poweremail_templates(osv.osv):
