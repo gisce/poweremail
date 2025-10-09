@@ -906,11 +906,16 @@ class poweremail_templates(osv.osv):
         return True
 
     def create_report(self, cursor, user, template, record_ids, context=None):
+        """"
+        Generate report to be attached and return it
+        If contain object_to_report_id in context, it will be used instead of record_ids
+        """
         if context is None:
             context = {}
         report_obj = self.pool.get('ir.actions.report.xml')
+        object_to_report_id = context.get('object_to_report_id', template.report_template.id)
         report_name = report_obj.read(
-            cursor, user, template.report_template.id, ['report_name'], context=context
+            cursor, user, object_to_report_id, ['report_name'], context=context
         )['report_name']
         reportname = 'report.' + report_name
         service = netsvc.LocalService(reportname)
@@ -952,23 +957,137 @@ class poweremail_templates(osv.osv):
 
         return True
 
+    def _get_records_from_report_template_object_reference(self, cursor, user, template, record_ids, context=None):
+        """
+        Evaluate the expression in report_template_object_reference field
+        to get the records to be used to generate the report.
+
+        :param cursor: Database Cursor
+        :param user: ID of User
+        :param template: Browse record of template
+        :param record_ids: IDs of objects to be used to evaluate the expression
+        :param context: Context arguments
+
+        :return: dict with model and record_ids keys evaluated from the expression
+        """
+        res_ids = []
+        expr = template.report_template_object_reference.replace('object', 'rec')
+        model = ''
+        for rec_obj in self.pool.get(template.object_name.model).simple_browse(cursor, user, record_ids, context=context):
+            try:
+                value = eval(expr, {}, {'rec': rec_obj})
+                if not value:
+                    continue
+
+                if isinstance(value, (list, tuple)):
+                    value = value[0]
+
+                model = value._table_name
+                if hasattr(value, 'id'):
+                    value = value.id
+
+                res_ids.append(value)
+            except Exception as e:
+                LOGGER.notifyChannel(
+                    _("Power Email"),
+                    netsvc.LOG_DEBUG,
+                    _("Error evaluating reference '%s' for record id %d: %s") % (
+                        template.report_template_object_reference, rec_obj.id, e)
+                )
+
+        return {
+            'model': model,
+            'record_ids': res_ids
+        }
+
+    def create_report_from_report_template_object_reference_reference(self, cursor, user, template, record_ids, context=None):
+        """
+        Generate report to be attached from the expression in report_template_object_reference field
+        and return it.
+
+        :param cursor: Database Cursor
+        :param user: ID of User
+        :param template: Browse record of template
+        :param record_ids: IDs of template object
+        :param context:
+        :return:
+        """
+        if 'object' not in template.report_template_object_reference:
+            LOGGER.notifyChannel(
+                _("Power Email"),
+                netsvc.LOG_ERROR,
+                _("Error evaluating reference: %s from record id %d. The expression must contain the 'object' variable.") % (
+                    template.report_template_object_reference, template.id)
+            )
+
+        refs = self._get_records_from_report_template_object_reference(cursor,
+                                                                       user,
+                                                                       template,
+                                                                       record_ids,
+                                                                       context=context)
+        if not refs.get('record_ids', []):
+            LOGGER.notifyChannel(
+                _("Power Email"),
+                netsvc.LOG_ERROR,
+                _("Error evaluating reference: %s from record id %d. The expression did not return any record.") % (
+                    template.report_template_object_reference, template.id)
+            )
+
+        report_xml_id = self.pool.get('ir.actions.report.xml').search(
+            cursor, user,
+            [('report_name', '=', refs['model'])],
+            limit=1,
+        )
+        if not report_xml_id:
+            raise osv.except_osv(
+                _("Error"),
+                _("No report found for model %s") % refs['model']
+            )
+
+        ctx = context.copy()
+        ctx['object_to_report_id'] = report_xml_id[0]
+        return self.create_report(cursor, user, template,
+                                         refs.get('record_ids', []),
+                                         context=ctx)
+
     def get_dynamic_attachment(self, cursor, user, template, record_ids, context=None):
-        res = {}
-        if template.report_template:
-            if template.report_template_object_reference:
-                record_reference_ids = []
-                report_attachments = template.report_template_object_reference
-                report_attachments.replace('object', template.object_name.name)
-                if not isinstance(report_attachments, list): # Pel cas que apunti a un many2one
-                    report_attachments = [report_attachments]
+        """
+        Generate report to be attached and return it. If contain a report_template_object_reference field,
+        it will generate one report for each record referenced by the expression in that field.
 
-                record_reference_ids += report_attachments
+        :param cursor: Database Cursor
+        :param user: ID of User
+        :param template: Browse record of template
+        :param record_ids: IDs of template object
+        :param context: Context arguments
 
-            report_vals = self.create_report(cursor, user, template, record_reference_ids, context=context)
-            res = {
-                'file': base64.b64encode(report_vals[0]),
-                'extension': report_vals[1]
-            }
+        :return: List of dicts with 'file' (base64 encoded) and 'extension' keys
+        """
+        res = []
+        # Preserve old behaviour for templates without report_template_object_reference
+        report_vals = self.create_report(cursor, user, template, record_ids,
+                                         context=context)
+        res.append({
+            'file': base64.b64encode(report_vals[0]),
+            'extension': report_vals[1]
+        })
+
+        if template.report_template_object_reference:
+            try:
+                report_vals = self.create_report_from_report_template_object_reference_reference(
+                    cursor, user, template, record_ids, context=context
+                )
+                res.append({
+                    'file': base64.b64encode(report_vals[0]),
+                    'extension': report_vals[1]
+                })
+            except Exception as e:
+                LOGGER.notifyChannel(
+                    _("Power Email"),
+                    netsvc.LOG_ERROR,
+                    _("Error evaluating reference: %s from record id %d. Error: %s") % (template.report_template_object_reference, template.id, e)
+                )
+
         return res
 
     def set_dynamic_attachments(self, cursor, user, template, mail, record_ids, context=None):
@@ -978,9 +1097,9 @@ class poweremail_templates(osv.osv):
         mailbox_obj = self.pool.get('poweremail.mailbox')
 
         res = False
-        dynamic_attachment = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
+        dynamic_attachments = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
 
-        if dynamic_attachment:
+        for dynamic_attachment in dynamic_attachments:
             new_att_vals = {
                 'name': mail.pem_subject + ' (Email Attachment)',
                 'datas': dynamic_attachment['file'],
