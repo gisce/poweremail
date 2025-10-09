@@ -4,6 +4,8 @@ from destral.transaction import Transaction
 from destral import testing
 from mock import patch
 from base64 import b64decode
+import netsvc
+from mock import ANY
 
 class TestAttachOtherModels(testing.OOTestCase):
     """
@@ -40,7 +42,7 @@ class TestAttachOtherModels(testing.OOTestCase):
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         acc_id = False
         if 'enforce_from_account' not in extra_vals:
-            acc_id = self.create_account(cursor, uid)
+            acc_id = self._create_account(cursor, uid)
 
         model_partner = imd_obj.get_object_reference(
             cursor, uid, 'base', 'model_res_partner'
@@ -48,7 +50,7 @@ class TestAttachOtherModels(testing.OOTestCase):
 
         # Agafem un report de demo
         report_id = imd_obj.get_object_reference(
-            cursor, uid, 'base', 'report_test'
+                cursor, uid, 'base', 'report_test'
         )[1]
 
         vals = {
@@ -146,3 +148,93 @@ class TestAttachOtherModels(testing.OOTestCase):
 
             for att in mail.pem_attachments_ids:
                 self.assertEqual(b64decode(att.datas), 'content_from_report_template_object_reference')
+
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report', return_value=("content_main", "pdf"))
+    def test_main_report_only(self, mock_create_report):
+        """Test that main report is generated correctly when no object reference."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            tmpl_id = self._create_template(cursor, uid)
+            tmpl_obj = self.openerp.pool.get('poweremail.templates')
+
+            res = tmpl_obj.get_dynamic_attachment(cursor, uid, tmpl_obj.simple_browse(cursor, uid, tmpl_id, context={}), [1], context={})
+            self.assertEqual(len(res), 1)
+            self.assertEqual(b64decode(res[0]['file']), b'content_main')
+            self.assertEqual(res[0]['extension'], 'pdf')
+
+@patch('poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference')
+@patch('poweremail.poweremail_template.poweremail_templates.create_report',
+       return_value=("content_from_report_reference", "pdf"))
+def test_multiple_reference_records(self, mock_create_report, mock_get_refs):
+    """Test that multiple referenced records generate multiple attachments."""
+    mock_get_refs.return_value = {'model': 'account.invoice', 'record_ids': [1, 2, 3]}
+
+    with Transaction().start(self.database) as txn:
+        cursor = txn.cursor
+        uid = txn.user
+        tmpl_id = self._create_template(cursor, uid, {
+            'report_template_object_reference': 'object.invoice_ids'
+        })
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        tmpl = tmpl_obj.simple_browse(cursor, uid, tmpl_id, context={})
+
+        res = tmpl_obj.get_dynamic_attachment(cursor, uid, tmpl, [1], context={})
+        self.assertGreaterEqual(len(res), 2)  # 1 main + 1 extra or more
+        mock_create_report.assert_called()
+
+@patch('poweremail.poweremail_template.LOGGER')
+@patch('poweremail.poweremail_template.poweremail_templates.create_report',
+       return_value=("content_main", "pdf"))
+def test_reference_expression_without_object(self, mock_create_report, mock_logger):
+    """Ensure expressions without 'object' are handled gracefully."""
+    with Transaction().start(self.database) as txn:
+        cursor = txn.cursor
+        uid = txn.user
+        tmpl_id = self._create_template(cursor, uid, {
+            'report_template_object_reference': 'invoice_id'
+        })
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        tmpl = tmpl_obj.simple_browse(cursor, uid, tmpl_id, context={})
+
+        res = tmpl_obj.get_dynamic_attachment(cursor, uid, tmpl, [1], context={})
+        self.assertEqual(len(res), 1)
+        mock_logger.notifyChannel.assert_any_call(
+            'Power Email', netsvc.LOG_ERROR,
+            ANY
+        )
+
+@patch('poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference',
+       return_value={'model': 'account.invoice', 'record_ids': []})
+@patch('poweremail.poweremail_template.poweremail_templates.create_report',
+       return_value=("content_main", "pdf"))
+def test_reference_evaluates_to_empty(self, mock_create_report, mock_get_refs):
+    """Ensure when reference returns empty list, only main report is generated."""
+    with Transaction().start(self.database) as txn:
+        cursor = txn.cursor
+        uid = txn.user
+        tmpl_id = self._create_template(cursor, uid, {
+            'report_template_object_reference': 'object.invoice_ids'
+        })
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        tmpl = tmpl_obj.simple_browse(cursor, uid, tmpl_id, context={})
+
+        res = tmpl_obj.get_dynamic_attachment(cursor, uid, tmpl, [1], context={})
+        self.assertEqual(len(res), 1)
+        self.assertEqual(b64decode(res[0]['file']), b'content_main')
+
+def test_get_records_from_reference_many2one(self):
+    """Test helper method evaluates a Many2one reference correctly."""
+    with Transaction().start(self.database) as txn:
+        cursor = txn.cursor
+        uid = txn.user
+        tmpl_id = self._create_template(cursor, uid, {
+            'report_template_object_reference': 'object.invoice_id'
+        })
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        tmpl = tmpl_obj.simple_browse(cursor, uid, tmpl_id, context={})
+
+        res = tmpl_obj._get_records_from_report_template_object_reference(cursor, uid, tmpl, [1])
+        self.assertIn('model', res)
+        self.assertIn('record_ids', res)
+        self.assertIsInstance(res['record_ids'], list)

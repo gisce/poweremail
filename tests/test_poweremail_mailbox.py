@@ -36,9 +36,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
         if 'enforce_from_account' not in extra_vals:
             acc_id = self.create_account(cursor, uid)
 
-        # Per defecte agafem el model res.partner de 'base', per evitar canviar comportaments d'altres tests
         model_partner = imd_obj.get_object_reference(
-            cursor, uid, extra_vals.get('model_name', 'base'), extra_vals.get('model_partner', 'model_res_partner')
+            cursor, uid, 'base', 'model_res_partner'
         )[1]
 
         vals = {
@@ -63,11 +62,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             mail_o = self.openerp.pool.get('poweremail.mailbox')
             varconf_o = self.openerp.pool.get('res.config')
             imd_obj = self.openerp.pool.get('ir.model.data')
-            tmpl_id = self.create_template(cursor, uid , extra_vals={
-                'model_partner': 'model_giscedata_facturacio_factura',
-                'model_name': 'giscedata_facturacio',
-            })
-
+            tmpl_id = self.create_template(cursor, uid)
             tmpl_obj = self.openerp.pool.get('poweremail.templates')
 
             partner_id = imd_obj.get_object_reference(
