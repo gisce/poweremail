@@ -913,16 +913,14 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
         report_obj = self.pool.get('ir.actions.report.xml')
-        object_to_report_id = context.get('object_to_report_id', template.report_template.id)
         report_name = report_obj.read(
-            cursor, user, object_to_report_id, ['report_name'], context=context
+            cursor, user, template.report_template.id, ['report_name'], context=context
         )['report_name']
         reportname = 'report.' + report_name
         service = netsvc.LocalService(reportname)
         data = {'model': template.model_int_name}
         (result, format) = service.create(cursor, user, record_ids, data, context=context)
         return (result, format)
-
 
     def _generate_attach_reports(self, cursor, user, template, record_ids, mail, context=None):
         """
@@ -1033,27 +1031,15 @@ class poweremail_templates(osv.osv):
                     template.report_template_object_reference, template.id)
             )
 
-        report_xml_id = self.pool.get('ir.actions.report.xml').search(
-            cursor, user,
-            [('report_name', '=', refs['model'])],
-            limit=1,
-        )
-        if not report_xml_id:
-            raise osv.except_osv(
-                _("Error"),
-                _("No report found for model %s") % refs['model']
-            )
-
-        ctx = context.copy()
-        ctx['object_to_report_id'] = report_xml_id[0]
         return self.create_report(cursor, user, template,
                                          refs.get('record_ids', []),
-                                         context=ctx)
+                                         context=context)
 
     def get_dynamic_attachment(self, cursor, user, template, record_ids, context=None):
         """
         Generate report to be attached and return it. If contain a report_template_object_reference field,
-        it will generate one report for each record referenced by the expression in that field.
+        it will generate the report from the records evaluated from the expression in that field. Ignoring
+        the record_ids parameter.
 
         :param cursor: Database Cursor
         :param user: ID of User
@@ -1064,29 +1050,24 @@ class poweremail_templates(osv.osv):
         :return: List of dicts with 'file' (base64 encoded) and 'extension' keys
         """
         res = []
-        # Preserve old behaviour for templates without report_template_object_reference
-        report_vals = self.create_report(cursor, user, template, record_ids,
-                                         context=context)
-        res.append({
-            'file': base64.b64encode(report_vals[0]),
-            'extension': report_vals[1]
-        })
-
         if template.report_template_object_reference:
             try:
                 report_vals = self.create_report_from_report_template_object_reference_reference(
                     cursor, user, template, record_ids, context=context
                 )
-                res.append({
-                    'file': base64.b64encode(report_vals[0]),
-                    'extension': report_vals[1]
-                })
             except Exception as e:
                 LOGGER.notifyChannel(
                     _("Power Email"),
                     netsvc.LOG_ERROR,
                     _("Error evaluating reference: %s from record id %d. Error: %s") % (template.report_template_object_reference, template.id, e)
                 )
+        else:
+            report_vals = self.create_report(cursor, user, template, record_ids,
+                                             context=context)
+        res.append({
+            'file': base64.b64encode(report_vals[0].encode()),
+            'extension': report_vals[1]
+        })
 
         return res
 

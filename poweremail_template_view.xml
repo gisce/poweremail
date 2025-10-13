@@ -7,7 +7,7 @@
     -->
 <openerp>
     <data>
-    	<record model="ir.ui.view" id="poweremail_template_attachment_form">
+        <record model="ir.ui.view" id="poweremail_template_attachment_form">
             <field name="name">poweremail.template.attachment.form</field>
             <field name="model">poweremail.template.attachment</field>
             <field name="type">form</field>
