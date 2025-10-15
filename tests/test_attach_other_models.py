@@ -43,22 +43,6 @@ class TestAttachOtherModels(testing.OOTestCase):
                 cursor, uid, 'base', 'report_test'
             )[1]
 
-            acc1_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'poweremail', 'info_energia_from_email'
-            )[1]
-            cls.tmpl_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'poweremail', 'default_template_poweremail_2'
-            )[1]
-
-            object_name_ref = cls.imd_obj.get_object_reference(
-                cursor, uid, 'base', 'model_res_partner'
-            )[1]  # Return ir.model id of res.partner
-
-            # Agafem un report de demo
-            cls.report_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'base', 'report_test'
-            )[1]
-
             cls.partner_ids = cls.partner_obj.search(cursor, uid, [], context={}, limit=1)
 
     def setUp(self):
@@ -70,10 +54,8 @@ class TestAttachOtherModels(testing.OOTestCase):
         self.cursor = self.txn.cursor
         self.uid = self.txn.user
 
-        self.pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
         self.mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
         self.partner_obj = self.openerp.pool.get('res.partner')
-        self.imd_obj = self.openerp.pool.get('ir.model.data')
         self.acc_obj = self.openerp.pool.get('poweremail.core_accounts')
 
         # Prepare demo data references
