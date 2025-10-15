@@ -396,7 +396,12 @@ class poweremail_templates(osv.osv):
         'report_template':fields.many2one(
                 'ir.actions.report.xml',
                 'Report to send'),
-        'report_template_object_reference': fields.char('Reference of the report', size=300, required=False),
+        'report_template_object_reference': fields.char(
+            'Reference of the report', size=300, required=False,
+            help="The evaluation of this field should return the ID of the related object. "
+                 "For example, use: object.related_model_id.id. "
+                 "This ensures that the template can correctly reference the object."
+        ),
         #'report_template':fields.reference('Report to send',[('ir.actions.report.xml','Reports')],size=128),
         'allowed_groups':fields.many2many(
                 'res.groups',
@@ -977,13 +982,7 @@ class poweremail_templates(osv.osv):
                 if not value:
                     continue
 
-                if isinstance(value, (list, tuple)):
-                    value = value[0]
-
                 model = value._table_name
-                if hasattr(value, 'id'):
-                    value = value.id
-
                 res_ids.append(value)
             except Exception as e:
                 LOGGER.notifyChannel(
@@ -1011,11 +1010,9 @@ class poweremail_templates(osv.osv):
         :return:
         """
         if 'object' not in template.report_template_object_reference:
-            LOGGER.notifyChannel(
-                _("Power Email"),
-                netsvc.LOG_ERROR,
-                _("Error evaluating reference: %s from record id %d. The expression must contain the 'object' variable.") % (
-                    template.report_template_object_reference, template.id)
+            raise osv.except_osv(
+                _("Error"),
+                _("The expression in 'Reference of the report' field must contain the 'object' variable.")
             )
 
         refs = self._get_records_from_report_template_object_reference(cursor,
@@ -1026,7 +1023,7 @@ class poweremail_templates(osv.osv):
         if not refs.get('record_ids', []):
             LOGGER.notifyChannel(
                 _("Power Email"),
-                netsvc.LOG_ERROR,
+                netsvc.LOG_WARNING,
                 _("Error evaluating reference: %s from record id %d. The expression did not return any record.") % (
                     template.report_template_object_reference, template.id)
             )
@@ -1050,6 +1047,7 @@ class poweremail_templates(osv.osv):
         :return: List of dicts with 'file' (base64 encoded) and 'extension' keys
         """
         res = []
+        report_vals = ()
         if template.report_template_object_reference:
             try:
                 report_vals = self.create_report_from_report_template_object_reference_reference(
@@ -1064,10 +1062,12 @@ class poweremail_templates(osv.osv):
         else:
             report_vals = self.create_report(cursor, user, template, record_ids,
                                              context=context)
-        res.append({
-            'file': base64.b64encode(report_vals[0].encode()),
-            'extension': report_vals[1]
-        })
+
+        if report_vals: # If report generation failed, report_vals is ()
+            res.append({
+                'file': base64.b64encode(report_vals[0].encode()),
+                'extension': report_vals[1]
+            })
 
         return res
 
