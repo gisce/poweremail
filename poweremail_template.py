@@ -945,7 +945,6 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
         lang = get_value(cursor, user, record_ids[0], template.lang, template, context=context)
-        record_reference_ids = record_ids
         ctx = context.copy()
         if lang:
             ctx['lang'] = lang
@@ -1044,9 +1043,10 @@ class poweremail_templates(osv.osv):
         :param record_ids: IDs of template object
         :param context: Context arguments
 
-        :return: List of dicts with 'file' (base64 encoded) and 'extension' keys
+        :return: dict with 'file' and 'extension' keys with the report content and extension. If report generation fails, return
+            dict with 'error' key with the error message.
         """
-        res = []
+        res = {}
         report_vals = ()
         if template.report_template_object_reference:
             try:
@@ -1054,20 +1054,18 @@ class poweremail_templates(osv.osv):
                     cursor, user, template, record_ids, context=context
                 )
             except Exception as e:
-                LOGGER.notifyChannel(
-                    _("Power Email"),
-                    netsvc.LOG_ERROR,
-                    _("Error evaluating reference: %s from record id %d. Error: %s") % (template.report_template_object_reference, template.id, e)
-                )
+                return {
+                    'error': _("Error generating report from reference expression: %s") % e
+                }
         else:
             report_vals = self.create_report(cursor, user, template, record_ids,
                                              context=context)
 
         if report_vals: # If report generation failed, report_vals is ()
-            res.append({
+            res = {
                 'file': base64.b64encode(report_vals[0].encode()),
                 'extension': report_vals[1]
-            })
+            }
 
         return res
 
@@ -1078,15 +1076,15 @@ class poweremail_templates(osv.osv):
         mailbox_obj = self.pool.get('poweremail.mailbox')
 
         res = False
-        dynamic_attachments = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
+        dynamic_attachment = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
 
-        for dynamic_attachment in dynamic_attachments:
+        if dynamic_attachment:
             new_att_vals = {
                 'name': mail.pem_subject + ' (Email Attachment)',
-                'datas': dynamic_attachment['file'],
+                'datas': dynamic_attachment.get('file', ''),
                 'datas_fname': tools.ustr(
                     get_value(cursor, user, record_ids[0], template.file_name, template, context=context) or 'Report'
-                ) + "." + dynamic_attachment['extension'],
+                ) + "." + dynamic_attachment.get('extension', ''),
                 'description': mail.pem_subject or "No Description",
                 'res_model': 'poweremail.mailbox',
                 'res_id': mail.id
@@ -1096,6 +1094,9 @@ class poweremail_templates(osv.osv):
                 'pem_attachments_ids': [[6, 0, [attachment_id]]],
                 'mail_type': 'multipart/mixed'
             }
+            if dynamic_attachment.get('error', False):
+                mailbox_vals['folder'] = 'error'
+
             res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
         return res
 
@@ -1295,7 +1296,10 @@ class poweremail_templates(osv.osv):
         return mailbox_id
 
     def check_outbox(self, cursor, uid, mailbox_id, context=None):
-        return True
+        folder_value = self.pool.get('poweremail.mailbox').read(
+            cursor, uid, mailbox_id, ['folder'], context=context
+        )['folder']
+        return folder_value != 'error'
 
     def generate_mail(self, cursor, user, template_id, record_ids, context=None):
         if context is None:

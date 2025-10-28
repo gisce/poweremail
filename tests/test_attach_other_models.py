@@ -4,8 +4,6 @@ from destral.transaction import Transaction
 from destral import testing
 from mock import patch
 from base64 import b64decode
-import netsvc
-from mock import ANY
 
 class TestAttachOtherModels(testing.OOTestCase):
     """
@@ -115,9 +113,8 @@ class TestAttachOtherModels(testing.OOTestCase):
     def test_main_report_only(self, mock_create_report):
         """Test that main report is generated correctly when no object reference."""
         res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={}), [1], context={})
-        self.assertEqual(len(res), 1)
-        self.assertEqual(b64decode(res[0]['file']), b'content_main')
-        self.assertEqual(res[0]['extension'], 'pdf')
+        self.assertEqual(b64decode(res['file']), b'content_main')
+        self.assertEqual(res['extension'], 'pdf')
 
 
     @patch('poweremail.poweremail_template.LOGGER')
@@ -131,11 +128,8 @@ class TestAttachOtherModels(testing.OOTestCase):
         tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
 
         res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
-        self.assertEqual(len(res), 0)
-        mock_logger.notifyChannel.assert_any_call(
-            'Power Email', netsvc.LOG_ERROR,
-            ANY
-        )
+        self.assertIn('error', res)
+        self.assertEqual(res['error'], "Error generating report from reference expression: warning -- Error\n\nThe expression in 'Reference of the report' field must contain the 'object' variable.")
 
     @patch('poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference',
            return_value={'model': 'account.invoice', 'record_ids': []})
@@ -145,8 +139,8 @@ class TestAttachOtherModels(testing.OOTestCase):
         """Ensure when reference returns empty list, only main report is generated."""
         tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
         res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
-        self.assertEqual(len(res), 1)
-        self.assertEqual(b64decode(res[0]['file']), b'content_main')
+        self.assertEqual(b64decode(res['file']), b'content_main')
+        self.assertEqual(res['extension'], 'pdf')
 
     def test_get_records_from_reference_one2many(self):
         """Test helper method evaluates a one2many reference correctly."""
@@ -167,3 +161,26 @@ class TestAttachOtherModels(testing.OOTestCase):
         mock_create_report.assert_called_once()
         args, kwargs = mock_create_report.call_args
         self.assertEqual(args[2].report_template.id, tmpl.report_template.id)
+
+    @patch('poweremail.poweremail_template.LOGGER')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
+           return_value=("content_main", "pdf"))
+    def test_generate_mail_with_folder_error_in_case_of_invalid_reference(self, mock_create_report, mock_logger):
+        """Check that a mail is created even if the reference expression is invalid but with folder 'error'."""
+        self.pm_tmp_obj.write(
+            self.cursor, self.uid, [self.tmpl_id], {'report_template_object_reference': 'user.menu_id'}  # Invalid reference, no 'object'
+        )
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
+
+        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
+        self.assertIn('error', res)
+        self.assertEqual(res['error'], "Error generating report from reference expression: warning -- Error\n\nThe expression in 'Reference of the report' field must contain the 'object' variable.")
+
+        # Generate mail to check error folder creation
+        self.pm_tmp_obj.generate_mail_sync(
+            self.cursor, self.uid, self.tmpl_id, [self.partner_ids[0]], context={'raise_exception': True}
+        )
+        error_mail_created_id = self.mailbox_obj.search(
+            self.cursor, self.uid, [('folder', '=', 'error'), ('template_id', '=', self.tmpl_id)]
+        )
+        self.assertTrue(error_mail_created_id)
