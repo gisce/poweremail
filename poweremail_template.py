@@ -1020,11 +1020,9 @@ class poweremail_templates(osv.osv):
                                                                        record_ids,
                                                                        context=context)
         if not refs.get('record_ids', []):
-            LOGGER.notifyChannel(
-                _("Power Email"),
-                netsvc.LOG_WARNING,
-                _("Error evaluating reference: %s from record id %d. The expression did not return any record.") % (
-                    template.report_template_object_reference, template.id)
+            raise osv.except_osv(
+                _("Error"),
+                _("No records found evaluating the expression in 'Reference of the report' field.")
             )
 
         return self.create_report(cursor, user, template,
