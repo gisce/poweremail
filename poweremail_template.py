@@ -1113,9 +1113,9 @@ class poweremail_templates(osv.osv):
                     record_company_type = record_model.fields_get(cursor, user)[company_field]['type']
                     record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
 
-                    if record_company_type == 'many2one':
+                    if record_company and record_company_type == 'many2one':
                         ctx_company['company_id'] = record_company[0]
-                    elif record_company_type == 'integer':
+                    elif record_company and record_company_type == 'integer':
                         ctx_company['company_id'] = record_company
                     else:
                         ctx_company['company_id'] = False
