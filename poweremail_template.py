@@ -89,8 +89,10 @@ def send_on_create(self, cr, uid, vals, context=None):
             ctx = context.copy()
             ctx['src_rec_id'] = oid
             ctx['src_model'] = template.object_name.model
-            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                [oid], context=ctx)
+            if context.get('generate_mail_sync', False):
+                self.pool.get('poweremail.templates').generate_mail_sync(cr, uid, tid, [oid], context=ctx)
+            else:
+                self.pool.get('poweremail.templates').generate_mail(cr, uid, tid, [oid], context=ctx)
     return oid
 
 
@@ -104,8 +106,10 @@ def send_on_write(self, cr, uid, ids, vals, context=None):
         # Ensure it's still configured to send on write
         if template.send_on_write:
             context['vals'] = vals.copy()
-            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                ids, context)
+            if context.get('generate_mail_sync', False):
+                self.pool.get('poweremail.templates').generate_mail_sync(cr, uid, tid, ids, context)
+            else:
+                self.pool.get('poweremail.templates').generate_mail(cr, uid, tid, ids, context)
     return result
 
 
