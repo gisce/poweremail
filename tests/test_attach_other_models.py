@@ -4,183 +4,205 @@ from destral.transaction import Transaction
 from destral import testing
 from mock import patch
 from base64 import b64decode
+from osv.osv import except_osv
 
 class TestAttachOtherModels(testing.OOTestCase):
     """
     Test the attachment of other models to the email
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Prepara les dades demo en una transacció temporal.
-        No modifica la base de dades persistent.
-        """
-        super(TestAttachOtherModels, cls).setUpClass()
-        with Transaction().start(cls.database) as txn:
-            cursor = txn.cursor
-            uid = txn.user
-            cls.imd_obj = cls.openerp.pool.get('ir.model.data')
-            cls.pm_tmp_obj = cls.openerp.pool.get('poweremail.templates')
-            cls.partner_obj = cls.openerp.pool.get('res.partner')
-
-            # Guardem referències necessàries
-            cls.acc1_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'poweremail', 'info_energia_from_email'
-            )[1]
-
-            cls.tmpl_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'poweremail', 'default_template_poweremail_2'
-            )[1]
-
-            cls.object_name_ref = cls.imd_obj.get_object_reference(
-                cursor, uid, 'base', 'model_res_partner'
-            )[1]
-
-            cls.report_id = cls.imd_obj.get_object_reference(
-                cursor, uid, 'base', 'report_test'
-            )[1]
-
-            cls.partner_ids = cls.partner_obj.search(cursor, uid, [], context={}, limit=1)
-
     def setUp(self):
-        """
-        Cada test obre la seva transacció però fa servir les dades creades a setUpClass
-        """
         super(TestAttachOtherModels, self).setUp()
         self.txn = Transaction().start(self.database)
         self.cursor = self.txn.cursor
         self.uid = self.txn.user
+        pool = self.openerp.pool
 
-        self.mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
-        self.partner_obj = self.openerp.pool.get('res.partner')
-        self.acc_obj = self.openerp.pool.get('poweremail.core_accounts')
+        # Objectes comuns
+        self.partner_obj = pool.get('res.partner')
+        self.pm_tmp_obj = pool.get('poweremail.templates')
+        self.acc_obj = pool.get('poweremail.core_accounts')
+        self.mailbox_obj = pool.get('poweremail.mailbox')
+        self.ir_model_obj = pool.get('ir.model')
+        self.report_obj = pool.get('ir.actions.report.xml')
 
-        # Prepare demo data references
-        self.acc_obj.write(
-            self.cursor, self.uid, [self.acc1_id], {'email_id': 'test@example.com'}, context={}
-        )
+        # Crear partner nou
+        self.partner_id = self.partner_obj.create(self.cursor, self.uid, {
+            'name': 'Test Partner',
+            'email': 'partner@test.com',
+        })
+
+        # Crear compte d'email nou
+        self.account_id = self.acc_obj.create(self.cursor, self.uid, {
+            'name': 'Test account',
+            'user': self.uid,
+            'email_id': 'test_account@test.com',
+            'smtpserver': 'smtp.test.com',
+            'smtpport': 25,
+            'company': 'no',
+        })
+
+        # Crear model i report dummy
+        model_partner_id = self.ir_model_obj.search(
+            self.cursor, self.uid, [('model', '=', 'res.partner')]
+        )[0]
+
+        self.report_id = self.report_obj.create(self.cursor, self.uid, {
+            'name': 'Fake Report',
+            'model': 'res.partner',
+            'report_name': 'fake.report.partner',
+            'report_type': 'pdf',
+        })
+
+        # Crear plantilla nova
+        self.template_id = self.pm_tmp_obj.create(self.cursor, self.uid, {
+            'name': 'Template Test',
+            'object_name': model_partner_id,
+            'lang': 'en_US',
+            'report_template': self.report_id,
+            'enforce_from_account': self.account_id,
+            'template_language': 'mako',
+            'def_to': 'object.email',
+            'inline': True,
+            'def_subject': 'Test subject',
+            'def_body_text': 'Test body text',
+            'def_priority': '2',
+        })
+
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
+           return_value=("OK_REPORT", "pdf"))
+    def test_happy_path_with_valid_reference(self, mock_create_report):
+        """Ensure normal flow works when the reference expression returns a
+        valid ID."""
         self.pm_tmp_obj.write(
-            self.cursor, self.uid, [self.tmpl_id],
-            {'lang': 'en_US', 'object_name': self.object_name_ref,
-             'report_template': self.report_id,
-             'enforce_from_account': self.acc1_id,
-             'template_language': 'mako',
-             'def_to': 'Test to',
-             'inline': True,
-             'def_subject': 'Test subject',
-             'def_cc': 'Test cc',
-             'def_bcc': 'Test bcc',
-             'def_body_text': 'Test body text',
-             'def_priority': '2',
-             }, context={}
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object.id'}
         )
 
-    def tearDown(self):
-        super(TestAttachOtherModels, self).tearDown()
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.template_id)
+        res = self.pm_tmp_obj.get_dynamic_attachment(
+            self.cursor, self.uid, tmpl, [self.partner_id]
+        )
 
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report', return_value=("content_from_report_template_object_reference", "provapdf"))
-    def test_generate_attachments_with_report_template_object_reference(self, extra_vals=None):
-        """
-        Test the generation of attachments with a report template object reference
+        self.assertIn('file', res)
+        self.assertEqual(b64decode(res['file']), b'OK_REPORT')
+        self.assertEqual(res['extension'], 'pdf')
 
-        NOTE: In this case only will generate one attachment, because the conditions are too restrictive to return anything
-        """
-        mailbox_id = self.pm_tmp_obj.generate_mail(self.cursor, self.uid, self.tmpl_id, [self.partner_ids[0]], context={'raise_exception': True})
+        mailbox_id = self.pm_tmp_obj.generate_mail(
+            self.cursor, self.uid, self.template_id, [self.partner_id],
+            context={'raise_exception': True}
+        )
         mail = self.mailbox_obj.simple_browse(self.cursor, self.uid, mailbox_id)
-        for att in mail.pem_attachments_ids:
-            self.assertEqual(b64decode(att.datas), 'content_from_report_template_object_reference') # datas is get from the 1r tuple value from create_report method, that in this case is mocked to avoid the real report generation
+        self.assertNotEqual(mail.folder, 'error')
 
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report', return_value=("content_from_report_template_object_reference", "provapdf"))
-    def test_generate_attachments_without_report_template_object_reference(self, mock_create_report , extra_vals=None):
-        """
-        Test the generation of attachments without a report template object reference
-        """
+    def test_reference_returns_record_instead_of_id(self):
+        """Ensure exception is raised if expression returns a record instead
+        of an ID."""
         self.pm_tmp_obj.write(
-            self.cursor, self.uid, [self.tmpl_id], {'report_template_object_reference': False}
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object'}
         )
-        with patch.object(self.pm_tmp_obj, '_generate_attach_reports') as mock_generate_attach_reports:
-            mock_generate_attach_reports.return_value = None
-            with patch.object(self.pm_tmp_obj._generate_attach_reports, 'get_value') as mock_get_value_from_generate_attach_reports: # Mock the get_value from the _generate_attach_reports method
-                mailbox_id = self.pm_tmp_obj.generate_mail(self.cursor, self.uid, self.tmpl_id, [self.partner_ids[0]], context={'raise_exception': True})
-                mock_get_value_from_generate_attach_reports.assert_not_called()
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid,
+                                             self.template_id)
+        with self.assertRaises(except_osv) as error:
+            self.pm_tmp_obj._get_records_from_report_template_object_reference(
+                self.cursor, self.uid, tmpl, [self.partner_id]
+            )
 
-                mail = self.mailbox_obj.simple_browse(self.cursor, self.uid, mailbox_id)
-                for att in mail.pem_attachments_ids:
-                    self.assertEqual(b64decode(att.datas), 'content_from_report_template_object_reference')
+        self.assertIn(
+            u"The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.",
+            error.exception.value
+        )
 
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report', return_value=("content_main", "pdf"))
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
+           return_value=("content_main", "pdf"))
     def test_main_report_only(self, mock_create_report):
-        """Test that main report is generated correctly when no object reference."""
-        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={}), [1], context={})
+        """Test that main report is generated correctly when no object
+        reference."""
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.template_id)
+        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [self.partner_id])
         self.assertEqual(b64decode(res['file']), b'content_main')
         self.assertEqual(res['extension'], 'pdf')
 
-
-    @patch('poweremail.poweremail_template.LOGGER')
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
-           return_value=("content_main", "pdf"))
-    def test_reference_expression_without_object(self, mock_create_report, mock_logger):
-        """Ensure expressions without 'object' are handled gracefully."""
+    def test_create_report_from_report_template_object_reference_reference_with_non_records_ids(
+            self):
+        """Ensure exception is raised if expression returns non-record IDs."""
         self.pm_tmp_obj.write(
-            self.cursor, self.uid, [self.tmpl_id], {'report_template_object_reference': 'user.menu_id'}  # Invalid reference, no 'object'
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object.email'}
         )
-        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid,
+                                             self.template_id)
+        with self.assertRaises(except_osv) as error:
+            self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl,
+                                                   [self.partner_id])
 
-        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
-        self.assertIn('error', res)
-        self.assertEqual(res['error'], "Error generating report from reference expression: warning -- Error\n\nThe expression in 'Reference of the report' field must contain the 'object' variable.")
+        self.assertIn(
+            u"The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.",
+            error.exception.value
+        )
 
-    @patch('poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference',
-           return_value={'model': 'account.invoice', 'record_ids': []})
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
-           return_value=("content_main", "pdf"))
-    def test_reference_evaluates_to_empty(self, mock_create_report, mock_get_refs):
-        """Ensure when reference returns empty list, only main report is generated."""
-        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
-        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
-        self.assertEqual(b64decode(res['file']), b'content_main')
-        self.assertEqual(res['extension'], 'pdf')
-
-    def test_get_records_from_reference_one2many(self):
-        """Test helper method evaluates a one2many reference correctly."""
+    def test_reference_expression_without_object(self):
+        """Ensure expressions without 'object' raise an exception."""
         self.pm_tmp_obj.write(
-            self.cursor, self.uid, [self.tmpl_id], {'report_template_object_reference': 'object.address'}  # Invalid reference, no 'object'
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'user.menu_id'}
         )
-        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
-        res = self.pm_tmp_obj._get_records_from_report_template_object_reference(self.cursor, self.uid, tmpl, [1])
-        self.assertIn('model', res)
-        self.assertIn('record_ids', res)
-        self.assertIsInstance(res['record_ids'], list)
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.template_id)
+        with self.assertRaises(except_osv) as error:
+            self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [self.partner_id])
 
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report', return_value=("content_from_report_template_object_reference", "provapdf"))
+        self.assertIn(
+            u"The expression in 'Reference of the report' field must contain the 'object' variable.",
+            error.exception.value
+        )
+
+    def test_reference_evaluates_to_empty(self):
+        """Ensure expression with empty result raises an exception."""
+        self.pm_tmp_obj.write(
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object.child_ids'}
+        )
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid,
+                                             self.template_id)
+        with self.assertRaises(except_osv) as error:
+            self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl,
+                                                   [self.partner_id])
+
+        self.assertIn(
+            u"The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.",
+            error.exception.value
+        )
+
+    @patch(
+        'poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference',
+        return_value={'record_ids': []})
+    def test_create_report_from_report_template_object_reference_no_reference(
+            self, mock_get_records):
+        """Ensure exception is raised if no records found from reference."""
+        self.pm_tmp_obj.write(
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object.id'}
+        )
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid,
+                                             self.template_id)
+        with self.assertRaises(except_osv) as error:
+            self.pm_tmp_obj.create_report_from_report_template_object_reference_reference(
+                self.cursor, self.uid, tmpl, [self.partner_id]
+            )
+
+        self.assertIn(
+            u"No records found evaluating the expression in 'Reference of the report' field.",
+            error.exception.value
+        )
+
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
+           return_value=("content_from_report_template_object_reference",
+                         "pdf"))
     def test_reference_uses_same_report_template(self, mock_create_report):
-        """Ensure referenced records still use the template's own report."""
-        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
-        self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
+        """Ensure referenced records use the same template report."""
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.template_id)
+        self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [self.partner_id])
         mock_create_report.assert_called_once()
         args, kwargs = mock_create_report.call_args
         self.assertEqual(args[2].report_template.id, tmpl.report_template.id)
-
-    @patch('poweremail.poweremail_template.LOGGER')
-    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
-           return_value=("content_main", "pdf"))
-    def test_generate_mail_with_folder_error_in_case_of_invalid_reference(self, mock_create_report, mock_logger):
-        """Check that a mail is created even if the reference expression is invalid but with folder 'error'."""
-        self.pm_tmp_obj.write(
-            self.cursor, self.uid, [self.tmpl_id], {'report_template_object_reference': 'user.menu_id'}  # Invalid reference, no 'object'
-        )
-        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.tmpl_id, context={})
-
-        res = self.pm_tmp_obj.get_dynamic_attachment(self.cursor, self.uid, tmpl, [1], context={})
-        self.assertIn('error', res)
-        self.assertEqual(res['error'], "Error generating report from reference expression: warning -- Error\n\nThe expression in 'Reference of the report' field must contain the 'object' variable.")
-
-        # Generate mail to check error folder creation
-        self.pm_tmp_obj.generate_mail_sync(
-            self.cursor, self.uid, self.tmpl_id, [self.partner_ids[0]], context={'raise_exception': True}
-        )
-        error_mail_created_id = self.mailbox_obj.search(
-            self.cursor, self.uid, [('folder', '=', 'error'), ('template_id', '=', self.tmpl_id)]
-        )
-        self.assertTrue(error_mail_created_id)

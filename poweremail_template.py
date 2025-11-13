@@ -974,25 +974,24 @@ class poweremail_templates(osv.osv):
         """
         res_ids = []
         expr = template.report_template_object_reference.replace('object', 'rec')
-        model = ''
-        for rec_obj in self.pool.get(template.object_name.model).simple_browse(cursor, user, record_ids, context=context):
+        for rec_brw in self.pool.get(template.object_name.model).simple_browse(cursor, user, record_ids, context=context):
             try:
-                value = eval(expr, {}, {'rec': rec_obj})
-                if not value:
-                    continue
-
-                model = value._table_name
-                res_ids.append(value)
+                value = eval(expr, {}, {'rec': rec_brw})  # Es considera que el resultat es un ID. (e.g): rec.invoice_id.id
             except Exception as e:
-                LOGGER.notifyChannel(
-                    _("Power Email"),
-                    netsvc.LOG_DEBUG,
-                    _("Error evaluating reference '%s' for record id %d: %s") % (
-                        template.report_template_object_reference, rec_obj.id, e)
+                raise osv.except_osv(
+                    _("Error"),
+                    _("Error evaluating the expression in 'Reference of the report' field: %s") % e
                 )
 
+            if not value or not isinstance(value, (long, int)):
+                raise osv.except_osv(
+                    _("Error"),
+                    _("The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.")
+                )
+
+            res_ids.append(value)
+
         return {
-            'model': model,
             'record_ids': res_ids
         }
 
@@ -1047,14 +1046,9 @@ class poweremail_templates(osv.osv):
         res = {}
         report_vals = ()
         if template.report_template_object_reference:
-            try:
-                report_vals = self.create_report_from_report_template_object_reference_reference(
-                    cursor, user, template, record_ids, context=context
-                )
-            except Exception as e:
-                return {
-                    'error': _("Error generating report from reference expression: %s") % e
-                }
+            report_vals = self.create_report_from_report_template_object_reference_reference(
+                cursor, user, template, record_ids, context=context
+            )
         else:
             report_vals = self.create_report(cursor, user, template, record_ids,
                                              context=context)
@@ -1092,10 +1086,9 @@ class poweremail_templates(osv.osv):
                 'pem_attachments_ids': [[6, 0, [attachment_id]]],
                 'mail_type': 'multipart/mixed'
             }
-            if dynamic_attachment.get('error', False):
-                mailbox_vals['folder'] = 'error'
 
             res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
+
         return res
 
     def get_static_attachments_ids_from_record(self, cursor, user, template, record_ids, context=None):
@@ -1294,10 +1287,7 @@ class poweremail_templates(osv.osv):
         return mailbox_id
 
     def check_outbox(self, cursor, uid, mailbox_id, context=None):
-        folder_value = self.pool.get('poweremail.mailbox').read(
-            cursor, uid, mailbox_id, ['folder'], context=context
-        )['folder']
-        return folder_value != 'error'
+        return True
 
     def generate_mail(self, cursor, user, template_id, record_ids, context=None):
         if context is None:
