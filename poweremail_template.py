@@ -1055,7 +1055,7 @@ class poweremail_templates(osv.osv):
 
         if report_vals: # If report generation failed, report_vals is ()
             res = {
-                'file': base64.b64encode(report_vals[0].encode()),
+                'file': base64.b64encode(report_vals[0]),
                 'extension': report_vals[1]
             }
 
