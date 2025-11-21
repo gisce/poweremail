@@ -114,7 +114,7 @@ class poweremail_preview(osv.osv_memory):
         if wizard_values['env']:
             ctx.update(eval(wizard_values['env']))
 
-        had_error = False
+        vals['state'] = 'init'
 
         for field in mail_fields:
             try:
@@ -131,17 +131,11 @@ class poweremail_preview(osv.osv_memory):
 
             except Exception as e:
                 if field == 'body_text':
-                    had_error = True
                     vals[field] = html_error_template().render()
                 else:
                     tb = traceback.format_tb(sys.exc_info()[2])
                     vals[field] = '{}\n{}'.format(e.message, ''.join(tb))
                 vals['state'] = 'error'
-
-        if had_error:
-            vals['state'] = 'error'
-        else:
-            vals['state'] = 'init'
 
         self.write(cr, uid, ids, vals, context=context)
         return True
