@@ -113,6 +113,9 @@ class poweremail_preview(osv.osv_memory):
         ctx['raise_exception'] = True
         if wizard_values['env']:
             ctx.update(eval(wizard_values['env']))
+
+        vals['state'] = 'init'
+
         for field in mail_fields:
             try:
                 if field == 'report':
