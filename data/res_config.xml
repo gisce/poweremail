@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data noupdate="1">
+        <record model="res.config" id="poweremail_n_mails_per_batch">
+            <field name="name">poweremail_n_mails_per_batch</field>
+            <field name="value">0</field>
+            <field name="description">Sets a limit of mails to send every time the email cron is run. 0 for no limit.</field>
+        </record>
+    </data>
+</openerp>
