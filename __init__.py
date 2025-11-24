@@ -29,8 +29,7 @@ from . import poweremail_send_wizard
 from . import poweremail_mailbox
 from . import poweremail_serveraction
 from . import wizard
-
-from . import wizard
+from . import utils
 
 import logging
 

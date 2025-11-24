@@ -43,7 +43,7 @@ import tools
 import six
 
 from qreu import Email
-from qreu.address import Address, parseaddr
+from qreu.address import Address, parseaddr, getaddresses
 from qreu.sendcontext import Sender, SMTPSender
 from html2text import html2text
 
@@ -53,7 +53,8 @@ _MAIL_COUNT_MARGIN = 4
 def filter_send_emails(emails_str):
     if not emails_str:
         emails_str = ''
-    return ', '.join(set([e.strip() for e in emails_str.split(',') if e.strip()]))
+    emails = getaddresses([emails_str])
+    return ", ".join(Address(*mail).display for mail in emails)
 
 _priority_selection = [('0', 'Low'),
                        ('1', 'Normal'),
@@ -98,8 +99,7 @@ class poweremail_core_accounts(osv.osv):
         'smtpuname': fields.char('User Name',
                         size=120, required=False,
                         readonly=True, states={'draft':[('readonly', False)]}),
-        'smtppass': fields.char('Password',
-                        size=120, invisible=True,
+        'smtppass': fields.char('Password', size=120,
                         required=False, readonly=True,
                         states={'draft':[('readonly', False)]}),
         'smtptls': fields.boolean(
@@ -494,6 +494,31 @@ class poweremail_core_accounts(osv.osv):
             result['all'].extend(ids_as_list)
         return result
 
+    def get_not_debug_sender(self, account):
+        return SMTPSender(
+            host=account.smtpserver,
+            port=account.smtpport,
+            user=account.smtpuname,
+            passwd=account.smtppass,
+            tls=account.smtptls,
+            ssl=account.smtpssl
+        )
+
+    def get_sender(self, account):
+        sender = (
+            Sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass,
+                tls=account.smtptls,
+                ssl=account.smtpssl
+            )
+            if config.get('debug_mode', False)
+            else self.get_not_debug_sender(account)
+        )
+        return sender
+
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
         def create_qreu(headers, payload, **kwargs):
@@ -596,14 +621,7 @@ class poweremail_core_accounts(osv.osv):
                 extra_headers.pop('Organitzation')
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
-            with sender(
-                host=account.smtpserver,
-                port=account.smtpport,
-                user=account.smtpuname,
-                passwd=account.smtppass,
-                tls=account.smtptls,
-                ssl=account.smtpssl
-            ):
+            with self.get_sender(account): # Returns a Sender context from qreu
                 mail = Email()
                 try:
                     mail = create_qreu(

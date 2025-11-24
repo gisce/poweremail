@@ -50,7 +50,7 @@
     """,
     "init_xml": ['poweremail_scheduler_data.xml'],
     "demo_xml": [
-        'poweremail_demo.xml'
+        'demo/poweremail_demo.xml'
     ],
     "update_xml": [
         'data/res_config.xml',
@@ -67,6 +67,7 @@
         'poweremail_mailbox_view.xml',
         'poweremail_serveraction_view.xml',
         'security/ir.model.access.csv',
+        'poweremail_mailbox_cronjobs.xml'
     ],
     "installable": True,
     "active": False,

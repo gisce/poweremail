@@ -31,6 +31,7 @@ from tools.translate import _
 import tools
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
+from premailer import transform
 
 
 class poweremail_send_wizard(osv.osv_memory):
@@ -138,7 +139,11 @@ class poweremail_send_wizard(osv.osv_memory):
         if len(context['src_rec_ids']) > 1: # Multiple Mail: Gets original template values for multiple email change
             return getattr(template, field)
         else: # Simple Mail: Gets computed template values
-            return self.get_value(cr, uid, template, getattr(template, field), context)
+            value = self.get_value(cr, uid, template, getattr(template, field), context)
+            if template.inline and field == 'def_body_text':
+                value = transform(value)
+
+            return value
 
     _columns = {
         'state':fields.selection([
@@ -414,6 +419,18 @@ class poweremail_send_wizard(osv.osv_memory):
             attachment_ids_templ.append(new_id)
         return attachment_ids_templ
 
+    def add_record_attachments(self, cursor, uid, template, src_rec_id, context=None):
+        attachment_ids = []
+        if template.attach_record_items:
+            attachment_o = self.pool.get('ir.attachment')
+            attachment_sp = [('res_model', '=', template.object_name.model),
+                             ('res_id', '=', src_rec_id)]
+
+            if template.record_attachment_categories:
+                attachment_sp.append(('category_id', 'in', [c.id for c in template.record_attachment_categories]))
+            attachment_ids = attachment_o.search(cursor, uid, attachment_sp, context=context)
+        return attachment_ids
+
     def create_partner_event(self, cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=None):
         if context is None:
             context = {}
@@ -495,6 +512,9 @@ class poweremail_send_wizard(osv.osv_memory):
                 # Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
             }
             ctx = context.copy()
+            if template.inline:
+                vals['pem_body_text'] = transform(vals['pem_body_text'])
+
             mail_id = self.create_mail(cr, uid, screen_vals, src_rec_id, vals, context=ctx)
             mail_ids.append(mail_id)
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
@@ -516,6 +536,10 @@ class poweremail_send_wizard(osv.osv_memory):
             # Add template attachments
             attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
             attachment_ids.extend(attachment_ids_templ)
+            # Add record attachments
+            attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
+            attachment_ids.extend(attachment_ids_record)
+
             if attachment_ids:
                 mailbox_vals = {
                     'pem_attachments_ids': [[6, 0, attachment_ids]],

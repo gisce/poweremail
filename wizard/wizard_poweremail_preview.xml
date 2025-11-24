@@ -8,16 +8,30 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Power Email Preview">
-                    <field name="model_ref" on_change="on_change_ref(model_ref, context)" colspan="4"/>
-                    <field name="to" colspan="4"/>
-                    <field name="cc" colspan="4"/>
-                    <field name="bcc" colspan="4"/>
+                    <field name="state" invisible="1"/>
+                    <field name="model_ref" colspan="4"/>
+                    <field name="enforce_from_account" colspan="4" readonly="1"/>
+                    <field name="to" colspan="2"/>
+                    <field name="cc" colspan="2"/>
+                    <field name="bcc" colspan="2"/>
+                    <field name="lang" colspan="2"/>
                     <field name="subject" colspan="4"/>
-                    <field name="body_text" colspan="4"/>
+                    <separator string="Extra scope variables" colspan="4"/>
+                    <field name="env" colspan="4" widget="codeeditor" widget_props="{'lang': 'json'}" height="100" nolabel="1"/>
+                    <notebook>
+                        <page string="Body preview">
+                            <field name="body_text" colspan="4" widget="html_preview" nolabel="1"/>
+                        </page>
+                        <page string="Body HTML">
+                            <field name="body_text" colspan="4" nolabel="1"/>
+                        </page>
+                    </notebook>
                     <field name="report" colspan="4"/>
-                    <field name="save_to_drafts_prev" colspan="4"/>
-                    <button icon="gtk-close" special="cancel" string="Close" />
-                    <button name="action_generate_static_mail" icon="gtk-ok" string="Generate Email" type="object"/>
+                    <separator colspan="2"/>
+                    <field name="save_to_drafts_prev" colspan="2"/>
+                    <button name="action_generate_static_mail" icon="gtk-refresh" string="Preview Email" type="object" colspan="2"/>
+                    <button name="action_send_static_mail" icon="send" string="Send Email" type="object"
+                            attrs="{'invisible':[('state','=','error')]}" colspan="2"/>
                 </form>
             </field>
         </record>

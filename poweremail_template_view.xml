@@ -90,13 +90,22 @@
                             />
                         </page>
                         <page string="Attachment settings">
-                            <separator string="Dynamic attachments (reports)" colspan="4" />
-                            <field name="file_name" colspan="2" />
-                            <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]" />
-                            <field name="attach_record_items" colspan="2"/>
-                            <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
-                            <separator string="Static attachments" colspan="4"/>
-                            <field name="ir_attachment_ids" colspan="4" nolabel="1"/>
+                            <group string="Dynamic attachments (reports)" colspan="2">
+                                <field name="file_name" colspan="2"/>
+                                <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]"/>
+                                <field name="attach_record_items" colspan="2"/>
+                                <group attrs="{'invisible':[('attach_record_items', '!=', True)]}" colspan="8">
+                                    <newline/>
+                                    <field name="record_attachment_categories" colspan="8"/>
+                                </group>
+                                <field name="tmpl_attachment_ids" colspan="4" nolabel="1"/>
+                            </group>
+                            <group string="Static attachments" colspan="2">
+                                <alert alert_type="info" text="The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: extraordinary_meeting.en_EN.pdf) to identify the document by language.">
+                                    <button string="More information" type="object" name="link_additional_info" icon="external-link"/>
+                                </alert>
+                                <field name="ir_attachment_ids" colspan="4" nolabel="1"/>
+                            </group>
                         </page>
                         <page string="Automatisms settings">
                             <field name="auto_email" colspan="4"/>
@@ -108,6 +117,7 @@
                                 attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
                             <field name="send_on_create" colspan="4"/>
                             <field name="send_on_write" colspan="4"/>
+                            <field name="send_immediately" colspan="4"/>
                             <field name="use_filter" colspan="4"/>
                             <group string="Filter" colspan="4" attrs="{'invisible':[('use_filter','=',False)]}">
                                 <group colspan="3" col="1">
@@ -130,24 +140,38 @@
                                 <field name="single_email" colspan="4"/>
                                 <field name="use_sign" colspan="4"/>
                                 <field name="save_to_drafts" colspan="4"/>
+                                <field name="inline" colspan="4"/>
                             </group>
                             <group>
                                 <separator colspan="4" string="Allowed User Groups" />
                                 <field name="allowed_groups" string="Allowed User Groups" nolabel="1" colspan="4"/>
                             </group>
                         </page>
+                        <page string="Wizard send email">
+                            <field name="ref_ir_act_window" colspan="4"/>
+                            <field name="ref_ir_value" colspan="4"/>
+                            <group>
+                                <label string="" colspan="2"/>
+                                <button
+                                    string="Remove send email wizard"
+                                    colspan="1" name="remove_action_reference"
+                                    type="object"
+                                    attrs="{'readonly':[('ref_ir_act_window', '=', False), ('ref_ir_value', '=', False)]}"
+                                    icon="minus"
+                                    primary="1" danger="1"
+                                />
+                                <button
+                                    string="Create send email wizard"
+                                    colspan="1" name="create_action_reference"
+                                    type="object"
+                                    attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"
+                                    icon="plus"
+                                    primary="1"
+                                />
+                            </group>
+                        </page>
                         <page string="Advanced">
-                            <separator string="Email action and wizard" colspan="4" />
-                            <field name="ref_ir_act_window"/>
-                            <field name="ref_ir_value"/>
                             <field name="server_action" colspan="4" readonly="1" />
-                            <button
-                                string="Create action and value"
-                                colspan="1" name="create_action_reference"
-                                type="object"
-                                attrs="{'readonly':[('ref_ir_act_window', '!=', False), ('ref_ir_value', '!=', False)]}"
-                                icon="gtk-execute"
-                            />
                             <separator string="Expression builder" colspan="4"/>
                             <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" colspan="4"/>
                             <notebook colspan="4">
