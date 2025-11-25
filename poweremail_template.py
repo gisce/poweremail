@@ -983,7 +983,7 @@ class poweremail_templates(osv.osv):
                     _("Error evaluating the expression in 'Reference of the report' field: %s") % e
                 )
 
-            if not value or not isinstance(value, (long, int)):
+            if not value or not isinstance(value, six.integer_types):
                 raise osv.except_osv(
                     _("Error"),
                     _("The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.")
@@ -991,9 +991,7 @@ class poweremail_templates(osv.osv):
 
             res_ids.append(value)
 
-        return {
-            'record_ids': res_ids
-        }
+        return res_ids
 
     def create_report_from_report_template_object_reference_reference(self, cursor, user, template, record_ids, context=None):
         """
@@ -1013,20 +1011,16 @@ class poweremail_templates(osv.osv):
                 _("The expression in 'Reference of the report' field must contain the 'object' variable.")
             )
 
-        refs = self._get_records_from_report_template_object_reference(cursor,
-                                                                       user,
-                                                                       template,
-                                                                       record_ids,
-                                                                       context=context)
-        if not refs.get('record_ids', []):
+        record_ref_ids = self._get_records_from_report_template_object_reference(
+            cursor, user, template, record_ids, context=context
+        )
+        if not record_ref_ids:
             raise osv.except_osv(
                 _("Error"),
                 _("No records found evaluating the expression in 'Reference of the report' field.")
             )
 
-        return self.create_report(cursor, user, template,
-                                         refs.get('record_ids', []),
-                                         context=context)
+        return self.create_report(cursor, user, template, record_ref_ids, context=context)
 
     def get_dynamic_attachment(self, cursor, user, template, record_ids, context=None):
         """
@@ -1050,15 +1044,13 @@ class poweremail_templates(osv.osv):
                 cursor, user, template, record_ids, context=context
             )
         else:
-            report_vals = self.create_report(cursor, user, template, record_ids,
-                                             context=context)
+            report_vals = self.create_report(cursor, user, template, record_ids, context=context)
 
         if report_vals: # If report generation failed, report_vals is ()
             res = {
                 'file': base64.b64encode(report_vals[0]),
                 'extension': report_vals[1]
             }
-
         return res
 
     def set_dynamic_attachments(self, cursor, user, template, mail, record_ids, context=None):
@@ -1086,9 +1078,7 @@ class poweremail_templates(osv.osv):
                 'pem_attachments_ids': [[6, 0, [attachment_id]]],
                 'mail_type': 'multipart/mixed'
             }
-
             res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
-
         return res
 
     def get_static_attachments_ids_from_record(self, cursor, user, template, record_ids, context=None):
