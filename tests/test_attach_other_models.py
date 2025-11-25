@@ -176,9 +176,11 @@ class TestAttachOtherModels(testing.OOTestCase):
 
     @patch(
         'poweremail.poweremail_template.poweremail_templates._get_records_from_report_template_object_reference',
-        return_value={'record_ids': []})
+        return_value=[]
+    )
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def test_create_report_from_report_template_object_reference_no_reference(
-            self, mock_get_records):
+            self, mock_get_records, mock_create_report):
         """Ensure exception is raised if no records found from reference."""
         self.pm_tmp_obj.write(
             self.cursor, self.uid, [self.template_id],
