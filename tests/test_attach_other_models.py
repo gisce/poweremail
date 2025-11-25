@@ -124,12 +124,13 @@ class TestAttachOtherModels(testing.OOTestCase):
         self.assertEqual(b64decode(res['file']), b'content_main')
         self.assertEqual(res['extension'], 'pdf')
 
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def test_create_report_from_report_template_object_reference_reference_with_non_records_ids(
-            self):
+            self, mock_create_report):
         """Ensure exception is raised if expression returns non-record IDs."""
         self.pm_tmp_obj.write(
             self.cursor, self.uid, [self.template_id],
-            {'report_template_object_reference': 'object.email'}
+            {'report_template_object_reference': 'object.name'}
         )
         tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid,
                                              self.template_id)
