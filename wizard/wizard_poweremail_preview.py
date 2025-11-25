@@ -9,6 +9,7 @@ from ..poweremail_template import get_value
 from tools.translate import _
 import tools
 from premailer import transform
+from osv.orm import Constraint, OnlyFieldsConstraint
 
 
 class poweremail_preview(osv.osv_memory):
@@ -56,6 +57,78 @@ class poweremail_preview(osv.osv_memory):
             res = templates_brw[0].enforce_from_account.id
 
         return res
+
+    def onchange_model_ref(self, cr, uid, ids, model_ref, context=None):
+        context = context or {}
+        res = {'value': {}}
+
+        if not model_ref or 'active_id' not in context:
+            return res
+
+        model_name, record_id = model_ref.split(',')
+        record_id = int(record_id)
+
+        template_obj = self.pool.get('poweremail.templates')
+        template = template_obj.browse(cr, uid, context['active_id'],
+                                       context=context)
+
+        lang = False
+        try:
+            if template.lang:
+                lang = get_value(cr, uid, record_id, template.lang, template,
+                                 context)
+        except Exception:
+            lang = context.get('lang') or False
+
+        ctx = context.copy()
+
+        if lang:
+            ctx.update({'lang': lang})
+            template = template_obj.browse(cr, uid, context['active_id'], ctx)
+            res['value']['lang'] = str(lang)
+
+        ctx['raise_exception'] = True
+
+        wizard_env = False
+        if ids:
+            wiz_vals = self.read(cr, uid, ids, ['env'], context=context)
+            if wiz_vals:
+                wizard_env = wiz_vals[0].get('env')
+
+        if wizard_env:
+            try:
+                ctx.update(eval(wizard_env))
+            except Exception:
+                pass
+
+        header_fields = ['to', 'cc', 'bcc', 'subject']
+
+        for field in header_fields:
+            try:
+                field_expr = getattr(template, "def_%s" % field)
+                res['value'][field] = get_value(
+                    cr, uid, record_id, field_expr, template, ctx
+                )
+            except Exception:
+                res['value'][field] = False
+
+        return res
+
+    def call_check_to(self, cr, uid, ids):
+        to = self.read(cr, uid, ids, ['to'])[0]['to']
+        res = True
+        separator = ','
+        for email in to.split(separator):
+            is_valid = tools.misc.get_validate_email_format(email)
+            if not is_valid:
+                res = False
+        return res
+
+    _constraints = [
+        OnlyFieldsConstraint(call_check_to,
+                             _(u"The email address is not valid."),
+                             ["to"]),
+        ]
 
     _columns = {
         'model_ref': fields.reference(
