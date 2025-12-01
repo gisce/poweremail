@@ -91,8 +91,10 @@ def send_on_create(self, cr, uid, vals, context=None):
             ctx = context.copy()
             ctx['src_rec_id'] = oid
             ctx['src_model'] = template.object_name.model
-            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                [oid], context=ctx)
+            if context.get('generate_mail_sync', False):
+                self.pool.get('poweremail.templates').generate_mail_sync(cr, uid, tid, [oid], context=ctx)
+            else:
+                self.pool.get('poweremail.templates').generate_mail(cr, uid, tid, [oid], context=ctx)
     return oid
 
 
@@ -106,8 +108,10 @@ def send_on_write(self, cr, uid, ids, vals, context=None):
         # Ensure it's still configured to send on write
         if template.send_on_write:
             context['vals'] = vals.copy()
-            self.pool.get('poweremail.templates').generate_mail(cr, uid, tid,
-                                                                ids, context)
+            if context.get('generate_mail_sync', False):
+                self.pool.get('poweremail.templates').generate_mail_sync(cr, uid, tid, ids, context)
+            else:
+                self.pool.get('poweremail.templates').generate_mail(cr, uid, tid, ids, context)
     return result
 
 
@@ -243,7 +247,7 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                 traceback.print_exc()
                 return u""
     else:
-        return message
+        return message or ''
 
 
 class poweremail_templates(osv.osv):
@@ -1214,9 +1218,9 @@ class poweremail_templates(osv.osv):
                     record_company_type = record_model.fields_get(cursor, user)[company_field]['type']
                     record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
 
-                    if record_company_type == 'many2one':
+                    if record_company and record_company_type == 'many2one':
                         ctx_company['company_id'] = record_company[0]
-                    elif record_company_type == 'integer':
+                    elif record_company and record_company_type == 'integer':
                         ctx_company['company_id'] = record_company
                     else:
                         ctx_company['company_id'] = False
