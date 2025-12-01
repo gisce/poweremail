@@ -69,6 +69,40 @@ class TestAttachOtherModels(testing.OOTestCase):
             'def_priority': '2',
         })
 
+    @patch('poweremail.poweremail_template.PY3', True)
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report',
+           return_value=("OK_REPORT_PY3", "pdf"))
+    def test_happy_path_python3_encoding(self, mock_create_report):
+        """
+        Ensure that in Python 3, the report string is encoded before base64.
+        This tests the PY3 branch added in the patch.
+        """
+        # Set the report template object reference
+        self.pm_tmp_obj.write(
+            self.cursor, self.uid, [self.template_id],
+            {'report_template_object_reference': 'object.id'}
+        )
+
+        tmpl = self.pm_tmp_obj.simple_browse(self.cursor, self.uid, self.template_id)
+
+        # Get dynamic attachment
+        res = self.pm_tmp_obj.get_dynamic_attachment(
+            self.cursor, self.uid, tmpl, [self.partner_id]
+        )
+
+        # Assert that 'file' exists and is correctly base64-encoded
+        self.assertIn('file', res)
+        self.assertEqual(b64decode(res['file']), b'OK_REPORT_PY3')
+        self.assertEqual(res['extension'], 'pdf')
+
+        # Generate mail to ensure full happy path works
+        mailbox_id = self.pm_tmp_obj.generate_mail(
+            self.cursor, self.uid, self.template_id, [self.partner_id],
+            context={'raise_exception': True}
+        )
+        mail = self.mailbox_obj.simple_browse(self.cursor, self.uid, mailbox_id)
+        self.assertNotEqual(mail.folder, 'error')
+
     @patch('poweremail.poweremail_template.poweremail_templates.create_report',
            return_value=("OK_REPORT", "pdf"))
     def test_happy_path_with_valid_reference(self, mock_create_report):

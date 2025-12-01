@@ -75,6 +75,8 @@ import pooler
 from premailer import transform
 from .poweremail_core import get_email_default_lang, _priority_selection
 from .utils import Localizer
+from sys import version_info
+PY3 = version_info[0] == 3
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -1047,8 +1049,13 @@ class poweremail_templates(osv.osv):
             report_vals = self.create_report(cursor, user, template, record_ids, context=context)
 
         if report_vals: # If report generation failed, report_vals is ()
+            if PY3:
+                file_to_report = report_vals[0].encode()
+            else:
+                file_to_report = report_vals[0]
+
             res = {
-                'file': base64.b64encode(report_vals[0]),
+                'file': base64.b64encode(file_to_report),
                 'extension': report_vals[1]
             }
         return res
