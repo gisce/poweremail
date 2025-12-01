@@ -92,7 +92,13 @@
                         <page string="Attachment settings">
                             <group string="Dynamic attachments (reports)" colspan="2">
                                 <field name="file_name" colspan="2"/>
-                                <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]"/>
+                                <field name="report_template_object_reference" colspan="2"/>
+                                <group attrs="{'invisible':[('report_template_object_reference', '!=', False)]}" colspan="8">
+                                    <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]"/>
+                                </group>
+                                <group attrs="{'invisible':[('report_template_object_reference', '!=', True)]}" colspan="8">
+                                    <field name="report_template" colspan="2"/>
+                                </group>
                                 <field name="attach_record_items" colspan="2"/>
                                 <group attrs="{'invisible':[('attach_record_items', '!=', True)]}" colspan="8">
                                     <newline/>
@@ -142,8 +148,6 @@
                                 <field name="save_to_drafts" colspan="4"/>
                                 <field name="inline" colspan="4"/>
                             </group>
-                            <separator string="Attachments (Report to attach)" colspan="4" />
-                            <field name="report_template_object_reference" colspan="2"/>
                             <group>
                                 <separator colspan="4" string="Allowed User Groups" />
                                 <field name="allowed_groups" string="Allowed User Groups" nolabel="1" colspan="4"/>
