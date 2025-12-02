@@ -1040,8 +1040,8 @@ class poweremail_templates(osv.osv):
         :param record_ids: IDs of template object
         :param context: Context arguments
 
-        :return: dict with 'file' and 'extension' keys with the report content and extension. If report generation fails, return
-            dict with 'error' key with the error message.
+        :return: dict with 'file' and 'extension' keys with the report content and extension.
+                 Returns an empty dict if report generation fails.
         """
         res = {}
         report_vals = ()
