@@ -917,7 +917,7 @@ class poweremail_templates(osv.osv):
         return True
 
     def create_report(self, cursor, user, template, record_ids, context=None):
-        """"
+        """
         Generate report to be attached and return it
         If contain object_to_report_id in context, it will be used instead of record_ids
         """
