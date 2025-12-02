@@ -976,7 +976,7 @@ class poweremail_templates(osv.osv):
         :param record_ids: IDs of objects to be used to evaluate the expression
         :param context: Context arguments
 
-        :return: dict with model and record_ids keys evaluated from the expression
+        :return: list of record IDs evaluated from the expression
         """
         res_ids = []
         expr = template.report_template_object_reference.replace('object', 'rec')
