@@ -647,6 +647,9 @@ p { color:red;}
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
     @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     def test_save_to_mailbox_report_error_creates_error_email(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
+        # Aquest test verifica que s'envia un email des de el wizar 'poweremail.send.wizard'
+        #i dona error al generar el report aquest email es genera a la carpeta error.
+
         with Transaction().start(self.database) as txn:
             uid = txn.user
             cursor = txn.cursor
@@ -778,3 +781,63 @@ p { color:red;}
             self.assertEqual(mail_read['state'], 'na')
             history = mail_read.get('history') or u""
             self.assertIn(error_msg, history)
+
+    def test_save_to_folder_error(self):
+        # Aquest test verifica que s'envia un email des de el wizar 'poweremail.preview'
+        #i dona error al generar el report aquest email es genera a la carpeta error.
+        with Transaction().start(self.database) as txn:
+            uid = txn.user
+            cursor = txn.cursor
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            template_obj = self.openerp.pool.get('poweremail.templates')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+            wizard_obj = self.openerp.pool.get('poweremail.preview')
+
+            template_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'default_template_poweremail_2'
+            )[1]
+            account_id = imd_obj.get_object_reference(
+                cursor, uid, 'poweremail', 'info_energia_from_email'
+            )[1]
+
+            body_text = "<!doctype html>" \
+                        "<html>" \
+                        "<head></head>" \
+                        "<body>" \
+                        "<% env['hola']%>" \
+                        "<br/>" \
+                        "El importe de su factura de electricidad que comprende el periodo del <B>2021/06/01</B> al <B>2021/06/30</B> es de <B> 14.54€</B>.<br/>" \
+                        "<br/>" \
+                        "Por favor, encuentre adjunta la factura en formato PDF.<br/>" \
+                        "<br/>" \
+                        "<br/>" \
+                        "Atentamente,<br/>" \
+                        "<br/>" \
+                        "Tiny sprl" \
+                        "</body>" \
+                        "</html>"
+            template_obj.write(cursor, uid, template_id, {
+                'def_to': 'joanot@martorell.cat',
+                'enforce_from_account': account_id,
+                'def_body_text': body_text,
+                'def_body_html': False,
+            })
+            template = template_obj.simple_browse(cursor, uid, template_id)
+            template_name = template.object_name.name
+
+            mail_error_ids = mailbox_obj.search(cursor, uid, [
+                ('folder', '=', 'error'),
+            ])
+            self.assertFalse(mail_error_ids)
+
+            wiz_id = wizard_obj.create(cursor, uid, {
+                'model_ref': '{},{}'.format(template_name, 1),
+            }, context={'active_ids': [template_id]})
+            wizard_obj.action_send_static_mail(
+                cursor, uid, [wiz_id], context={'active_ids': [template_id]}
+            )
+
+            mail_error_ids = mailbox_obj.search(cursor, uid, [
+                ('folder', '=', 'error'),
+            ])
+            self.assertTrue(mail_error_ids)
