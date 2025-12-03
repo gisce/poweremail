@@ -520,25 +520,29 @@ class poweremail_send_wizard(osv.osv_memory):
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
             ctx['lang'] = template_o.get_email_lang(cr, uid, template, src_rec_id, context=ctx)
-            attachment_id = self.create_report_attachment(
-                cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
-            )
-            if attachment_id:
-                attachment_ids.append(attachment_id)
+
             data = {}
-            attachment_ids_extra = self.process_extra_attachment_in_template(
-                cr, uid, template, src_rec_id, mail_id, data, context=ctx
-            )
-            attachment_ids.extend(attachment_ids_extra)
-            # Add document attachments
-            attachment_ids_doc = self.add_attachment_documents(cr, uid, screen_vals, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_doc)
-            # Add template attachments
-            attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_templ)
-            # Add record attachments
-            attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
-            attachment_ids.extend(attachment_ids_record)
+            try:
+                attachment_id = self.create_report_attachment(cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx)
+                if attachment_id:
+                    attachment_ids.append(attachment_id)
+
+                attachment_ids_extra = self.process_extra_attachment_in_template(cr, uid, template, src_rec_id, mail_id, data, context=ctx)
+                attachment_ids.extend(attachment_ids_extra)
+
+                attachment_ids_doc = self.add_attachment_documents(cr, uid, screen_vals, mail_id)
+                attachment_ids.extend(attachment_ids_doc)
+
+                attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
+                attachment_ids.extend(attachment_ids_templ)
+
+                attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
+                attachment_ids.extend(attachment_ids_record)
+
+            except Exception as e:
+                error_msg = _("Error generating the email report")
+                mailbox_obj.historise(cr, uid, [mail_id], error_msg, context=ctx, error=True)
+                continue
 
             if attachment_ids:
                 mailbox_vals = {

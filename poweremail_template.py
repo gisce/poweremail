@@ -1340,10 +1340,13 @@ class poweremail_templates(osv.osv):
                 pe_obj = self.pool.get('poweremail.mailbox')
                 send_immediately = template.send_immediately
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
-                    if send_immediately:
+                    if not mail.pem_body_text:
+                        pe_obj.write(cursor, user, mailbox_id, {'folder': 'error'}, context=context)
+                    elif send_immediately:
                         pe_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
                     else:
                         pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
+
         if len(mailbox_ids) > 1:
             return mailbox_ids
         elif mailbox_ids:
