@@ -604,6 +604,7 @@ class poweremail_core_accounts(osv.osv):
         extra_headers = context.get('headers', {})
         # Try to send the e-mail from each allowed account
         # Only one mail is sent
+        error = None
         for account_id in ids:
             account = self.browse(cr, uid, account_id, context)
             # Update the sender address from account
@@ -655,6 +656,7 @@ class poweremail_core_accounts(osv.osv):
                     # If error sending,
                     #  retry with another account if there is any
                     continue
+        return error
 
     def extracttime(self, time_as_string):
         """
