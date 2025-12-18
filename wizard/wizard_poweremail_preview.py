@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
 import sys
@@ -10,6 +11,7 @@ from tools.translate import _
 import tools
 from premailer import transform
 from osv.orm import Constraint, OnlyFieldsConstraint
+from tools.safe_eval import safe_eval
 
 
 class poweremail_preview(osv.osv_memory):
@@ -59,6 +61,19 @@ class poweremail_preview(osv.osv_memory):
         return res
 
     def onchange_model_ref(self, cr, uid, ids, model_ref, context=None):
+        """
+        A partir d'una referència del tipus 'model,id', calcula:
+          - l'idioma efectiu del correu segons la plantilla
+          - els camps de capçalera (to, cc, bcc, subject)
+        tenint en compte:
+          - el context actiu (active_id)
+          - l'entorn del wizard (env)
+          - expressions dinàmiques definides a la plantilla
+
+        :param model_ref: string 'model_name,record_id'
+        :return: dict {'value': {...}} per actualitzar el wizard
+        """
+
         context = context or {}
         res = {'value': {}}
 
@@ -69,23 +84,21 @@ class poweremail_preview(osv.osv_memory):
         record_id = int(record_id)
 
         template_obj = self.pool.get('poweremail.templates')
-        template = template_obj.browse(cr, uid, context['active_id'],
-                                       context=context)
+        template = template_obj.simple_browse(cr, uid, context['active_id'], context=context)
 
         lang = False
-        try:
-            if template.lang:
-                lang = get_value(cr, uid, record_id, template.lang, template,
-                                 context)
-        except Exception:
-            lang = context.get('lang') or False
+        if template.lang:
+            try:
+                lang = get_value(cr, uid, record_id, template.lang, template, context)
+            except Exception:
+                lang = context.get('lang') or False
 
         ctx = context.copy()
 
         if lang:
             ctx.update({'lang': lang})
-            template = template_obj.browse(cr, uid, context['active_id'], ctx)
-            res['value']['lang'] = str(lang)
+            template = template_obj.simple_browse(cr, uid, context['active_id'], ctx)
+            res['value']['lang'] = lang
 
         ctx['raise_exception'] = True
 
@@ -97,7 +110,7 @@ class poweremail_preview(osv.osv_memory):
 
         if wizard_env:
             try:
-                ctx.update(eval(wizard_env))
+                ctx.update(safe_eval(wizard_env))
             except Exception:
                 pass
 
@@ -115,6 +128,17 @@ class poweremail_preview(osv.osv_memory):
         return res
 
     def call_check_to(self, cr, uid, ids):
+        """
+        Aquesta funció comprova que totes les adreces de correu electrònic
+        definides al camp 'to' siguin vàlides. El camp s'espera en format
+        text amb múltiples adreces separades per comes.
+        Per cada adreça:
+          - Es valida el format mitjançant tools.misc.get_validate_email_format
+          - Si alguna adreça no és vàlida, la funció retorna False
+
+        :return: True si totes les adreces són vàlides, False en cas contrari
+        """
+
         to = self.read(cr, uid, ids, ['to'])[0]['to']
         res = True
         separator = ','
