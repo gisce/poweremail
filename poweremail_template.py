@@ -32,6 +32,7 @@ import types
 import netsvc
 import six
 import sentry_sdk
+from six import integer_types
 
 LOGGER = netsvc.Logger()
 
@@ -289,7 +290,7 @@ class poweremail_templates(osv.osv):
             context = {}
         if not value:
             return False
-        if isinstance(ids, (int, long)):
+        if isinstance(ids, integer_types):
             ids = [ids]
 
         for attach in value:
