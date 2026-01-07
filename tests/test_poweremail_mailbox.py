@@ -640,3 +640,155 @@ p { color:red;}
             mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
+
+    @mock.patch('poweremail.poweremail_mailbox.netsvc.Logger')
+    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_exception_logs_error(self, mock_send_mail, mock_logger):
+        """Test that when send_this_mail raises an exception, the error is logged"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to raise an exception
+            mock_send_mail.side_effect = Exception("Connection refused")
+            mock_logger_instance = mock.Mock()
+            mock_logger.return_value = mock_logger_instance
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify that the logger was called with the error
+            mock_logger_instance.notifyChannel.assert_called_once()
+            call_args = mock_logger_instance.notifyChannel.call_args
+            self.assertIn("Power Email", call_args[0])
+            self.assertIn("Connection refused", str(call_args[0]))
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history'])
+            self.assertEqual(mail['folder'], 'error')
+            
+            # Verify error is in history
+            self.assertIn('Traceback', mail['history'])
+
+    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_failure_historises_error(self, mock_send_mail):
+        """Test that when send_mail returns an error message, it's historised"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to return an error message (not True)
+            error_message = "SMTP authentication failed"
+            mock_send_mail.return_value = error_message
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            
+            # Verify error message is in history
+            self.assertIn(error_message, mail['history'])
+
+    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_success_moves_to_sent(self, mock_send_mail):
+        """Test that when send_mail succeeds, the mail is moved to sent folder"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to return True (success)
+            mock_send_mail.return_value = True
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to sent folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'sent')
+            self.assertEqual(mail['state'], 'na')
+            
+            # Verify success message is in history
+            self.assertIn('Email sent successfully', mail['history'])
+
+    def test_send_this_mail_no_recipient_error(self):
+        """Test that when there's no recipient, an appropriate error is logged"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail without recipient
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': '',  # Empty recipient
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'error')
+            
+            # Verify error message is in history
+            self.assertIn('No recipient', mail['history'])
