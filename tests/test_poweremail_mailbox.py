@@ -391,20 +391,13 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 5)
 
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
-    def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
+    @mock.patch('poweremail.poweremail_template.poweremail_templates.generate_mail_sync')
+    def test_save_to_mailbox(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
             cursor = txn.cursor
-            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
-            pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
-            ir_attachment_obj = self.openerp.pool.get('ir.attachment')
+
             imd_obj = self.openerp.pool.get('ir.model.data')
-            pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
             send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
 
             # Dummy value for an invoice id
@@ -457,87 +450,48 @@ class TestPoweremailMailbox(testing.OOTestCase):
             # Creem un mailbox
             wizard_id = send_wizard_obj.create(cursor, uid, wizard_vals)
 
-            # Hem de posar 'enforce_from_account' al template perque és required
-            pw_account_id = pw_account_obj.create(cursor, uid, {
-                'name': 'test',
-                'user': 1,
-                'email_id': 'test@email',
-                'smtpserver': 'smtp.gmail.com',
-                'smtpport': '587',
-                'company': 'no',
-                'state': 'approved',
-            })
+            mock_function.return_value = 123
 
-            # Agafem un report de demo
-            report_id = imd_obj.get_object_reference(
-                cursor, uid, 'base', 'report_test'
-            )[1]
-
-            # Escribim el que necessitem als templates
-            template_vals = {
-                'enforce_from_account': pw_account_id,
-                'report_template': report_id
-            }
-            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
-
-            # Creem un attachments de prova
-            ir_vals = {
-                'name': 'filename_prova_1',
-                'datas': base64.b64encode(b'attachment test content'),
-                'datas_fname': 'filename_prova.txt',
-                'res_model': 'poweremail.templates',
-                'res_id': template_id,
-            }
-            attachment_id = ir_attachment_obj.create(cursor, uid, ir_vals)
-
-            mail_vals = {
-                'pem_from': 'test@email',
-                'pem_to': 'aorellana@gisce.net',
-                'pem_cc': False,
-                'pem_bcc': False,
-                'pem_subject': 'Factura electricidad False',
-                'pem_body_text': body_text,
-                'pem_body_html': False,
-                'pem_account_id': 1,
-                'priority': '1',
-                'state': 'na',
-                'mail_type': 'multipart/alternative'
+            context = {
+                'template_id': template_id,
+                'lang': False,
+                'src_rec_id': fact_id,
+                'tz': False,
+                'src_rec_ids': [fact_id],
+                'active_ids': [fact_id],
+                'type': 'out_invoice',
+                'active_id': fact_id,
             }
 
-            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id],
+                                                       context=context)
 
-            attach_vals = {
-                'name': 'Factura electricidad False(adjunto correo electrónico)',
-                'datas': "datas_test",
-                'datas_fname': "False.pdf",
-                'description': body_text,
-                'res_model': 'poweremail.mailbox',
-                'res_id': mail_id
-            }
-            attachment_report_id = ir_attachment_obj.create(cursor, uid, attach_vals)
+            # 1) Retorn correcte del wrapper
+            self.assertEqual(mail_ids, [123])
 
-            mock_function.return_value = mail_id
-            mock_function_2.return_value = attachment_report_id
-            mock_function_3.return_value = []
-            mock_function_4.return_value = []
-            mock_function_5.return_value = [attachment_id]
+            # 2) Delegació a generate_mail_sync amb paràmetres correctes
+            mock_function.assert_called_once()
+            call_args, call_kwargs = mock_function.call_args
 
-            context = {}
-            context['template_id'] = template_id
-            context['lang'] = False
-            context['src_rec_id'] = fact_id
-            context['tz'] = False
-            context['src_rec_ids'] = [fact_id]
-            context['active_ids'] = [fact_id]
-            context['type'] = 'out_invoice'
-            context['template_id'] = template_id
-            context['active_id'] = fact_id
+            self.assertEqual(call_args[0], cursor)
+            self.assertEqual(call_args[1], uid)
+            self.assertEqual(call_args[2], template_id)
+            self.assertEqual(call_args[3], [fact_id])
 
-            mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
-            mail_created_vals = mailbox_obj.read(cursor, uid, mail_ids[0], [])
-            self.assertEqual(len(mail_created_vals['pem_attachments_ids']), 2)
-            self.assertIn(attachment_report_id, mail_created_vals['pem_attachments_ids'])
-            self.assertIn(attachment_id, mail_created_vals['pem_attachments_ids'])
+            # Context que construeix el wizard
+            ctx = call_kwargs.get('context', {})
+            self.assertEqual(ctx.get('account_id'), 1)
+            self.assertEqual(ctx.get('single_email'), False)
+            self.assertEqual(ctx.get('use_sign'), False)
+
+            overrides = ctx.get('wizard_overrides', {})
+            self.assertEqual(overrides.get('to'), 'aorellana@gisce.net')
+            self.assertEqual(overrides.get('cc'), False)
+            self.assertEqual(overrides.get('bcc'), False)
+            self.assertEqual(overrides.get('subject'),'Factura electricidad False')
+            self.assertEqual(overrides.get('body_text'), body_text)
+            self.assertEqual(overrides.get('body_html'), False)
+            self.assertEqual(overrides.get('priority'), '1')
 
     def test_save_to_mailbox_inlining(self):
         with Transaction().start(self.database) as txn:
@@ -549,14 +503,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
             pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
             send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
 
-            # Dummy value for an invoice id
-            fact_id = 6
-            # Agafem un template de prova per posar a l'attachment
+            fact_id = uid
             template_id = imd_obj.get_object_reference(
                 cursor, uid, 'poweremail', 'default_template_poweremail'
             )[1]
 
-            # Creem un wizard 'poweremail_send_wizard'
             body_text = """
 <html>
 <style type="text/css">
@@ -568,10 +519,25 @@ p { color:red;}
 </html>
             """
 
+            pw_account_id = pw_account_obj.create(cursor, uid, {
+                'name': 'test',
+                'user': 1,
+                'email_id': 'test@examle.com',
+                'smtpserver': 'smtp.gmail.com',
+                'smtpport': '587',
+                'company': 'no',
+                'state': 'approved',
+            })
+
+            pm_tmp_obj.write(cursor, uid, template_id, {
+                'enforce_from_account': pw_account_id,
+                'inline': True
+            })
+
             wizard_vals = {
                 'rel_model_ref': fact_id,
                 'requested': 1,
-                'from': 1,
+                'from': pw_account_id,
                 'attachment_ids': [],
                 'body_text': body_text,
                 'cc': False,
@@ -590,40 +556,7 @@ p { color:red;}
                 'full_success': False,
             }
 
-            # Creem un mailbox
             wizard_id = send_wizard_obj.create(cursor, uid, wizard_vals)
-
-            pw_account_id = pw_account_obj.create(cursor, uid, {
-                'name': 'test',
-                'user': 1,
-                'email_id': 'test@email',
-                'smtpserver': 'smtp.gmail.com',
-                'smtpport': '587',
-                'company': 'no',
-                'state': 'approved',
-            })
-
-            # Escribim el que necessitem als templates
-            template_vals = {
-                'enforce_from_account': pw_account_id,
-                'inline': True
-            }
-            pm_tmp_obj.write(cursor, uid, template_id, template_vals)
-
-            mail_vals = {
-                'pem_from': 'test@email',
-                'pem_to': 'example@example.org',
-                'pem_cc': False,
-                'pem_bcc': False,
-                'pem_subject': 'Factura electricidad False',
-                'pem_body_text': body_text,
-                'pem_body_html': False,
-                'pem_account_id': 1,
-                'priority': '1',
-                'state': 'na',
-            }
-
-            mailbox_obj.create(cursor, uid, mail_vals)
 
             context = {}
             context['template_id'] = template_id
