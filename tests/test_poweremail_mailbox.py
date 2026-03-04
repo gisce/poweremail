@@ -799,6 +799,9 @@ p { color:red;}
             account_id = imd_obj.get_object_reference(
                 cursor, uid, 'poweremail', 'info_energia_from_email'
             )[1]
+            mail_error_ids_before = mailbox_obj.search(cursor, uid, [
+                ('folder', '=', 'error'),
+            ])
 
             body_text = "<!doctype html>" \
                         "<html>" \
@@ -825,11 +828,6 @@ p { color:red;}
             template = template_obj.simple_browse(cursor, uid, template_id)
             template_name = template.object_name.name
 
-            mail_error_ids = mailbox_obj.search(cursor, uid, [
-                ('folder', '=', 'error'),
-            ])
-            self.assertFalse(mail_error_ids)
-
             wiz_id = wizard_obj.create(cursor, uid, {
                 'model_ref': '{},{}'.format(template_name, 1),
             }, context={'active_ids': [template_id]})
@@ -837,10 +835,11 @@ p { color:red;}
                 cursor, uid, [wiz_id], context={'active_ids': [template_id]}
             )
 
-            mail_error_ids = mailbox_obj.search(cursor, uid, [
+            mail_error_ids_after = mailbox_obj.search(cursor, uid, [
                 ('folder', '=', 'error'),
             ])
-            self.assertTrue(mail_error_ids)
+            self.assertTrue(
+                len(mail_error_ids_after) > len(mail_error_ids_before))
             
     @mock.patch('poweremail.poweremail_mailbox.netsvc.Logger')
     @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
