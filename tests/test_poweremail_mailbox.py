@@ -667,8 +667,8 @@ p { color:red;}
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
 
-    @mock.patch('poweremail.poweremail_mailbox.netsvc.Logger')
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_mailbox.netsvc.Logger')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_exception_logs_error(self, mock_send_mail, mock_logger):
         """Test that when send_this_mail raises an exception, the error is logged"""
         with Transaction().start(self.database) as txn:
@@ -693,7 +693,7 @@ p { color:red;}
             
             # Mock send_mail to raise an exception
             mock_send_mail.side_effect = Exception("Connection refused")
-            mock_logger_instance = mock.Mock()
+            mock_logger_instance = Mock()
             mock_logger.return_value = mock_logger_instance
             
             # Send the mail
@@ -712,7 +712,7 @@ p { color:red;}
             # Verify error is in history
             self.assertIn('Traceback', mail['history'])
 
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_failure_historises_error(self, mock_send_mail):
         """Test that when send_mail returns an error message, it's historised"""
         with Transaction().start(self.database) as txn:
@@ -750,7 +750,7 @@ p { color:red;}
             # Verify error message is in history
             self.assertIn(error_message, mail['history'])
 
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_success_moves_to_sent(self, mock_send_mail):
         """Test that when send_mail succeeds, the mail is moved to sent folder"""
         with Transaction().start(self.database) as txn:
