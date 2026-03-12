@@ -358,25 +358,20 @@ class poweremail_templates(osv.osv):
                 'last_send_date': False,
             }
         for template in self.simple_browse(cr, uid, ids, context=context):
-            base_domain = [
+            domain = [
                 ('template_id', '=', template.id),
                 ('date_mail', '!=', False),
                 ('date_mail', '<=', now.strftime('%Y-%m-%d %H:%M:%S')),
             ]
-            count_domain = list(base_domain)
             if template.stats_interval:
                 since_date = (now - timedelta(days=template.stats_interval)).strftime('%Y-%m-%d %H:%M:%S')
-                count_domain.append(('date_mail', '>=', since_date))
+                domain.append(('date_mail', '>=', since_date))
 
-            mailbox_ids = mailbox_obj.search(cr, uid, count_domain, context=context)
+            mailbox_ids = mailbox_obj.search(cr, uid, domain, order='date_mail desc', context=context)
             res[template.id]['send_count'] = len(mailbox_ids)
 
-            last_ids = mailbox_obj.search(
-                cr, uid, base_domain, order='date_mail desc', limit=1,
-                context=context
-            )
-            if last_ids:
-                last_mail = mailbox_obj.read(cr, uid, last_ids[0], ['date_mail'], context=context)
+            if mailbox_ids:
+                last_mail = mailbox_obj.read(cr, uid, mailbox_ids[0], ['date_mail'], context=context)
                 res[template.id]['last_send_date'] = last_mail.get('date_mail') or False
 
         return res
