@@ -42,6 +42,7 @@ from osv import osv, fields
 from tools.translate import _
 from tools.safe_eval import safe_eval
 from tools import config
+from datetime import datetime, timedelta
 #Try and check the available templating engines
 from mako.template import Template  #For backward combatibility
 try:
@@ -344,6 +345,42 @@ class poweremail_templates(osv.osv):
                 res_ids = [record['res_id'] for record in records]
                 return [('id', 'not in', res_ids)]
 
+    def _get_send_stats(self, cr, uid, ids, field_name, arg, context=None):
+        context = context or {}
+
+        res = {}
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        now = datetime.now()
+
+        for template_id in ids:
+            res[template_id] = {
+                'send_count': 0,
+                'last_send_date': False,
+            }
+        for template in self.simple_browse(cr, uid, ids, context=context):
+            base_domain = [
+                ('template_id', '=', template.id),
+                ('date_mail', '!=', False),
+                ('date_mail', '<=', now.strftime('%Y-%m-%d %H:%M:%S')),
+            ]
+            count_domain = list(base_domain)
+            if template.stats_interval:
+                since_date = (now - timedelta(days=template.stats_interval)).strftime('%Y-%m-%d %H:%M:%S')
+                count_domain.append(('date_mail', '>=', since_date))
+
+            mailbox_ids = mailbox_obj.search(cr, uid, count_domain, context=context)
+            res[template.id]['send_count'] = len(mailbox_ids)
+
+            last_ids = mailbox_obj.search(
+                cr, uid, base_domain, order='date_mail desc', limit=1,
+                context=context
+            )
+            if last_ids:
+                last_mail = mailbox_obj.read(cr, uid, last_ids[0], ['date_mail'], context=context)
+                res[template.id]['last_send_date'] = last_mail.get('date_mail') or False
+
+        return res
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -562,7 +599,17 @@ class poweremail_templates(osv.osv):
             fnct_search=_get_model_data_name_search,
         ),
         'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
-                                                                         " immediately without going throug outbox folder.")
+                                                                         " immediately without going throug outbox folder."),
+        'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
+                string='Last Send Date', multi='send_stats',readonly=True
+        ),
+        'send_count': fields.function(_get_send_stats, method=True, type='integer',
+                string='Send Count', multi='send_stats', readonly=True
+        ),
+        'stats_interval': fields.integer(
+            'Stats Interval',
+            help='Number of days used to calculate the send count backwards from today. If empty or zero, all sent emails are taken into account.',
+        ),
     }
 
     _defaults = {
