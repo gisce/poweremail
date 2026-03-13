@@ -1,6 +1,7 @@
 # coding=utf-8
 import base64
 import hmac
+import hashlib
 
 import six
 if six.PY2:
@@ -838,6 +839,7 @@ p { color:red;}
                 }
             )
 
+            context = {'lang': 'en_US'}
             with patch('smtplib.SMTP.login', new=self.fake_login):
                 with patch('smtplib.SMTP.close', new=self.fake_close):
                     core_obj.send_mail(cursor, uid, [acc1_id], {
@@ -849,7 +851,8 @@ p { color:red;}
                         "Prova", {
                             'text': "Això és una prova",
                             'html': ''
-                        }
+                        },
+                        context=context
                     )
 
     def _to_bytes(self, value, encoding='utf-8'):
@@ -862,8 +865,13 @@ p { color:red;}
     def fake_login(self, user, password):
         challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
         challenge = base64.b64decode(challenge)
-        response = (self._to_bytes(user) + b" " +
-                hmac.HMAC(self._to_bytes(password), challenge).hexdigest().encode('ascii')
+        response = (
+                self._to_bytes(user) + b" " +
+                hmac.new(
+                    self._to_bytes(password),
+                    challenge,
+                    hashlib.md5
+                ).hexdigest().encode('ascii')
         )
         encoded = base64.b64encode(response)
         if six.PY3:
