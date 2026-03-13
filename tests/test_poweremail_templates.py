@@ -3,6 +3,7 @@ import base64
 import mock
 from destral import testing
 from destral.transaction import Transaction
+from datetime import datetime, timedelta
 
 
 class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
@@ -52,6 +53,24 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
 
         tmpl_id = tmpl_obj.create(cursor, uid, vals)
         return tmpl_id
+
+    def create_mailbox(self, template_id, date_mail):
+        cursor = self.cursor
+        uid = self.uid
+
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+
+        pm_account = imd_obj.get_object_reference(
+            cursor, uid, 'poweremail', 'info_energia_from_email'
+        )[1]
+
+        return mailbox_obj.create(cursor, uid, {
+            'pem_account_id': pm_account,
+            'pem_subject': 'Prova',
+            'template_id': template_id,
+            'date_mail': date_mail,
+        })
 
     def test_creating_email_gets_default_priority(self):
 
@@ -274,3 +293,41 @@ p { color:red;}
         template.remove_action_reference({})
         self.assertFalse(template.ref_ir_act_window)
         self.assertFalse(template.ref_ir_value)
+
+    def test_send_stats_without_interval(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        tmpl_id = self.create_template()
+
+        old_date = (datetime.now() - timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S')
+        new_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+
+        self.create_mailbox(tmpl_id, old_date)
+        self.create_mailbox(tmpl_id, new_date)
+
+        template = tmpl_obj.read(cursor, uid, tmpl_id, ['send_count', 'last_send_date'])
+
+        self.assertEqual(template['send_count'], 2)
+        self.assertEqual(template['last_send_date'], new_date)
+
+    def test_send_stats_with_interval(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        tmpl_id = self.create_template({
+            'stats_interval': 7,
+        })
+
+        old_date = (datetime.now() - timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S')
+        in_range_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+
+        self.create_mailbox(tmpl_id, old_date)
+        self.create_mailbox(tmpl_id, in_range_date)
+
+        template = tmpl_obj.read(cursor, uid, tmpl_id, ['send_count', 'last_send_date'])
+
+        self.assertEqual(template['send_count'], 1)
+        self.assertEqual(template['last_send_date'], in_range_date)
