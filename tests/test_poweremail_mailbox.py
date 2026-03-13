@@ -1,7 +1,6 @@
 # coding=utf-8
 import base64
 import hmac
-from email.base64mime import encode as encode_base64
 
 import six
 if six.PY2:
@@ -863,10 +862,13 @@ p { color:red;}
     def fake_login(self, user, password):
         challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
         challenge = base64.b64decode(challenge)
-        response = (self._to_bytes(user) + b" " + hmac.HMAC(self._to_bytes(password),
-                challenge).hexdigest().encode('ascii')
+        response = (self._to_bytes(user) + b" " +
+                hmac.HMAC(self._to_bytes(password), challenge).hexdigest().encode('ascii')
         )
-        return encode_base64(response, eol="")
+        encoded = base64.b64encode(response)
+        if six.PY3:
+            encoded = encoded.decode('ascii')
+        return encoded
 
     def fake_close(self):
         pass
