@@ -853,10 +853,19 @@ p { color:red;}
                         }
                     )
 
+    def _to_bytes(self, value, encoding='utf-8'):
+        if value is None:
+            return b''
+        if isinstance(value, bytes):
+            return value
+        return value.encode(encoding)
+
     def fake_login(self, user, password):
-        challenge = "PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
-        challenge = base64.decodestring(challenge)
-        response = user + " " + hmac.HMAC(password, challenge).hexdigest()
+        challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+        challenge = base64.b64decode(challenge)
+        response = (self._to_bytes(user) + b" " + hmac.HMAC(self._to_bytes(password),
+                challenge).hexdigest().encode('ascii')
+        )
         return encode_base64(response, eol="")
 
     def fake_close(self):
