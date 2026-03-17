@@ -510,7 +510,7 @@ class poweremail_templates(osv.osv):
                 store=False),
         'send_on_create': fields.boolean(
                 'Send on Create',
-                help='Sends an e-mail when a new document is created. Restart the ERP instance after changing this option.'),
+                help='Create an e-mail when a new record is created. The instance where the record is created must be restarted for the changes to take effect.'),
         'send_on_write': fields.boolean(
                 'Send on Update',
                 help='Sends an e-mail when a document is modified.'),
