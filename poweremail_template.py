@@ -79,6 +79,7 @@ from .poweremail_core import get_email_default_lang, _priority_selection
 from .utils import Localizer
 from sys import version_info
 PY3 = version_info[0] == 3
+from sql.aggregate import Count, Max
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -346,6 +347,16 @@ class poweremail_templates(osv.osv):
                 return [('id', 'not in', res_ids)]
 
     def _get_send_stats(self, cr, uid, ids, field_name, arg, context=None):
+        """
+        Computes send stats for the given ids.
+
+        @param cr: The current row, from the database cursor,
+        @param uid: User id
+        @param ids: List of calendar attendee’s IDs
+        @param context: Current context
+        @return: dict {id: value}
+        """
+
         context = context or {}
 
         res = {}
@@ -357,6 +368,8 @@ class poweremail_templates(osv.osv):
                 'send_count': 0,
                 'last_send_date': False,
             }
+        q = mailbox_obj.q(cr, uid)
+
         for template in self.simple_browse(cr, uid, ids, context=context):
             domain = [
                 ('template_id', '=', template.id),
@@ -364,15 +377,18 @@ class poweremail_templates(osv.osv):
                 ('date_mail', '<=', now.strftime('%Y-%m-%d %H:%M:%S')),
             ]
             if template.stats_interval:
-                since_date = (now - timedelta(days=template.stats_interval)).strftime('%Y-%m-%d %H:%M:%S')
+                since_date = (
+                        now - timedelta(days=template.stats_interval)
+                ).strftime('%Y-%m-%d %H:%M:%S')
                 domain.append(('date_mail', '>=', since_date))
 
-            mailbox_ids = mailbox_obj.search(cr, uid, domain, order='date_mail desc', context=context)
-            res[template.id]['send_count'] = len(mailbox_ids)
+            sql = q.select([Count('id'), Max('date_mail')], group_by=None).where(domain)
+            cr.execute(*sql)
+            row = cr.fetchone()
 
-            if mailbox_ids:
-                last_mail = mailbox_obj.read(cr, uid, mailbox_ids[0], ['date_mail'], context=context)
-                res[template.id]['last_send_date'] = last_mail.get('date_mail') or False
+            if row:
+                res[template.id]['send_count'] = row[0] or 0
+                res[template.id]['last_send_date'] = row[1] or False
 
         return res
 
@@ -594,9 +610,9 @@ class poweremail_templates(osv.osv):
             fnct_search=_get_model_data_name_search,
         ),
         'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
-                                                                         " immediately without going throug outbox folder."),
+                                                                         " immediately without going through outbox folder."),
         'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
-                string='Last Send Date', multi='send_stats',readonly=True
+                string='Last Sent Date', multi='send_stats',readonly=True
         ),
         'send_count': fields.function(_get_send_stats, method=True, type='integer',
                 string='Send Count', multi='send_stats', readonly=True
