@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Email templates & preview
 """
@@ -368,7 +369,6 @@ class poweremail_templates(osv.osv):
                 'send_count': 0,
                 'last_send_date': False,
             }
-        q = mailbox_obj.q(cr, uid)
 
         for template in self.simple_browse(cr, uid, ids, context=context):
             domain = [
@@ -382,7 +382,7 @@ class poweremail_templates(osv.osv):
                 ).strftime('%Y-%m-%d %H:%M:%S')
                 domain.append(('date_mail', '>=', since_date))
 
-            sql = q.select([Count('id'), Max('date_mail')], group_by=None).where(domain)
+            sql = mailbox_obj.q(cr, uid).select([Count('id'), Max('date_mail')], group_by=None).where(domain)
             cr.execute(*sql)
             row = cr.fetchone()
 
