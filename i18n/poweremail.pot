@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OpenERP Server 5.0.14\n"
 "Report-Msgid-Bugs-To: support@openerp.com\n"
-"POT-Creation-Date: 2025-08-18 10:42\n"
-"PO-Revision-Date: 2025-08-18 10:42\n"
+"POT-Creation-Date: 2026-03-20 09:25\n"
+"PO-Revision-Date: 2026-03-20 09:25\n"
 "Last-Translator: <>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -92,7 +92,7 @@ msgid "Un-Read"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:561
+#: code:addons/poweremail/poweremail_template.py:654
 #, python-format
 msgid "The template name must be unique!"
 msgstr ""
@@ -141,7 +141,7 @@ msgid "Inline HTML"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:55
+#: code:addons/poweremail/poweremail_template.py:58
 #, python-format
 msgid "Mako templates not installed"
 msgstr ""
@@ -159,6 +159,11 @@ msgstr ""
 #. module: poweremail
 #: help:poweremail.templates,model_data_name:0
 msgid "Model Data Name."
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Stats"
 msgstr ""
 
 #. module: poweremail
@@ -197,6 +202,11 @@ msgid "All values for the mail can be configured in the template editor itself."
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.templates,stats_interval:0
+msgid "Number of days used to calculate the send count backwards from today. If empty or zero, all sent emails are taken into account."
+msgstr ""
+
+#. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
 msgid "\n"
 "    Power Email - extends the most Power ful open source ERP with email which powers the world today.\n"
@@ -222,6 +232,17 @@ msgstr ""
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree_company
 msgid "Mailbox: Outbox"
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.core_selfolder:0
+#: view:poweremail.send.wizard:0
+msgid "Cancel"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.templates,last_send_date:0
+msgid "Last Sent Date"
 msgstr ""
 
 #. module: poweremail
@@ -274,6 +295,12 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.send.wizard,generated:0
 msgid "No of generated Mails"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.core_accounts,isuser:0
+#: field:poweremail.core_accounts,smtpuname:0
+msgid "User Name"
 msgstr ""
 
 #. module: poweremail
@@ -432,7 +459,7 @@ msgid "No recipient: Email cannot be sent"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:664
+#: code:addons/poweremail/poweremail_template.py:757
 #, python-format
 msgid "Copy of template "
 msgstr ""
@@ -565,6 +592,11 @@ msgid "Last Downloaded Mail"
 msgstr ""
 
 #. module: poweremail
+#: field:poweremail.templates,stats_interval:0
+msgid "Stats Interval"
+msgstr ""
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1318
 #, python-format
 msgid "Select a folder before you save record"
@@ -644,8 +676,8 @@ msgstr ""
 #: code:addons/poweremail/poweremail_send_wizard.py:99
 #: code:addons/poweremail/poweremail_send_wizard.py:269
 #: code:addons/poweremail/poweremail_send_wizard.py:275
-#: code:addons/poweremail/poweremail_template.py:53
-#: code:addons/poweremail/poweremail_template.py:67
+#: code:addons/poweremail/poweremail_template.py:56
+#: code:addons/poweremail/poweremail_template.py:70
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_administration_server
 #, python-format
 msgid "Power Email"
@@ -710,6 +742,12 @@ msgstr ""
 #: code:addons/poweremail/poweremail_core.py:401
 #, python-format
 msgid "Incoming port is not defined"
+msgstr ""
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:1096
+#, python-format
+msgid "The expression in 'Reference of the report' field must contain the 'object' variable."
 msgstr ""
 
 #. module: poweremail
@@ -817,6 +855,11 @@ msgid "Name of Template"
 msgstr ""
 
 #. module: poweremail
+#: field:poweremail.templates,send_count:0
+msgid "Send Count"
+msgstr ""
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:334
 #, python-format
 msgid "Report"
@@ -905,6 +948,11 @@ msgid "Send now"
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.templates,report_template_object_reference:0
+msgid "The evaluation of this field should return the ID of the related object. For example, use: object.related_model_id.id. This ensures that the template can correctly reference the object."
+msgstr ""
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_trash_tree
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_trash_tree_company
 msgid "Mailbox: Trash"
@@ -950,6 +998,11 @@ msgstr ""
 #. module: poweremail
 #: model:ir.model,name:poweremail.model_poweremail_templates
 msgid "Power Email Templates for Models"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.preview,enforce_from_account:0
+msgid "Email account"
 msgstr ""
 
 #. module: poweremail
@@ -1062,7 +1115,7 @@ msgid "Enter port number, eg: SMTP-587 "
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1237
+#: code:addons/poweremail/poweremail_template.py:1454
 #, python-format
 msgid "%s Mail Form"
 msgstr ""
@@ -1074,6 +1127,7 @@ msgid "Starting Full mail reception for mail: %s."
 msgstr ""
 
 #. module: poweremail
+#: view:poweremail.preview:0
 #: field:poweremail.preview,env:0
 msgid "Extra scope variables"
 msgstr ""
@@ -1225,6 +1279,11 @@ msgid "Incoming server login attempt dropped Account: %s\n"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_template_emails
+msgid "Template emails"
+msgstr ""
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.act_selfolder_form
 msgid "IMAP Folder Selection Wizard"
 msgstr ""
@@ -1311,6 +1370,12 @@ msgstr ""
 #. module: poweremail
 #: view:poweremail.preview:0
 msgid "Power Email Preview"
+msgstr ""
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:1068
+#, python-format
+msgid "Error evaluating the expression in 'Reference of the report' field: %s"
 msgstr ""
 
 #. module: poweremail
@@ -1519,6 +1584,11 @@ msgid "Account Status"
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.preview,enforce_from_account:0
+msgid "Email will be sent from this account."
+msgstr ""
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1003
 #: code:addons/poweremail/poweremail_core.py:1123
 #, python-format
@@ -1542,9 +1612,8 @@ msgid "Server"
 msgstr ""
 
 #. module: poweremail
-#: view:poweremail.core_selfolder:0
-#: view:poweremail.send.wizard:0
-msgid "Cancel"
+#: help:poweremail.templates,send_immediately:0
+msgid "Emails created from this template will be sent immediately without going through outbox folder."
 msgstr ""
 
 #. module: poweremail
@@ -1595,6 +1664,11 @@ msgstr ""
 #. module: poweremail
 #: selection:poweremail.core_accounts,company:0
 msgid "Yes"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.templates,send_immediately:0
+msgid "Send Immediately"
 msgstr ""
 
 #. module: poweremail
@@ -1685,6 +1759,11 @@ msgid "Send Mail"
 msgstr ""
 
 #. module: poweremail
+#: field:poweremail.templates,report_template_object_reference:0
+msgid "Reference of the report"
+msgstr ""
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_folder_email_form
 #: view:wizard.change.folder.email:0
 msgid "Canviar emails de carpeta"
@@ -1696,7 +1775,7 @@ msgid "Email Configuration"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:235
+#: code:addons/poweremail/poweremail_template.py:245
 #, python-format
 msgid "An error occurred while rendering template id {}:  {}"
 msgstr ""
@@ -1729,7 +1808,6 @@ msgid "Saving Header of unknown payload (%s) Account: %s."
 msgstr ""
 
 #. module: poweremail
-#: help:poweremail.preview,enforce_from_account:0
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
 msgstr ""
@@ -1845,7 +1923,6 @@ msgid "Save Mail -> Mailbox write error Account: %s, Mail: %s"
 msgstr ""
 
 #. module: poweremail
-#: field:poweremail.preview,enforce_from_account:0
 #: field:poweremail.templates,enforce_from_account:0
 msgid "Enforce From Account"
 msgstr ""
@@ -1887,7 +1964,7 @@ msgid "Plain Text & HTML with no attachments"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:656
+#: code:addons/poweremail/poweremail_template.py:749
 #, python-format
 msgid "Deletion of Record failed"
 msgstr ""
@@ -1995,7 +2072,7 @@ msgid "Both HTML & Text"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:656
+#: code:addons/poweremail/poweremail_template.py:749
 #, python-format
 msgid "Warning"
 msgstr ""
@@ -2179,9 +2256,9 @@ msgid "From"
 msgstr ""
 
 #. module: poweremail
-#: field:poweremail.core_accounts,isuser:0
-#: field:poweremail.core_accounts,smtpuname:0
-msgid "User Name"
+#: code:addons/poweremail/poweremail_template.py:1074
+#, python-format
+msgid "The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID."
 msgstr ""
 
 #. module: poweremail
@@ -2234,9 +2311,8 @@ msgid "File Name Pattern"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1258
-#: code:addons/poweremail/poweremail_template.py:1278
-#: code:addons/poweremail/poweremail_template.py:1292
+#: code:addons/poweremail/poweremail_template.py:1475
+#: code:addons/poweremail/poweremail_template.py:1489
 #, python-format
 msgid "Send Mail (%s)"
 msgstr ""
@@ -2246,6 +2322,10 @@ msgstr ""
 #: code:addons/poweremail/poweremail_mailbox.py:218
 #: code:addons/poweremail/poweremail_mailbox.py:223
 #: code:addons/poweremail/poweremail_serveraction.py:89
+#: code:addons/poweremail/poweremail_template.py:1067
+#: code:addons/poweremail/poweremail_template.py:1073
+#: code:addons/poweremail/poweremail_template.py:1095
+#: code:addons/poweremail/poweremail_template.py:1104
 #: code:addons/poweremail/wizard/wizard_poweremail_preview.py:153
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_error_company
 #: selection:poweremail.preview,state:0
@@ -2265,7 +2345,13 @@ msgid "Select the field from the model you want to use.\n"
 msgstr ""
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:69
+#: code:addons/poweremail/poweremail_template.py:1105
+#, python-format
+msgid "No records found evaluating the expression in 'Reference of the report' field."
+msgstr ""
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:72
 #, python-format
 msgid "Django templates not installed"
 msgstr ""
