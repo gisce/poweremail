@@ -477,77 +477,35 @@ class poweremail_send_wizard(osv.osv_memory):
         if context is None:
             context = {}
 
-        core_accounts_obj = self.pool.get('poweremail.core_accounts')
-        mailbox_obj = self.pool.get('poweremail.mailbox')
         template_o = self.pool.get('poweremail.templates')
 
-        mail_ids = []
         template = self._get_template(cr, uid, context)
-        screen_vals = self.read(cr, uid, ids[0], [], context)
-        if isinstance(screen_vals, list):  # Solves a bug in v5.0.16
-            screen_vals = screen_vals[0]
-        report_record_ids = context['src_rec_ids'][:]
-        if screen_vals['single_email'] and len(context['src_rec_ids']) > 1:
-            # We send a single email for several records
-            context['src_rec_ids'] = context['src_rec_ids'][:1]
-        for src_rec_id in context['src_rec_ids']:
-            attachment_ids = []
-            accounts = core_accounts_obj.read(cr, uid, screen_vals['from'], context=context)
-            vals = {
-                'pem_from': tools.ustr(accounts['name']) + "<" + tools.ustr(accounts['email_id']) + ">",
-                'pem_to': self.get_end_value(cr, uid, src_rec_id, screen_vals['to'], template, context=context),
-                'pem_cc': self.get_end_value(cr, uid, src_rec_id, screen_vals['cc'], template, context=context),
-                'pem_bcc': self.get_end_value(cr, uid, src_rec_id, screen_vals['bcc'], template, context=context),
-                'pem_subject': self.get_end_value(cr, uid, src_rec_id, screen_vals['subject'], template,
-                                                  context=context),
-                'pem_body_text': self.get_end_value(cr, uid, src_rec_id, screen_vals['body_text'], template,
-                                                    context=context),
-                'pem_body_html': self.get_end_value(cr, uid, src_rec_id, screen_vals['body_html'], template,
-                                                    context=context),
-                'pem_account_id': screen_vals['from'],
-                'priority': screen_vals['priority'],
-                'state': 'na',
-                'mail_type': 'multipart/alternative',
-                'template_id': template.id
-                # Options:'multipart/mixed','multipart/alternative','text/plain','text/html'
-            }
-            ctx = context.copy()
-            if template.inline:
-                vals['pem_body_text'] = transform(vals['pem_body_text'])
+        src_rec_ids = (context.get('src_rec_ids', []))[:]
 
-            mail_id = self.create_mail(cr, uid, screen_vals, src_rec_id, vals, context=ctx)
-            mail_ids.append(mail_id)
-            # Ensure report is rendered using template's language. If not found, user's launguage is used.
-            ctx = context.copy()
-            ctx['lang'] = template_o.get_email_lang(cr, uid, template, src_rec_id, context=ctx)
-            attachment_id = self.create_report_attachment(
-                cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
-            )
-            if attachment_id:
-                attachment_ids.append(attachment_id)
-            data = {}
-            attachment_ids_extra = self.process_extra_attachment_in_template(
-                cr, uid, template, src_rec_id, mail_id, data, context=ctx
-            )
-            attachment_ids.extend(attachment_ids_extra)
-            # Add document attachments
-            attachment_ids_doc = self.add_attachment_documents(cr, uid, screen_vals, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_doc)
-            # Add template attachments
-            attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_templ)
-            # Add record attachments
-            attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
-            attachment_ids.extend(attachment_ids_record)
+        wiz = self.simple_browse(cr, uid, ids[0], context=context)
+        ctx = context.copy()
 
-            if attachment_ids:
-                mailbox_vals = {
-                    'pem_attachments_ids': [[6, 0, attachment_ids]],
-                    'mail_type': 'multipart/mixed'
-                }
-                mailbox_obj.write(cr, uid, mail_id, mailbox_vals, context=context)
-            self.create_partner_event(cr, uid, template, vals, data, src_rec_id, mail_id, attachment_ids, context=ctx)
-        return mail_ids
+        from_val = getattr(wiz, 'from', False)
+        if isinstance(from_val, (list, tuple)):
+            from_val = from_val[0]
+        if from_val:
+            ctx['account_id'] = int(from_val)
+
+        ctx['single_email'] = bool(getattr(wiz, 'single_email', False))
+        ctx['use_sign'] = bool(getattr(wiz, 'signature', False))
+
+        ctx['wizard_overrides'] = {
+            'to': getattr(wiz, 'to', False),
+            'cc': getattr(wiz, 'cc', False),
+            'bcc': getattr(wiz, 'bcc', False),
+            'subject': getattr(wiz, 'subject', False),
+            'body_text': getattr(wiz, 'body_text', False),
+            'body_html': getattr(wiz, 'body_html', False),
+            'priority': getattr(wiz, 'priority', False),
+        }
+        mail_id = template_o.generate_mail_sync(cr, uid, template.id, src_rec_ids, context=ctx)
+        return list(mail_id) if isinstance(mail_id, (list, tuple)) else [mail_id]
+
 
 poweremail_send_wizard()
 
