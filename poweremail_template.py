@@ -392,6 +392,49 @@ class poweremail_templates(osv.osv):
 
         return res
 
+    def _search_send_stats(self, cr, uid, obj, name, args, context=None):
+        res_ids = None
+
+        base_query = """
+            SELECT t.id
+            FROM poweremail_templates t
+            LEFT JOIN poweremail_mailbox m
+              ON m.template_id = t.id
+             AND m.date_mail IS NOT NULL
+             AND m.date_mail <= NOW()
+             AND (
+                  COALESCE(t.stats_interval, 0) = 0
+                  OR m.date_mail >= (NOW() - (t.stats_interval || ' days')::interval)
+             )
+            GROUP BY t.id
+        """
+
+        for field, operator, value in args:
+            if name == 'send_count':
+                cr.execute(
+                    base_query + " HAVING COUNT(m.id) %s %%s" % operator,
+                    (int(value),)
+                )
+            else:
+                if value in (False, None):
+                    if operator == '=':
+                        # last_send_date = False
+                        cr.execute(
+                            base_query + " HAVING MAX(m.date_mail) IS NULL")
+                    elif operator == '!=':
+                        # last_send_date != False
+                        cr.execute(
+                            base_query + " HAVING MAX(m.date_mail) IS NOT NULL")
+                else:
+                    cr.execute(
+                        base_query + " HAVING COALESCE(MAX(m.date_mail), '1970-01-01'::timestamp) %s %%s" % operator,
+                        (value,)
+                    )
+            ids = set(row[0] for row in cr.fetchall())
+            res_ids = ids if res_ids is None else res_ids & ids
+
+        return [('id', 'in', list(res_ids))] if res_ids else [('id', '=', 0)]
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -612,7 +655,7 @@ class poweremail_templates(osv.osv):
         'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
                                                                          " immediately without going through outbox folder."),
         'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
-            string='Last Sent Date', multi='send_stats',readonly=True,
+            string='Last Sent Date', multi='send_stats',readonly=True, fnct_search=_search_send_stats,
             sort={
             'alias': 'pw_mailbox_last_send',
             'field': 'last_send_date',
@@ -634,7 +677,7 @@ class poweremail_templates(osv.osv):
         'send_count': fields.function(_get_send_stats, method=True,
             type='integer',
             string='Send Count', multi='send_stats',
-            readonly=True,
+            readonly=True, fnct_search=_search_send_stats,
             sort={
                 'alias': 'pw_mailbox_send_count',
                 'field': 'send_count',
