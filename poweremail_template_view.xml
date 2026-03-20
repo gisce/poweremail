@@ -246,8 +246,8 @@
                     <field name="use_sign" colspan="4" select="2" />
                     <field name="file_name" colspan="4" />
                     <field name="enforce_from_account" />
-                    <field name="last_send_date" />
-                    <field name="send_count" />
+                    <field name="last_send_date" select="2" />
+                    <field name="send_count" select="2" />
                 </tree>
             </field>
         </record>

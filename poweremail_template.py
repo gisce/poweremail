@@ -612,10 +612,30 @@ class poweremail_templates(osv.osv):
         'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
                                                                          " immediately without going through outbox folder."),
         'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
-                string='Last Sent Date', multi='send_stats',readonly=True
+            string='Last Sent Date', multi='send_stats',readonly=True,
+            sort={
+                'alias': 'pw_mailbox_stats',
+                'field': 'last_send_date',
+                'join': 'LEFT JOIN ('
+                '   SELECT template_id, MAX(date_mail) AS last_send_date '
+                '   FROM poweremail_mailbox '
+                '   GROUP BY template_id'
+                ') AS pw_mailbox_stats '
+                '   ON pw_mailbox_stats.template_id = poweremail_templates.id'
+            }
         ),
         'send_count': fields.function(_get_send_stats, method=True, type='integer',
-                string='Send Count', multi='send_stats', readonly=True
+            string='Send Count', multi='send_stats', readonly=True,
+            sort={
+                'alias': 'pw_mailbox_send_count',
+                'field': 'send_count',
+                'join': 'LEFT JOIN ('
+                '   SELECT template_id, COUNT(id) AS send_count '
+                '   FROM poweremail_mailbox '
+                '   GROUP BY template_id'
+                ') AS pw_mailbox_send_count '
+                '   ON pw_mailbox_send_count.template_id = poweremail_templates.id'
+            }
         ),
         'stats_interval': fields.integer(
             'Stats Interval',
