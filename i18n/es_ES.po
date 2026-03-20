@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GISCE-ERP\n"
 "Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"POT-Creation-Date: 2026-03-20 09:25\n"
-"PO-Revision-Date: 2026-03-20 08:38+0000\n"
+"POT-Creation-Date: 2026-03-20 11:21\n"
+"PO-Revision-Date: 2026-03-20 10:23+0000\n"
 "Last-Translator: destanyol <>\n"
 "Language-Team: Spanish (Spain) <erp@dev.gisce.net>\n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,13 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: poweremail
+#: help:poweremail.templates,send_immediately:0
+msgid ""
+"Emails created from this template will be sent immediately without going "
+"throug outbox folder."
+msgstr "Los correos electrónicos creados a partir de esta plantilla se enviarán inmediatamente sin pasar por la carpeta de salida."
 
 #. module: poweremail
 #: model:ir.model,name:poweremail.model_poweremail_core_selfolder
@@ -97,7 +104,7 @@ msgid "Un-Read"
 msgstr "Sin leer"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:654
+#: code:addons/poweremail/poweremail_template.py:576
 #, python-format
 msgid "The template name must be unique!"
 msgstr "¡El nombre de la plantilla debe ser único!"
@@ -146,7 +153,7 @@ msgid "Inline HTML"
 msgstr "Inline HTML"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:58
+#: code:addons/poweremail/poweremail_template.py:56
 #, python-format
 msgid "Mako templates not installed"
 msgstr "Las plantillas Mako no están instaladas"
@@ -474,7 +481,7 @@ msgid "No recipient: Email cannot be sent"
 msgstr "Sin destinatario: el correo no se puede enviar"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:757
+#: code:addons/poweremail/poweremail_template.py:679
 #, python-format
 msgid "Copy of template "
 msgstr "Copia de la plantilla"
@@ -695,8 +702,8 @@ msgstr "Si selecciona correo electrónico automático se creará una acción de 
 #: code:addons/poweremail/poweremail_send_wizard.py:99
 #: code:addons/poweremail/poweremail_send_wizard.py:269
 #: code:addons/poweremail/poweremail_send_wizard.py:275
-#: code:addons/poweremail/poweremail_template.py:56
-#: code:addons/poweremail/poweremail_template.py:70
+#: code:addons/poweremail/poweremail_template.py:54
+#: code:addons/poweremail/poweremail_template.py:68
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_administration_server
 #, python-format
 msgid "Power Email"
@@ -765,7 +772,7 @@ msgid "Incoming port is not defined"
 msgstr "No se ha definido el puerto de entrada"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1096
+#: code:addons/poweremail/poweremail_template.py:1018
 #, python-format
 msgid ""
 "The expression in 'Reference of the report' field must contain the 'object' "
@@ -1132,6 +1139,11 @@ msgid "Plain Text"
 msgstr "Texto plano"
 
 #. module: poweremail
+#: field:poweremail.templates,ref_ir_value:0
+msgid "Wizard Button"
+msgstr "Botón asistente"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106
 #, python-format
 msgid "Mail fetch exception"
@@ -1143,7 +1155,7 @@ msgid "Enter port number, eg: SMTP-587 "
 msgstr "Introduzca el número del puerto, por ejemplo para SMTP el 587."
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1454
+#: code:addons/poweremail/poweremail_template.py:1376
 #, python-format
 msgid "%s Mail Form"
 msgstr "%s formulario de correo"
@@ -1404,7 +1416,7 @@ msgid "Power Email Preview"
 msgstr "Previsualización"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1068
+#: code:addons/poweremail/poweremail_template.py:990
 #, python-format
 msgid "Error evaluating the expression in 'Reference of the report' field: %s"
 msgstr "Error al evaluar la expresión en el campo 'Referencia del informe': %s"
@@ -1536,9 +1548,11 @@ msgid ""
 msgstr "<!doctype html>\n<html>\n<head></head>\n<body>\nEste es un correo de demostración\n</body>\n</html>"
 
 #. module: poweremail
-#: field:poweremail.templates,ref_ir_value:0
-msgid "Wizard Button"
-msgstr "Botón asistente"
+#: help:poweremail.templates,send_on_create:0
+msgid ""
+"Create an e-mail when a new record is created. The instance where the record"
+" is created must be restarted for the changes to take effect."
+msgstr "Crear un correo electrónico cuando se cree un nuevo registro. La instancia en la que se crea el registro debe reiniciarse para que los cambios surtan efecto."
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_basic_template_all
@@ -1818,13 +1832,14 @@ msgid "Email Configuration"
 msgstr "Configuración correo electrónico"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:245
+#: code:addons/poweremail/poweremail_template.py:242
 #, python-format
 msgid "An error occurred while rendering template id {}:  {}"
 msgstr "Ha ocurrido un error mientras se renderizaba la plantilla con id {}:  {}"
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_error_tree_company
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_error_tree_personal
 msgid "Mailbox: Error"
 msgstr "Buzón: Error"
 
@@ -2008,7 +2023,7 @@ msgid "Plain Text & HTML with no attachments"
 msgstr "Texto plano y HTML sin adjunto"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:749
+#: code:addons/poweremail/poweremail_template.py:671
 #, python-format
 msgid "Deletion of Record failed"
 msgstr "La eliminación del registro ha fallado"
@@ -2117,7 +2132,7 @@ msgid "Both HTML & Text"
 msgstr "A la vez HTML y Texto"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:749
+#: code:addons/poweremail/poweremail_template.py:671
 #, python-format
 msgid "Warning"
 msgstr "Aviso"
@@ -2304,7 +2319,7 @@ msgid "From"
 msgstr "Desde"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1074
+#: code:addons/poweremail/poweremail_template.py:996
 #, python-format
 msgid ""
 "The expression in 'Reference of the report' field returned an empty value or"
@@ -2361,8 +2376,8 @@ msgid "File Name Pattern"
 msgstr "Patrón nombre de fichero"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1475
-#: code:addons/poweremail/poweremail_template.py:1489
+#: code:addons/poweremail/poweremail_template.py:1397
+#: code:addons/poweremail/poweremail_template.py:1411
 #, python-format
 msgid "Send Mail (%s)"
 msgstr "Enviar correo (%s)"
@@ -2372,12 +2387,13 @@ msgstr "Enviar correo (%s)"
 #: code:addons/poweremail/poweremail_mailbox.py:218
 #: code:addons/poweremail/poweremail_mailbox.py:223
 #: code:addons/poweremail/poweremail_serveraction.py:89
-#: code:addons/poweremail/poweremail_template.py:1067
-#: code:addons/poweremail/poweremail_template.py:1073
-#: code:addons/poweremail/poweremail_template.py:1095
-#: code:addons/poweremail/poweremail_template.py:1104
+#: code:addons/poweremail/poweremail_template.py:989
+#: code:addons/poweremail/poweremail_template.py:995
+#: code:addons/poweremail/poweremail_template.py:1017
+#: code:addons/poweremail/poweremail_template.py:1026
 #: code:addons/poweremail/wizard/wizard_poweremail_preview.py:153
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_error_company
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_error_personal
 #: selection:poweremail.preview,state:0
 #, python-format
 msgid "Error"
@@ -2396,7 +2412,7 @@ msgid ""
 msgstr "Seleccione el campo del modelo que quiera utilizar.\nSólo los campos one2many y many2many se pueden utilizar para las tablas."
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1105
+#: code:addons/poweremail/poweremail_template.py:1027
 #, python-format
 msgid ""
 "No records found evaluating the expression in 'Reference of the report' "
@@ -2404,7 +2420,7 @@ msgid ""
 msgstr "No se encontraron registros al evaluar la expresión en el campo 'Referencia del informe'."
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:72
+#: code:addons/poweremail/poweremail_template.py:70
 #, python-format
 msgid "Django templates not installed"
 msgstr "Las plantillas Django no están instaladas"
@@ -2544,11 +2560,6 @@ msgstr "Cambiar el estado de los correos"
 #: view:poweremail.templates:0
 msgid "OpenObject Code Filter:"
 msgstr "Filtro de código OpenObject:"
-
-#. module: poweremail
-#: help:poweremail.templates,send_on_create:0
-msgid "Sends an e-mail when a new document is created."
-msgstr "Envía un correo electrónico cuando se crea un documento nuevo."
 
 #. module: poweremail
 #: field:poweremail.templates,def_subject:0
