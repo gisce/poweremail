@@ -614,27 +614,39 @@ class poweremail_templates(osv.osv):
         'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
             string='Last Sent Date', multi='send_stats',readonly=True,
             sort={
-                'alias': 'pw_mailbox_stats',
+                'alias': 'pw_mailbox_last_send',
                 'field': 'last_send_date',
                 'join': 'LEFT JOIN ('
-                '   SELECT template_id, MAX(date_mail) AS last_send_date '
-                '   FROM poweremail_mailbox '
-                '   GROUP BY template_id'
-                ') AS pw_mailbox_stats '
-                '   ON pw_mailbox_stats.template_id = poweremail_templates.id'
+                    '   SELECT t.id AS template_id, MAX(m.date_mail) AS last_send_date '
+                    '   FROM poweremail_templates t '
+                    '   LEFT JOIN poweremail_mailbox m '
+                    '     ON m.template_id = t.id '
+                    '     AND m.date_mail IS NOT NULL '
+                    '     AND m.date_mail <= NOW() '
+                    '   GROUP BY t.id'
+                    ') AS pw_mailbox_last_send '
+                    '   ON pw_mailbox_last_send.template_id = poweremail_templates.id'
             }
         ),
-        'send_count': fields.function(_get_send_stats, method=True, type='integer',
-            string='Send Count', multi='send_stats', readonly=True,
+        'send_count': fields.function(_get_send_stats, method=True,
+            type='integer',
+            string='Send Count', multi='send_stats',
+            readonly=True,
             sort={
                 'alias': 'pw_mailbox_send_count',
                 'field': 'send_count',
                 'join': 'LEFT JOIN ('
-                '   SELECT template_id, COUNT(id) AS send_count '
-                '   FROM poweremail_mailbox '
-                '   GROUP BY template_id'
-                ') AS pw_mailbox_send_count '
-                '   ON pw_mailbox_send_count.template_id = poweremail_templates.id'
+                    '   SELECT t.id AS template_id, COUNT(m.id) AS send_count '
+                    '   FROM poweremail_templates t '
+                    '   LEFT JOIN poweremail_mailbox m '
+                    '     ON m.template_id = t.id '
+                    '     AND m.date_mail IS NOT NULL '
+                    '     AND m.date_mail <= NOW() '
+                    '     AND (COALESCE(t.stats_interval, 0) = 0 '
+                    '          OR m.date_mail >= (NOW() - (t.stats_interval || \' days\')::interval)) '
+                    '   GROUP BY t.id'
+                    ') AS pw_mailbox_send_count '
+                    '   ON pw_mailbox_send_count.template_id = poweremail_templates.id'
             }
         ),
         'stats_interval': fields.integer(
