@@ -1,6 +1,13 @@
 # coding=utf-8
 import base64
-import mock
+import hmac
+import hashlib
+
+import six
+if six.PY2:
+    from mock import MagicMock, PropertyMock, patch, Mock
+else:
+    from unittest.mock import MagicMock, PropertyMock, patch, Mock
 from destral import testing
 from destral.transaction import Transaction
 
@@ -16,6 +23,25 @@ class TestPoweremailMailbox(testing.OOTestCase):
             'email_id': 'test@example.com',
             'smtpserver': 'smtp.example.com',
             'smtpport': 587,
+            'smtpuname': 'test',
+            'smtppass': 'test',
+            'company': 'yes'
+        }
+        if extra_vals:
+            vals.update(extra_vals)
+
+        acc_id = acc_obj.create(cursor, uid, vals)
+        return acc_id
+
+    def create_false_account(self, cursor, uid, extra_vals=None):
+        acc_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+        vals = {
+            'name': 'Test account',
+            'user': uid,
+            'email_id': 'test@example.com',
+            'smtpserver': '',
+            'smtpport': 0,
             'smtpuname': 'test',
             'smtppass': 'test',
             'company': 'yes'
@@ -200,7 +226,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 2)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_attachments_and_report(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -264,7 +290,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 3)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_report_no_attachments(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -316,7 +342,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 1)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_attachments_and_report_multi_users(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -391,11 +417,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 5)
 
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -641,8 +667,8 @@ p { color:red;}
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
 
-    @mock.patch('poweremail.poweremail_mailbox.netsvc.Logger')
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_mailbox.netsvc.Logger')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_exception_logs_error(self, mock_send_mail, mock_logger):
         """Test that when send_this_mail raises an exception, the error is logged"""
         with Transaction().start(self.database) as txn:
@@ -667,7 +693,7 @@ p { color:red;}
             
             # Mock send_mail to raise an exception
             mock_send_mail.side_effect = Exception("Connection refused")
-            mock_logger_instance = mock.Mock()
+            mock_logger_instance = Mock()
             mock_logger.return_value = mock_logger_instance
             
             # Send the mail
@@ -686,7 +712,7 @@ p { color:red;}
             # Verify error is in history
             self.assertIn('Traceback', mail['history'])
 
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_failure_historises_error(self, mock_send_mail):
         """Test that when send_mail returns an error message, it's historised"""
         with Transaction().start(self.database) as txn:
@@ -724,7 +750,7 @@ p { color:red;}
             # Verify error message is in history
             self.assertIn(error_message, mail['history'])
 
-    @mock.patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
     def test_send_this_mail_success_moves_to_sent(self, mock_send_mail):
         """Test that when send_mail succeeds, the mail is moved to sent folder"""
         with Transaction().start(self.database) as txn:
@@ -792,3 +818,65 @@ p { color:red;}
             
             # Verify error message is in history
             self.assertIn('No recipient', mail['history'])
+    
+    def test_check_poweremail_get_sender(self):
+        # Aquest test el que farà serà comprovar la funcionalitat del get_sender
+        # El problema que tenim ara mateix és que a l'hora de fer el get_sender,
+        # aquest mira de crear un Sender o un SMTPSender.
+        self.openerp.install_module('base_extended')
+
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            core_obj = self.pool.get('poweremail.core_accounts')
+
+            acc1_id = self.create_false_account(
+                cursor, uid, extra_vals={
+                    'name': 'acc1',
+                    'email_id': 'test1@example.com',
+                    'smtpssl': False,
+                    'smtptls': False,
+                }
+            )
+
+            context = {'lang': 'en_US'}
+            with patch('smtplib.SMTP.login', new=self.fake_login):
+                with patch('smtplib.SMTP.close', new=self.fake_close):
+                    core_obj.send_mail(cursor, uid, [acc1_id], {
+                            'To': 'nvillarroya@gisce.net',
+                            'CC': '',
+                            'BCC': '',
+                            'FROM': 'nvillarroya@gisce.net'
+                        },
+                        "Prova", {
+                            'text': "Això és una prova",
+                            'html': ''
+                        },
+                        context=context
+                    )
+
+    def _to_bytes(self, value, encoding='utf-8'):
+        if value is None:
+            return b''
+        if isinstance(value, bytes):
+            return value
+        return value.encode(encoding)
+
+    def fake_login(self, user, password):
+        challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+        challenge = base64.b64decode(challenge)
+        response = (
+                self._to_bytes(user) + b" " +
+                hmac.new(
+                    self._to_bytes(password),
+                    challenge,
+                    hashlib.md5
+                ).hexdigest().encode('ascii')
+        )
+        encoded = base64.b64encode(response)
+        if six.PY3:
+            encoded = encoded.decode('ascii')
+        return encoded
+
+    def fake_close(self):
+        pass
