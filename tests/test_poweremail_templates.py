@@ -331,3 +331,96 @@ p { color:red;}
 
         self.assertEqual(template['send_count'], 1)
         self.assertEqual(template['last_send_date'], in_range_date)
+
+    def test_search_send_stats(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        acc_id = self.create_account({'email_id': 'test_search_send_stats@example.com'})
+
+        with mock.patch.object(self, 'create_account', return_value=acc_id):
+            tmpl_0_id = self.create_template({'name': 'Template 0'})
+            tmpl_1_id = self.create_template({'name': 'Template 1'})
+            tmpl_2_id = self.create_template({'name': 'Template 2'})
+
+        sent_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+
+        self.create_mailbox(tmpl_1_id, sent_date)
+        self.create_mailbox(tmpl_2_id, sent_date)
+        self.create_mailbox(tmpl_2_id, sent_date)
+
+        ids = tmpl_obj.search(cursor, uid, [('last_send_date', '=', False)])
+        self.assertIn(tmpl_0_id, ids)
+        self.assertNotIn(tmpl_1_id, ids)
+        self.assertNotIn(tmpl_2_id, ids)
+
+        ids = tmpl_obj.search(cursor, uid, [('last_send_date', '!=', False)])
+        self.assertNotIn(tmpl_0_id, ids)
+        self.assertIn(tmpl_1_id, ids)
+        self.assertIn(tmpl_2_id, ids)
+
+        ids = tmpl_obj.search(cursor, uid, [('send_count', '=', 0)])
+        self.assertIn(tmpl_0_id, ids)
+        self.assertNotIn(tmpl_1_id, ids)
+        self.assertNotIn(tmpl_2_id, ids)
+
+        ids = tmpl_obj.search(cursor, uid, [('send_count', '=', 1)])
+        self.assertNotIn(tmpl_0_id, ids)
+        self.assertIn(tmpl_1_id, ids)
+        self.assertNotIn(tmpl_2_id, ids)
+
+        ids = tmpl_obj.search(cursor, uid, [('send_count', '=', 2)])
+        self.assertNotIn(tmpl_0_id, ids)
+        self.assertNotIn(tmpl_1_id, ids)
+        self.assertIn(tmpl_2_id, ids)
+
+        templates = tmpl_obj.read(cursor, uid, [tmpl_0_id, tmpl_1_id, tmpl_2_id],
+            ['send_count', 'last_send_date']
+        )
+        values = dict((x['id'], x) for x in templates)
+
+        self.assertEqual(values[tmpl_0_id]['send_count'], 0)
+        self.assertFalse(values[tmpl_0_id]['last_send_date'])
+
+        self.assertEqual(values[tmpl_1_id]['send_count'], 1)
+        self.assertEqual(values[tmpl_1_id]['last_send_date'], sent_date)
+
+        self.assertEqual(values[tmpl_2_id]['send_count'], 2)
+        self.assertEqual(values[tmpl_2_id]['last_send_date'], sent_date)
+
+    def test_send_stats_values_order(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        acc_id = self.create_account({'email_id': 'test_send_stats_values_order@example.com'})
+
+        with mock.patch.object(self, 'create_account', return_value=acc_id):
+            tmpl_0_id = self.create_template({'name': 'Template 0'})
+            tmpl_1_id = self.create_template({'name': 'Template 1'})
+            tmpl_2_id = self.create_template({'name': 'Template 2'})
+
+        old_date = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')
+        new_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+
+        self.create_mailbox(tmpl_1_id, old_date)
+        self.create_mailbox(tmpl_2_id, new_date)
+        self.create_mailbox(tmpl_2_id, new_date)
+
+        templates = tmpl_obj.read(cursor, uid, [tmpl_0_id, tmpl_1_id, tmpl_2_id],
+            ['send_count', 'last_send_date']
+        )
+        values = dict((x['id'], x) for x in templates)
+
+        ordered_by_count = sorted(
+            [tmpl_0_id, tmpl_1_id, tmpl_2_id],
+            key=lambda tmpl_id: values[tmpl_id]['send_count']
+        )
+        self.assertEqual(ordered_by_count, [tmpl_0_id, tmpl_1_id, tmpl_2_id])
+
+        ordered_by_last_send_date = sorted(
+            [tmpl_0_id, tmpl_1_id, tmpl_2_id],
+            key=lambda tmpl_id: values[tmpl_id]['last_send_date'] or '1970-01-01 00:00:00'
+        )
+        self.assertEqual(ordered_by_last_send_date, [tmpl_0_id, tmpl_1_id, tmpl_2_id])
