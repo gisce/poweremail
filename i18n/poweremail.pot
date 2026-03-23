@@ -167,6 +167,11 @@ msgid "Model Data Name."
 msgstr ""
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Stats"
+msgstr ""
+
+#. module: poweremail
 #: help:poweremail.templates,null_value:0
 msgid "This Value is used if the field is empty."
 msgstr ""
@@ -202,6 +207,11 @@ msgid "All values for the mail can be configured in the template editor itself."
 msgstr ""
 
 #. module: poweremail
+#: help:poweremail.templates,stats_interval:0
+msgid "Number of days used to calculate the send count backwards from today. If empty or zero, all sent emails are taken into account."
+msgstr ""
+
+#. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
 msgid "\n"
 "    Power Email - extends the most Power ful open source ERP with email which powers the world today.\n"
@@ -227,6 +237,17 @@ msgstr ""
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree_company
 msgid "Mailbox: Outbox"
+msgstr ""
+
+#. module: poweremail
+#: view:poweremail.core_selfolder:0
+#: view:poweremail.send.wizard:0
+msgid "Cancel"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.templates,last_send_date:0
+msgid "Last Sent Date"
 msgstr ""
 
 #. module: poweremail
@@ -576,6 +597,11 @@ msgid "Last Downloaded Mail"
 msgstr ""
 
 #. module: poweremail
+#: field:poweremail.templates,stats_interval:0
+msgid "Stats Interval"
+msgstr ""
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1318
 #, python-format
 msgid "Select a folder before you save record"
@@ -831,6 +857,11 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.templates,name:0
 msgid "Name of Template"
+msgstr ""
+
+#. module: poweremail
+#: field:poweremail.templates,send_count:0
+msgid "Send Count"
 msgstr ""
 
 #. module: poweremail
@@ -1591,9 +1622,8 @@ msgid "Server"
 msgstr ""
 
 #. module: poweremail
-#: view:poweremail.core_selfolder:0
-#: view:poweremail.send.wizard:0
-msgid "Cancel"
+#: help:poweremail.templates,send_immediately:0
+msgid "Emails created from this template will be sent immediately without going through outbox folder."
 msgstr ""
 
 #. module: poweremail

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Email templates & preview
 """
@@ -42,6 +43,7 @@ from osv import osv, fields
 from tools.translate import _
 from tools.safe_eval import safe_eval
 from tools import config
+from datetime import datetime, timedelta
 #Try and check the available templating engines
 from mako.template import Template  #For backward combatibility
 try:
@@ -78,6 +80,7 @@ from .poweremail_core import get_email_default_lang, _priority_selection
 from .utils import Localizer
 from sys import version_info
 PY3 = version_info[0] == 3
+from sql.aggregate import Count, Max
 
 
 def send_on_create(self, cr, uid, vals, context=None):
@@ -344,6 +347,94 @@ class poweremail_templates(osv.osv):
                 res_ids = [record['res_id'] for record in records]
                 return [('id', 'not in', res_ids)]
 
+    def _get_send_stats(self, cr, uid, ids, field_name, arg, context=None):
+        """
+        Computes send stats for the given ids.
+
+        @param cr: The current row, from the database cursor,
+        @param uid: User id
+        @param ids: List of calendar attendee’s IDs
+        @param context: Current context
+        @return: dict {id: value}
+        """
+
+        context = context or {}
+
+        res = {}
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        now = datetime.now()
+
+        for template_id in ids:
+            res[template_id] = {
+                'send_count': 0,
+                'last_send_date': False,
+            }
+
+        for template in self.simple_browse(cr, uid, ids, context=context):
+            domain = [
+                ('template_id', '=', template.id),
+                ('date_mail', '!=', False),
+                ('date_mail', '<=', now.strftime('%Y-%m-%d %H:%M:%S')),
+            ]
+            if template.stats_interval:
+                since_date = (
+                        now - timedelta(days=template.stats_interval)
+                ).strftime('%Y-%m-%d %H:%M:%S')
+                domain.append(('date_mail', '>=', since_date))
+
+            sql = mailbox_obj.q(cr, uid).select([Count('id'), Max('date_mail')], group_by=None).where(domain)
+            cr.execute(*sql)
+            row = cr.fetchone()
+
+            if row:
+                res[template.id]['send_count'] = row[0] or 0
+                res[template.id]['last_send_date'] = row[1] or False
+
+        return res
+
+    def _search_send_stats(self, cr, uid, obj, name, args, context=None):
+        res_ids = None
+
+        base_query = """
+            SELECT t.id
+            FROM poweremail_templates t
+            LEFT JOIN poweremail_mailbox m
+              ON m.template_id = t.id
+             AND m.date_mail IS NOT NULL
+             AND m.date_mail <= NOW()
+             AND (
+                  COALESCE(t.stats_interval, 0) = 0
+                  OR m.date_mail >= (NOW() - (t.stats_interval || ' days')::interval)
+             )
+            GROUP BY t.id
+        """
+
+        for field, operator, value in args:
+            if name == 'send_count':
+                cr.execute(
+                    base_query + " HAVING COUNT(m.id) %s %%s" % operator,
+                    (int(value),)
+                )
+            else:
+                if value in (False, None):
+                    if operator == '=':
+                        # last_send_date = False
+                        cr.execute(
+                            base_query + " HAVING MAX(m.date_mail) IS NULL")
+                    elif operator == '!=':
+                        # last_send_date != False
+                        cr.execute(
+                            base_query + " HAVING MAX(m.date_mail) IS NOT NULL")
+                else:
+                    cr.execute(
+                        base_query + " HAVING COALESCE(MAX(m.date_mail), '1970-01-01'::timestamp) %s %%s" % operator,
+                        (value,)
+                    )
+            ids = set(row[0] for row in cr.fetchall())
+            res_ids = ids if res_ids is None else res_ids & ids
+
+        return [('id', 'in', list(res_ids))] if res_ids else [('id', '=', 0)]
+
     _columns = {
         'name': fields.char('Name of Template', size=100, required=True),
         'object_name': fields.many2one('ir.model', 'Model'),
@@ -562,7 +653,52 @@ class poweremail_templates(osv.osv):
             fnct_search=_get_model_data_name_search,
         ),
         'send_immediately': fields.boolean('Send Immediately', help="Emails created from this template will be sent"
-                                                                         " immediately without going throug outbox folder.")
+                                                                         " immediately without going through outbox folder."),
+        'last_send_date': fields.function(_get_send_stats, method=True, type='datetime',
+            string='Last Sent Date', multi='send_stats',readonly=True, fnct_search=_search_send_stats,
+            sort={
+            'alias': 'pw_mailbox_last_send',
+            'field': 'last_send_date',
+            'join': 'LEFT JOIN ('
+                '   SELECT t.id AS template_id, '
+                '          COALESCE(MAX(m.date_mail), \'1970-01-01\'::timestamp) AS last_send_date '
+                '   FROM poweremail_templates t '
+                '   LEFT JOIN poweremail_mailbox m '
+                '     ON m.template_id = t.id '
+                '     AND m.date_mail IS NOT NULL '
+                '     AND m.date_mail <= NOW() '
+                '     AND (COALESCE(t.stats_interval, 0) = 0 '
+                '          OR m.date_mail >= (NOW() - (t.stats_interval || \' days\')::interval)) '
+                '   GROUP BY t.id'
+                ') AS pw_mailbox_last_send '
+                '   ON pw_mailbox_last_send.template_id = poweremail_templates.id'
+            }
+        ),
+        'send_count': fields.function(_get_send_stats, method=True,
+            type='integer',
+            string='Send Count', multi='send_stats',
+            readonly=True, fnct_search=_search_send_stats,
+            sort={
+                'alias': 'pw_mailbox_send_count',
+                'field': 'send_count',
+                'join': 'LEFT JOIN ('
+                    '   SELECT t.id AS template_id, COUNT(m.id) AS send_count '
+                    '   FROM poweremail_templates t '
+                    '   LEFT JOIN poweremail_mailbox m '
+                    '     ON m.template_id = t.id '
+                    '     AND m.date_mail IS NOT NULL '
+                    '     AND m.date_mail <= NOW() '
+                    '     AND (COALESCE(t.stats_interval, 0) = 0 '
+                    '          OR m.date_mail >= (NOW() - (t.stats_interval || \' days\')::interval)) '
+                    '   GROUP BY t.id'
+                    ') AS pw_mailbox_send_count '
+                    '   ON pw_mailbox_send_count.template_id = poweremail_templates.id'
+            }
+        ),
+        'stats_interval': fields.integer(
+            'Stats Interval',
+            help='Number of days used to calculate the send count backwards from today. If empty or zero, all sent emails are taken into account.',
+        ),
     }
 
     _defaults = {
