@@ -707,6 +707,7 @@ class poweremail_templates(osv.osv):
         'def_priority': lambda *a: '1',
         'inline': lambda *a: False,
         'template_language': lambda *a: 'mako',
+        'stats_interval': lambda *a: 365,
     }
     _sql_constraints = [
         ('name', 'unique (name)', _('The template name must be unique!'))
