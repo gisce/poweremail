@@ -7,14 +7,14 @@ def up(cursor, installed_version):
     if config.updating_all or not installed_version:
         return
 
-    module = 'giscedata_telegestio'
+    module = 'poweremail'
     helper = MigrationHelper(cursor, module)
     record_list = [
         'action_poweremail_error_tree_personal',
         'menu_poweremail_error_personal',
 
     ]
-    helper.update_xml_records('oorq_view.xml', update_record_ids=record_list)
+    helper.update_xml_records('poweremail_mailbox_view.xml', update_record_ids=record_list)
 
 
 
