@@ -174,6 +174,11 @@ msgid "Model Data Name."
 msgstr "Nombre de los datos del modelo."
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Stats"
+msgstr "Estadísticas"
+
+#. module: poweremail
 #: help:poweremail.templates,null_value:0
 msgid "This Value is used if the field is empty."
 msgstr "Este valor se utiliza si el campo se encuentra vacío."
@@ -210,6 +215,13 @@ msgid ""
 msgstr "Todos los valores del correo se pueden configurar en el editor de plantillas."
 
 #. module: poweremail
+#: help:poweremail.templates,stats_interval:0
+msgid ""
+"Number of days used to calculate the send count backwards from today. If "
+"empty or zero, all sent emails are taken into account."
+msgstr "Número de días usados para calcular hacia atrás desde hoy el número de correos enviados. Si está vacío o es cero, se tienen en cuenta todos los correos enviados."
+
+#. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
 msgid ""
 "\n"
@@ -237,6 +249,16 @@ msgstr "\n  Power Email - Amplia OpenERP con características de correo electró
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree_company
 msgid "Mailbox: Outbox"
 msgstr "Buzón: Salida"
+
+#. module: poweremail
+#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: poweremail
+#: field:poweremail.templates,last_send_date:0
+msgid "Last Sent Date"
+msgstr "Fecha del último envío"
 
 #. module: poweremail
 #: model:ir.cron,name:poweremail.ir_cron_mail_scheduler_action
@@ -592,6 +614,11 @@ msgid "Last Downloaded Mail"
 msgstr "Última descarga de correo"
 
 #. module: poweremail
+#: field:poweremail.templates,stats_interval:0
+msgid "Stats Interval"
+msgstr "Intervalo de estadísticas"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1318
 #, python-format
 msgid "Select a folder before you save record"
@@ -855,6 +882,11 @@ msgstr "Cuerpo del correo electrónico"
 #: field:poweremail.templates,name:0
 msgid "Name of Template"
 msgstr "Nombre de la plantilla"
+
+#. module: poweremail
+#: field:poweremail.templates,send_count:0
+msgid "Send Count"
+msgstr "Número de envíos"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:334
@@ -1632,9 +1664,11 @@ msgid "Server"
 msgstr "Servidor"
 
 #. module: poweremail
-#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
-msgid "Cancel"
-msgstr "Cancelar"
+#: help:poweremail.templates,send_immediately:0
+msgid ""
+"Emails created from this template will be sent immediately without going "
+"through outbox folder."
+msgstr "Los correos creados a partir de esta plantilla se enviarán inmediatamente sin pasar por la carpeta de bandeja de salida."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:953

@@ -174,6 +174,11 @@ msgid "Model Data Name."
 msgstr "Nom de les dades del model."
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "Stats"
+msgstr "Estadístiques"
+
+#. module: poweremail
 #: help:poweremail.templates,null_value:0
 msgid "This Value is used if the field is empty."
 msgstr "Aquest valor s'utilitza si el camp es troba buit."
@@ -210,6 +215,13 @@ msgid ""
 msgstr "Tots els valors del correu es poden configurar a l'editor de plantilles."
 
 #. module: poweremail
+#: help:poweremail.templates,stats_interval:0
+msgid ""
+"Number of days used to calculate the send count backwards from today. If "
+"empty or zero, all sent emails are taken into account."
+msgstr "Nombre de dies utilitzats per calcular cap enrere des d'avui el nombre de correus enviats. Si està buit o és zero, es tenen en compte tots els correus enviats."
+
+#. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
 msgid ""
 "\n"
@@ -237,6 +249,16 @@ msgstr "\n Power Email - Amplia OpenERP amb característiques de correu electrò
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree_company
 msgid "Mailbox: Outbox"
 msgstr "Safata: Sortida"
+
+#. module: poweremail
+#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
+msgid "Cancel"
+msgstr "Cancel·la"
+
+#. module: poweremail
+#: field:poweremail.templates,last_send_date:0
+msgid "Last Sent Date"
+msgstr "Data de l'últim enviament"
 
 #. module: poweremail
 #: model:ir.cron,name:poweremail.ir_cron_mail_scheduler_action
@@ -592,6 +614,11 @@ msgid "Last Downloaded Mail"
 msgstr "Darrera descàrrega de correu"
 
 #. module: poweremail
+#: field:poweremail.templates,stats_interval:0
+msgid "Stats Interval"
+msgstr "Interval d'estadístiques"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1318
 #, python-format
 msgid "Select a folder before you save record"
@@ -855,6 +882,11 @@ msgstr "Cos del correu electrònic"
 #: field:poweremail.templates,name:0
 msgid "Name of Template"
 msgstr "Nom de la plantilla"
+
+#. module: poweremail
+#: field:poweremail.templates,send_count:0
+msgid "Send Count"
+msgstr "Nombre d'enviaments"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:334
@@ -1632,9 +1664,11 @@ msgid "Server"
 msgstr "Servidor"
 
 #. module: poweremail
-#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
-msgid "Cancel"
-msgstr "Cancel·la"
+#: help:poweremail.templates,send_immediately:0
+msgid ""
+"Emails created from this template will be sent immediately without going "
+"through outbox folder."
+msgstr "Els correus creats a partir d'aquesta plantilla s'enviaran immediatament sense passar per la carpeta de sortida."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:953
