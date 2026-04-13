@@ -16,41 +16,23 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
     def create_account(self, cursor, uid, extra_vals=None):
         acc_obj = self.openerp.pool.get('poweremail.core_accounts')
+        imd_obj = self.openerp.pool.get('ir.model.data')
 
-        vals = {
-            'name': 'Test account',
-            'user': uid,
-            'email_id': 'test@example.com',
-            'smtpserver': 'smtp.example.com',
-            'smtpport': 587,
-            'smtpuname': 'test',
-            'smtppass': 'test',
-            'company': 'yes'
-        }
-        if extra_vals:
-            vals.update(extra_vals)
+        acc_id = imd_obj.get_object_reference(cursor, uid, 'poweremail', 'info_energia_from_email')[1]
 
-        acc_id = acc_obj.create(cursor, uid, vals)
-        return acc_id
+        if not extra_vals:
+            return acc_id
+
+        return acc_obj.copy(cursor, uid, acc_id, extra_vals)
 
     def create_false_account(self, cursor, uid, extra_vals=None):
-        acc_obj = self.openerp.pool.get('poweremail.core_accounts')
-
         vals = {
-            'name': 'Test account',
-            'user': uid,
-            'email_id': 'test@example.com',
             'smtpserver': '',
             'smtpport': 0,
-            'smtpuname': 'test',
-            'smtppass': 'test',
-            'company': 'yes'
         }
         if extra_vals:
             vals.update(extra_vals)
-
-        acc_id = acc_obj.create(cursor, uid, vals)
-        return acc_id
+        return self.create_account(cursor, uid, extra_vals=vals)
 
     def create_template(self, cursor, uid, extra_vals=None):
         if extra_vals is None:
@@ -823,8 +805,6 @@ p { color:red;}
         # Aquest test el que farà serà comprovar la funcionalitat del get_sender
         # El problema que tenim ara mateix és que a l'hora de fer el get_sender,
         # aquest mira de crear un Sender o un SMTPSender.
-        self.openerp.install_module('base_extended')
-
         with Transaction().start(self.database) as txn:
             cursor = txn.cursor
             uid = txn.user
