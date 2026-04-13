@@ -2,14 +2,14 @@
 # This file contains the translation of the following modules:
 # 
 # Translators:
-#   <>, 2023, 2024, 2025.
+#   <>, 2023, 2024, 2025, 2026.
 # Joan Perez <jperez@gisce.net>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: GISCE-ERP\n"
 "Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"POT-Creation-Date: 2025-08-18 09:59\n"
-"PO-Revision-Date: 2025-08-18 08:00+0000\n"
+"POT-Creation-Date: 2026-03-20 11:21\n"
+"PO-Revision-Date: 2026-03-20 10:24+0000\n"
 "Last-Translator: destanyol <>\n"
 "Language-Team: Catalan (Spain) <erp@dev.gisce.net>\n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,13 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Language: ca_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: poweremail
+#: help:poweremail.templates,send_immediately:0
+msgid ""
+"Emails created from this template will be sent immediately without going "
+"throug outbox folder."
+msgstr "Els correus electrònics creats a partir d’aquesta plantilla s’enviaran immediatament sense passar per la carpeta de sortida."
 
 #. module: poweremail
 #: model:ir.model,name:poweremail.model_poweremail_core_selfolder
@@ -97,7 +104,7 @@ msgid "Un-Read"
 msgstr "Sense llegir"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:561
+#: code:addons/poweremail/poweremail_template.py:576
 #, python-format
 msgid "The template name must be unique!"
 msgstr "El nom de la plantilla ha de ser únic!"
@@ -146,7 +153,7 @@ msgid "Inline HTML"
 msgstr "Inline HTML"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:55
+#: code:addons/poweremail/poweremail_template.py:56
 #, python-format
 msgid "Mako templates not installed"
 msgstr "Les plantilles Mako no estan instal·lades"
@@ -162,14 +169,14 @@ msgid "POP3"
 msgstr "POP3"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "Remove action and value"
-msgstr "Elimina l'acció i el valor"
-
-#. module: poweremail
 #: help:poweremail.templates,model_data_name:0
 msgid "Model Data Name."
 msgstr "Nom de les dades del model."
+
+#. module: poweremail
+#: view:poweremail.templates:0
+msgid "Stats"
+msgstr "Estadístiques"
 
 #. module: poweremail
 #: help:poweremail.templates,null_value:0
@@ -208,6 +215,13 @@ msgid ""
 msgstr "Tots els valors del correu es poden configurar a l'editor de plantilles."
 
 #. module: poweremail
+#: help:poweremail.templates,stats_interval:0
+msgid ""
+"Number of days used to calculate the send count backwards from today. If "
+"empty or zero, all sent emails are taken into account."
+msgstr "Nombre de dies utilitzats per calcular cap enrere des d'avui el nombre de correus enviats. Si està buit o és zero, es tenen en compte tots els correus enviats."
+
+#. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
 msgid ""
 "\n"
@@ -235,6 +249,16 @@ msgstr "\n Power Email - Amplia OpenERP amb característiques de correu electrò
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_outbox_tree_company
 msgid "Mailbox: Outbox"
 msgstr "Safata: Sortida"
+
+#. module: poweremail
+#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
+msgid "Cancel"
+msgstr "Cancel·la"
+
+#. module: poweremail
+#: field:poweremail.templates,last_send_date:0
+msgid "Last Sent Date"
+msgstr "Data de l'últim enviament"
 
 #. module: poweremail
 #: model:ir.cron,name:poweremail.ir_cron_mail_scheduler_action
@@ -284,10 +308,15 @@ msgid "Server Information"
 msgstr "Informació del servidor"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_core.py:753
-#, python-format
-msgid "Saving Header of unknown payload (%s) Account: %s."
-msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
+#: field:poweremail.send.wizard,generated:0
+msgid "No of generated Mails"
+msgstr "Nº de correus generats"
+
+#. module: poweremail
+#: field:poweremail.core_accounts,isuser:0
+#: field:poweremail.core_accounts,smtpuname:0
+msgid "User Name"
+msgstr "Nom d'usuari"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:348
@@ -320,7 +349,7 @@ msgstr "Estadístiques de carpeta IMAP pel compte: %s: %s"
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_sent
 msgid "Emails sent"
-msgstr "Emails enviats"
+msgstr "Correus enviats"
 
 #. module: poweremail
 #: constraint:poweremail.core_accounts:0
@@ -338,6 +367,11 @@ msgid "Mail Contents"
 msgstr "Contingut del correu electrònic"
 
 #. module: poweremail
+#: view:poweremail.templates:0
+msgid "More information"
+msgstr "Més informació"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:329
 #, python-format
 msgid "%s (Email Attachment)"
@@ -347,11 +381,6 @@ msgstr "%s (adjunt correu electrònic)"
 #: field:poweremail.mailbox,state:0 field:poweremail.send.wizard,state:0
 msgid "Status"
 msgstr "Estat"
-
-#. module: poweremail
-#: view:poweremail.templates:0
-msgid "Email action and wizard"
-msgstr "Acció de l'email i l'assistent"
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -452,7 +481,7 @@ msgid "No recipient: Email cannot be sent"
 msgstr "Sense destinatari: el correu no es pot enviar"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:664
+#: code:addons/poweremail/poweremail_template.py:679
 #, python-format
 msgid "Copy of template "
 msgstr "Copia de la plantilla"
@@ -482,7 +511,7 @@ msgstr "Correu de destí no vàlid"
 #. module: poweremail
 #: field:poweremail.mailbox,pem_to:0 field:poweremail.templates,def_to:0
 msgid "Recepient (To)"
-msgstr "Per a:"
+msgstr "Per a"
 
 #. module: poweremail
 #: view:poweremail.mailbox:0
@@ -585,6 +614,11 @@ msgid "Last Downloaded Mail"
 msgstr "Darrera descàrrega de correu"
 
 #. module: poweremail
+#: field:poweremail.templates,stats_interval:0
+msgid "Stats Interval"
+msgstr "Interval d'estadístiques"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1318
 #, python-format
 msgid "Select a folder before you save record"
@@ -668,8 +702,8 @@ msgstr "Si seleccioneu correu electrònic automàtic es crearà una acció de se
 #: code:addons/poweremail/poweremail_send_wizard.py:99
 #: code:addons/poweremail/poweremail_send_wizard.py:269
 #: code:addons/poweremail/poweremail_send_wizard.py:275
-#: code:addons/poweremail/poweremail_template.py:53
-#: code:addons/poweremail/poweremail_template.py:67
+#: code:addons/poweremail/poweremail_template.py:54
+#: code:addons/poweremail/poweremail_template.py:68
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_administration_server
 #, python-format
 msgid "Power Email"
@@ -736,6 +770,14 @@ msgstr "Safata: Entrada"
 #, python-format
 msgid "Incoming port is not defined"
 msgstr "No s'ha definit el port d'entrada"
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:1018
+#, python-format
+msgid ""
+"The expression in 'Reference of the report' field must contain the 'object' "
+"variable."
+msgstr "L'expressió del camp 'Referència de l'informe' ha de contenir la variable 'object'."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:275
@@ -842,6 +884,11 @@ msgid "Name of Template"
 msgstr "Nom de la plantilla"
 
 #. module: poweremail
+#: field:poweremail.templates,send_count:0
+msgid "Send Count"
+msgstr "Nombre d'enviaments"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_send_wizard.py:334
 #, python-format
 msgid "Report"
@@ -932,6 +979,14 @@ msgid "Send now"
 msgstr "Envia ara"
 
 #. module: poweremail
+#: help:poweremail.templates,report_template_object_reference:0
+msgid ""
+"The evaluation of this field should return the ID of the related object. For"
+" example, use: object.related_model_id.id. This ensures that the template "
+"can correctly reference the object."
+msgstr "L'avaluació d'aquest camp ha de retornar l'ID de l'objecte relacionat. Per exemple, utilitza: object.related_model_id.id. Això garanteix que la plantilla pugui referenciar correctament l'objecte."
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_trash_tree
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_trash_tree_company
 msgid "Mailbox: Trash"
@@ -979,6 +1034,11 @@ msgstr "Des del compte"
 #: model:ir.model,name:poweremail.model_poweremail_templates
 msgid "Power Email Templates for Models"
 msgstr "Plantilles per als models"
+
+#. module: poweremail
+#: field:poweremail.preview,enforce_from_account:0
+msgid "Email account"
+msgstr "Compte de correu"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:782
@@ -1079,6 +1139,11 @@ msgid "Plain Text"
 msgstr "Text pla"
 
 #. module: poweremail
+#: field:poweremail.templates,ref_ir_value:0
+msgid "Wizard Button"
+msgstr "Botó assistent"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106
 #, python-format
 msgid "Mail fetch exception"
@@ -1090,7 +1155,7 @@ msgid "Enter port number, eg: SMTP-587 "
 msgstr "Introduïu el port, per exemple per SMTP 587."
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1237
+#: code:addons/poweremail/poweremail_template.py:1376
 #, python-format
 msgid "%s Mail Form"
 msgstr "%s formulari de correu"
@@ -1102,7 +1167,7 @@ msgid "Starting Full mail reception for mail: %s."
 msgstr "Iniciant recepció complerta de correus pel correu: %s."
 
 #. module: poweremail
-#: field:poweremail.preview,env:0
+#: view:poweremail.preview:0 field:poweremail.preview,env:0
 msgid "Extra scope variables"
 msgstr "Variables extres de l'àmbit (scope)"
 
@@ -1124,7 +1189,7 @@ msgstr "Carpeta IMAP seleccionada correctament. Compte: %s."
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_to_sent
 msgid "Emails to sent"
-msgstr "Emails per enviar"
+msgstr "Correus per enviar"
 
 #. module: poweremail
 #: view:poweremail.templates:0
@@ -1255,6 +1320,11 @@ msgid ""
 msgstr "Intent d'autenticació amb el servidor d'entrada avortat. Compte: %s.\nComproveu si les dades del servidor d'entrada estan complertes."
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_template_emails
+msgid "Template emails"
+msgstr "Plantilles de correu"
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.act_selfolder_form
 msgid "IMAP Folder Selection Wizard"
 msgstr "Assistent selecció carpeta IMAP"
@@ -1297,7 +1367,7 @@ msgstr "Error rebent correu: %s"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Create send email wizard"
-msgstr "Crear assistent per enviar l'email"
+msgstr "Crear assistent d'enviament de correu"
 
 #. module: poweremail
 #: view:poweremail.send.wizard:0
@@ -1344,6 +1414,12 @@ msgstr "Escriviu el nom del servidor de correu de sortida, per exemple: smtp.gma
 #: view:poweremail.preview:0
 msgid "Power Email Preview"
 msgstr "Previsualització"
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:990
+#, python-format
+msgid "Error evaluating the expression in 'Reference of the report' field: %s"
+msgstr "Error en avaluar l'expressió del camp 'Referència de l'informe': %s"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:532
@@ -1402,7 +1478,7 @@ msgstr "Bústia: Enviant"
 #. module: poweremail
 #: model:poweremail.templates,def_subject:poweremail.default_template_poweremail
 msgid "Demo email subject for user ${object.login}"
-msgstr "Assumpte de l'email de demostració per l'usuari ${object.login}"
+msgstr "Assumpte de correu de demostració per a l'usuari ${object.login}"
 
 #. module: poweremail
 #: view:poweremail.mailbox:0
@@ -1455,11 +1531,6 @@ msgid "Mailbox: Sent"
 msgstr "Safata: Enviats"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "External Link"
-msgstr "Enllaç Extern"
-
-#. module: poweremail
 #: field:poweremail.mailbox,priority:0 field:poweremail.send.wizard,priority:0
 msgid "Priority"
 msgstr "Prioritat"
@@ -1474,12 +1545,14 @@ msgid ""
 "This is a demo email\n"
 "</body>\n"
 "</html>"
-msgstr "<!doctype html>\n<html>\n<head></head>\n<body>\nAixò és una demostració d'un email\n</body>\n</html>"
+msgstr "<!doctype html>\n<html>\n<head></head>\n<body>\nAquest és un correu de demostració\n</body>\n</html>"
 
 #. module: poweremail
-#: field:poweremail.templates,ref_ir_value:0
-msgid "Wizard Button"
-msgstr "Botó assistent"
+#: help:poweremail.templates,send_on_create:0
+msgid ""
+"Create an e-mail when a new record is created. The instance where the record"
+" is created must be restarted for the changes to take effect."
+msgstr "Crear un correu electrònic quan es creï un registre nou. La instància on es crea el registre s’ha de reiniciar perquè els canvis tinguin efecte."
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_basic_template_all
@@ -1563,6 +1636,11 @@ msgid "Account Status"
 msgstr "Estat del compte"
 
 #. module: poweremail
+#: help:poweremail.preview,enforce_from_account:0
+msgid "Email will be sent from this account."
+msgstr "El correu s'enviarà des d'aquest compte."
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:1003
 #: code:addons/poweremail/poweremail_core.py:1123
 #, python-format
@@ -1586,9 +1664,11 @@ msgid "Server"
 msgstr "Servidor"
 
 #. module: poweremail
-#: view:poweremail.core_selfolder:0 view:poweremail.send.wizard:0
-msgid "Cancel"
-msgstr "Cancel·la"
+#: help:poweremail.templates,send_immediately:0
+msgid ""
+"Emails created from this template will be sent immediately without going "
+"through outbox folder."
+msgstr "Els correus creats a partir d'aquesta plantilla s'enviaran immediatament sense passar per la carpeta de sortida."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:953
@@ -1630,7 +1710,7 @@ msgstr "SERVIDOR SMTP o PORT no especificat"
 msgid ""
 "The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: "
 "extraordinary_meeting.en_EN.pdf) to identify the document by language."
-msgstr "El nom de l'arxiu ha de seguir el format TEXT.IDIOMA.EXTENSIO (per exemple: reunio_extraordinaria.ca_ES.pdf) per a identificar el document per idioma."
+msgstr "El nom de l'arxiu ha de seguir el format: TEXT.IDIOMA.EXTENSIÓ (per exemple: reunió_extraordinaria.ca_ES.pdf) per a identificar el document per idioma."
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -1641,6 +1721,11 @@ msgstr "Configuració"
 #: selection:poweremail.core_accounts,company:0
 msgid "Yes"
 msgstr "Sí"
+
+#. module: poweremail
+#: field:poweremail.templates,send_immediately:0
+msgid "Send Immediately"
+msgstr "Enviar immediatament"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:396
@@ -1731,6 +1816,11 @@ msgid "Send Mail"
 msgstr "Envia correu"
 
 #. module: poweremail
+#: field:poweremail.templates,report_template_object_reference:0
+msgid "Reference of the report"
+msgstr "Referència de l'informe"
+
+#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_folder_email_form
 #: view:wizard.change.folder.email:0
 msgid "Canviar emails de carpeta"
@@ -1742,13 +1832,14 @@ msgid "Email Configuration"
 msgstr "Configuració correu electrònic"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:235
+#: code:addons/poweremail/poweremail_template.py:242
 #, python-format
 msgid "An error occurred while rendering template id {}:  {}"
 msgstr "Un error ha passat mentre es renderitzava la plantilla amb id {}:  {}"
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_error_tree_company
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_error_tree_personal
 msgid "Mailbox: Error"
 msgstr "Safata: Error"
 
@@ -1767,12 +1858,12 @@ msgid "Field"
 msgstr "Camp"
 
 #. module: poweremail
-#: field:poweremail.send.wizard,generated:0
-msgid "No of generated Mails"
-msgstr "Nº de correus generats"
+#: code:addons/poweremail/poweremail_core.py:753
+#, python-format
+msgid "Saving Header of unknown payload (%s) Account: %s."
+msgstr "Guardant capçalera de càrrega desconeguda (%s). Compte: %s."
 
 #. module: poweremail
-#: help:poweremail.preview,enforce_from_account:0
 #: help:poweremail.templates,enforce_from_account:0
 msgid "Emails will be sent only from this account."
 msgstr "Els correus electrònics s'enviaran només des d'aquest compte."
@@ -1877,7 +1968,7 @@ msgstr "Activitat"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Remove send email wizard"
-msgstr "Esborrar l'assistent d'enviar l'email"
+msgstr "Eliminar assistent d'enviament de correu"
 
 #. module: poweremail
 #: view:wizard.change.state.email:0
@@ -1891,7 +1982,6 @@ msgid "Save Mail -> Mailbox write error Account: %s, Mail: %s"
 msgstr "Desar correu -> Error en escriure a la bústia. Compte: %s, Correu: %s"
 
 #. module: poweremail
-#: field:poweremail.preview,enforce_from_account:0
 #: field:poweremail.templates,enforce_from_account:0
 msgid "Enforce From Account"
 msgstr "Força des del compte"
@@ -1933,7 +2023,7 @@ msgid "Plain Text & HTML with no attachments"
 msgstr "Text pla i HTML sense adjunts"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:656
+#: code:addons/poweremail/poweremail_template.py:671
 #, python-format
 msgid "Deletion of Record failed"
 msgstr "L'eliminació del registre ha fallat"
@@ -2042,7 +2132,7 @@ msgid "Both HTML & Text"
 msgstr "A la vegada HTML i Text"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:656
+#: code:addons/poweremail/poweremail_template.py:671
 #, python-format
 msgid "Warning"
 msgstr "Avís"
@@ -2066,7 +2156,7 @@ msgstr "Acció finestra"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Wizard send email"
-msgstr "L'assistent envia un email"
+msgstr "Assistent d'enviament de correu"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:106
@@ -2152,7 +2242,7 @@ msgstr "El test de la connexió d'entrada ha estat un èxit"
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_sent_today
 msgid "Emails sent today"
-msgstr "Emails enviats avui"
+msgstr "Correus enviats avui"
 
 #. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_configuration_server
@@ -2216,12 +2306,7 @@ msgstr "No"
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_mailbox_error
 msgid "Emails in error folder"
-msgstr "Emails en la carpeta de errors"
-
-#. module: poweremail
-#: view:poweremail.templates:0
-msgid "Create action and value"
-msgstr "Crea acció i valor"
+msgstr "Correus a la carpeta d'errors"
 
 #. module: poweremail
 #: view:poweremail.preview:0
@@ -2234,10 +2319,12 @@ msgid "From"
 msgstr "Des de"
 
 #. module: poweremail
-#: field:poweremail.core_accounts,isuser:0
-#: field:poweremail.core_accounts,smtpuname:0
-msgid "User Name"
-msgstr "Nom d'usuari"
+#: code:addons/poweremail/poweremail_template.py:996
+#, python-format
+msgid ""
+"The expression in 'Reference of the report' field returned an empty value or"
+" a value that is not an integer ID."
+msgstr "L'expressió del camp 'Referència de l'informe' ha retornat un valor buit o un valor que no és un ID enter."
 
 #. module: poweremail
 #: view:poweremail.core_accounts:0
@@ -2289,8 +2376,8 @@ msgid "File Name Pattern"
 msgstr "Patró nom de fitxer"
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:1258
-#: code:addons/poweremail/poweremail_template.py:1272
+#: code:addons/poweremail/poweremail_template.py:1397
+#: code:addons/poweremail/poweremail_template.py:1411
 #, python-format
 msgid "Send Mail (%s)"
 msgstr "Envia correu (%s)"
@@ -2300,8 +2387,13 @@ msgstr "Envia correu (%s)"
 #: code:addons/poweremail/poweremail_mailbox.py:218
 #: code:addons/poweremail/poweremail_mailbox.py:223
 #: code:addons/poweremail/poweremail_serveraction.py:89
+#: code:addons/poweremail/poweremail_template.py:989
+#: code:addons/poweremail/poweremail_template.py:995
+#: code:addons/poweremail/poweremail_template.py:1017
+#: code:addons/poweremail/poweremail_template.py:1026
 #: code:addons/poweremail/wizard/wizard_poweremail_preview.py:153
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_error_company
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_error_personal
 #: selection:poweremail.preview,state:0
 #, python-format
 msgid "Error"
@@ -2320,7 +2412,15 @@ msgid ""
 msgstr "Seleccioneu el camp del model que voleu utilitzar.\nNomés els camps one2many i many2many es poden utilitzar per a les taules."
 
 #. module: poweremail
-#: code:addons/poweremail/poweremail_template.py:69
+#: code:addons/poweremail/poweremail_template.py:1027
+#, python-format
+msgid ""
+"No records found evaluating the expression in 'Reference of the report' "
+"field."
+msgstr "No s'han trobat registres en avaluar l'expressió del camp 'Referència de l'informe'."
+
+#. module: poweremail
+#: code:addons/poweremail/poweremail_template.py:70
 #, python-format
 msgid "Django templates not installed"
 msgstr "Les plantilles Django no estan instal·lades"
@@ -2451,11 +2551,6 @@ msgid "Template Preview"
 msgstr "Previsualització de la plantilla"
 
 #. module: poweremail
-#: view:poweremail.templates:0
-msgid "Informational Note"
-msgstr "Nota informativa"
-
-#. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_state_email_form
 #: view:wizard.change.state.email:0
 msgid "Canviar estat dels emails"
@@ -2465,11 +2560,6 @@ msgstr "Canviar estat dels emails"
 #: view:poweremail.templates:0
 msgid "OpenObject Code Filter:"
 msgstr "OpenObject Code Filter:"
-
-#. module: poweremail
-#: help:poweremail.templates,send_on_create:0
-msgid "Sends an e-mail when a new document is created."
-msgstr "Envia un correu electrònic quan es crea un document nou."
 
 #. module: poweremail
 #: field:poweremail.templates,def_subject:0
