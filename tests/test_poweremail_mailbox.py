@@ -1,6 +1,7 @@
 # coding=utf-8
 import base64
 import hmac
+import qreu
 
 import six
 if six.PY2:
@@ -15,23 +16,22 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
     def create_account(self, cursor, uid, extra_vals=None):
         acc_obj = self.openerp.pool.get('poweremail.core_accounts')
-        imd_obj = self.openerp.pool.get('ir.model.data')
 
-        acc_id = imd_obj.get_object_reference(cursor, uid, 'poweremail', 'info_energia_from_email')[1]
-
-        if not extra_vals:
-            return acc_id
-
-        return acc_obj.copy(cursor, uid, acc_id, extra_vals)
-
-    def create_false_account(self, cursor, uid, extra_vals=None):
         vals = {
-            'smtpserver': '',
-            'smtpport': 0,
+            'name': 'Test account',
+            'user': uid,
+            'email_id': 'test@example.com',
+            'smtpserver': 'smtp.example.com',
+            'smtpport': 587,
+            'smtpuname': 'test',
+            'smtppass': 'test',
+            'company': 'yes'
         }
         if extra_vals:
             vals.update(extra_vals)
-        return self.create_account(cursor, uid, extra_vals=vals)
+
+        acc_id = acc_obj.create(cursor, uid, vals)
+        return acc_id
 
     def create_template(self, cursor, uid, extra_vals=None):
         if extra_vals is None:
@@ -807,26 +807,27 @@ p { color:red;}
 
         El test valida que el fix https://github.com/gisce/qreu/pull/68
         funciona correctament.
-        :return:
         """
         with Transaction().start(self.database) as txn:
             cursor = txn.cursor
             uid = txn.user
-            core_obj = self.pool.get('poweremail.core_accounts')
+            core_obj = self.openerp.pool.get('poweremail.core_accounts')
+            imd_obj = self.openerp.pool.get('ir.model.data')
 
-            acc1_id = self.create_false_account(
-                cursor, uid, extra_vals={
-                    'smtpssl': False,
-                    'smtptls': False,
-                }
-            )
+            acc_id = imd_obj.get_object_reference(cursor, uid, 'poweremail', 'info_energia_from_email')[1]
+            acc1 = core_obj.simple_browse(cursor, uid, acc_id)
 
-            with patch('smtplib.SMTP.login', new=self.fake_login):
-                with patch('smtplib.SMTP.close', new=self.fake_close):
-                    acc1 = core_obj.simple_browse(cursor, uid, acc1_id)
+            acc1.write({
+                'smtpuname': 'test',
+                'smtppass': 'test',
+                'smtpserver': '',
+            })
+            # with patch('qreu.sendcontext.SMTP.login', new=self.fake_login):
+            with patch.object(qreu.sendcontext.SMTP, 'login', side_effect=self.fake_login) as fake_login:
+                with patch('qreu.sendcontext.SMTP.close', new=self.fake_close):
                     # desde l'ERP enviem un unicode a la llibreria qreu
                     self.assertTrue(isinstance(acc1.smtppass, type(u"")))
-                    core_obj.send_mail(cursor, uid, [acc1_id], {
+                    core_obj.send_mail(cursor, uid, [acc_id], {
                             'To': 'a@a.cat',
                             'FROM': 'b@b.cat'
                         },
@@ -835,6 +836,7 @@ p { color:red;}
                             'html': ''
                         }
                     )
+                    fake_login.assert_called_once()
 
     def fake_login(self, user, password):
         """Funció que replica part del comportament de l'autenticació a l'SMTP.
