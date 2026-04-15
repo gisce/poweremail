@@ -820,11 +820,14 @@ p { color:red;}
             self.assertIn('No recipient', mail['history'])
     
     def test_check_poweremail_get_sender(self):
-        # Aquest test el que farà serà comprovar la funcionalitat del get_sender
-        # El problema que tenim ara mateix és que a l'hora de fer el get_sender,
-        # aquest mira de crear un Sender o un SMTPSender.
-        self.openerp.install_module('base_extended')
+        """
+        Test que comprova que es pot autenticar correctament
+        amb el mode CRAM-MD5 al moment de fer login a l'SMTP.
 
+        El test valida que el fix https://github.com/gisce/qreu/pull/68
+        funciona correctament.
+        :return:
+        """
         with Transaction().start(self.database) as txn:
             cursor = txn.cursor
             uid = txn.user
@@ -832,51 +835,50 @@ p { color:red;}
 
             acc1_id = self.create_false_account(
                 cursor, uid, extra_vals={
-                    'name': 'acc1',
-                    'email_id': 'test1@example.com',
                     'smtpssl': False,
                     'smtptls': False,
                 }
             )
 
-            context = {'lang': 'en_US'}
             with patch('smtplib.SMTP.login', new=self.fake_login):
                 with patch('smtplib.SMTP.close', new=self.fake_close):
+                    acc1 = core_obj.simple_browse(cursor, uid, acc1_id)
+                    # desde l'ERP enviem un unicode a la llibreria qreu
+                    self.assertTrue(isinstance(acc1.smtppass, type(u"")))
                     core_obj.send_mail(cursor, uid, [acc1_id], {
-                            'To': 'nvillarroya@gisce.net',
-                            'CC': '',
-                            'BCC': '',
-                            'FROM': 'nvillarroya@gisce.net'
+                            'To': 'a@a.cat',
+                            'FROM': 'b@b.cat'
                         },
-                        "Prova", {
-                            'text': "Això és una prova",
+                        "Test", {
+                            'text': "Test",
                             'html': ''
-                        },
-                        context=context
+                        }
                     )
 
-    def _to_bytes(self, value, encoding='utf-8'):
-        if value is None:
-            return b''
-        if isinstance(value, bytes):
-            return value
-        return value.encode(encoding)
-
     def fake_login(self, user, password):
-        challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
-        challenge = base64.b64decode(challenge)
-        response = (
-                self._to_bytes(user) + b" " +
-                hmac.new(
-                    self._to_bytes(password),
-                    challenge,
-                    hashlib.md5
-                ).hexdigest().encode('ascii')
-        )
-        encoded = base64.b64encode(response)
-        if six.PY3:
-            encoded = encoded.decode('ascii')
-        return encoded
+        """Funció que replica part del comportament de l'autenticació a l'SMTP.
+        Realment no replica el login, només la part en que ens interessa per
+        validar el test_check_poweremail_get_sender
+        - Python 3: auth_cram_md5
+        - Python 2: encode_cram_md5
+        """
+        # abans del fix https://github.com/gisce/qreu/pull/68 password era
+        # unicode i petava. Amb el fix, es força un casting i hauria d'arribar
+        # un string
+        self.assertTrue(isinstance(password, str))
+        if six.PY2:
+            # replica el comportament de smtplib.SMTP.login.encode_cram_md5
+            from email.base64mime import encode as encode_base64
+            challenge = "PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+            challenge = base64.decodestring(challenge)
+            response = user + " " + hmac.HMAC(password, challenge).hexdigest()
+            return encode_base64(response, eol="")
+        else:
+            # replica el comportament de smtplib.SMTP.auth_cram_md5
+            challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+            if challenge is None:
+                return None
+            return user + " " + hmac.HMAC(password.encode('ascii'), challenge, 'md5').hexdigest()
 
     def fake_close(self):
         pass
