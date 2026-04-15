@@ -1,13 +1,12 @@
 # coding=utf-8
 import base64
 import hmac
-import hashlib
 
 import six
 if six.PY2:
-    from mock import MagicMock, PropertyMock, patch, Mock
+    from mock import patch, Mock
 else:
-    from unittest.mock import MagicMock, PropertyMock, patch, Mock
+    from unittest.mock import patch, Mock
 from destral import testing
 from destral.transaction import Transaction
 
