@@ -800,7 +800,7 @@ p { color:red;}
             # Verify error message is in history
             self.assertIn('No recipient', mail['history'])
     
-    def test_check_poweremail_get_sender(self):
+    def test_send_mail_cram_md5_login_casts_password_to_unicode(self):
         """
         Test que comprova que es pot autenticar correctament
         amb el mode CRAM-MD5 al moment de fer login a l'SMTP.
