@@ -1212,6 +1212,7 @@ class poweremail_templates(osv.osv):
         dynamic_attachment = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
 
         if dynamic_attachment:
+            attachment_ids = []
             new_att_vals = {
                 'name': mail.pem_subject + ' (Email Attachment)',
                 'datas': dynamic_attachment.get('file', ''),
@@ -1223,8 +1224,17 @@ class poweremail_templates(osv.osv):
                 'res_id': mail.id
             }
             attachment_id = attachment_obj.create(cursor, user, new_att_vals, context=context)
+            if attachment_id:
+                attachment_ids.append(attachment_id)
+
+            data = {}
+            attachment_ids_extra = self.process_extra_attachment_in_template(
+                cursor, user, template, record_ids[0], mail.id, data, context=context
+            )
+            attachment_ids.extend(attachment_ids_extra)
+
             mailbox_vals = {
-                'pem_attachments_ids': [[6, 0, [attachment_id]]],
+                'pem_attachments_ids': [[6, 0, [attachment_ids]]],
                 'mail_type': 'multipart/mixed'
             }
             res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
@@ -1591,6 +1601,39 @@ class poweremail_templates(osv.osv):
             'url': url,
             'target': 'new',
         }
+
+    def process_extra_attachment_in_template(self, cr, uid, template, src_rec_id, mail_id, data, context=None):
+        if context is None:
+            context = {}
+
+        attach_obj = self.pool.get('ir.attachment')
+
+        attachment_ids = []
+        # For each extra attachment in template
+        for tmpl_attach in template.tmpl_attachment_ids:
+            report = tmpl_attach.report_id
+            reportname = 'report.%s' % report.report_name
+            data['model'] = report.model
+            model_obj = self.pool.get(report.model)
+            # Parse search params
+            search_params = eval(get_value(cr, uid, src_rec_id, tmpl_attach.search_params, template, context=context))
+            report_model_ids = model_obj.search(cr, uid, search_params, context=context)
+            file_name = get_value(cr, uid, src_rec_id, tmpl_attach.file_name, template, context)
+            if report_model_ids:
+                service = netsvc.LocalService(reportname)
+                (result, format) = service.create(cr, uid, report_model_ids, data, context=context)
+                attach_vals = {
+                    'name': file_name,
+                    'datas': base64.b64encode(result),
+                    'datas_fname': file_name,
+                    'description': _("No Description"),
+                    'res_model': 'poweremail.mailbox',
+                    'res_id': mail_id
+                }
+                attachment_id = attach_obj.create(cr, uid, attach_vals, context=context)
+                attachment_ids.append(attachment_id)
+        return attachment_ids
+
 
 poweremail_templates()
 

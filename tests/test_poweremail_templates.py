@@ -424,3 +424,48 @@ p { color:red;}
             key=lambda tmpl_id: values[tmpl_id]['last_send_date'] or '1970-01-01 00:00:00'
         )
         self.assertEqual(ordered_by_last_send_date, [tmpl_0_id, tmpl_1_id, tmpl_2_id])
+
+    @mock.patch('poweremail.poweremail_template.netsvc.LocalService')
+    @mock.patch('poweremail.poweremail_template.get_value')
+    def test_process_extra_attachment_in_template(self, mock_get_value, mock_local_service):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        src_rec_id = 99
+        mail_id = 100
+
+        class MockReport(object):
+            report_name = 'test_report'
+            model = 'res.partner'
+
+        class MockTmplAttach(object):
+            report_id = MockReport()
+            search_params = "'search_params'"
+            file_name = "'output.pdf'"
+
+        class MockTemplate(object):
+            tmpl_attachment_ids = [MockTmplAttach()]
+
+        template = MockTemplate()
+
+        mock_get_value.side_effect = ["[]", "my_file_name.pdf"]
+
+        mock_service_instance = mock.Mock()
+        mock_local_service.return_value = mock_service_instance
+        mock_service_instance.create.return_value = (b'pdf_content', 'pdf')
+
+        with mock.patch.object(self.openerp.pool.get('res.partner'), 'search', return_value=[1, 2]):
+            with mock.patch.object(self.openerp.pool.get('ir.attachment'), 'create', return_value=123) as mock_attach_create:
+                data = {}
+                attachment_ids = tmpl_obj.process_extra_attachment_in_template(
+                    cursor, uid, template, src_rec_id, mail_id, data
+                )
+
+                self.assertEqual(attachment_ids, [123])
+                mock_attach_create.assert_called_once()
+                call_args = mock_attach_create.call_args
+                self.assertEqual(call_args[0][2]['name'], 'my_file_name.pdf')
+                self.assertEqual(call_args[0][2]['datas_fname'], 'my_file_name.pdf')
+                self.assertEqual(call_args[0][2]['res_model'], 'poweremail.mailbox')
+                self.assertEqual(call_args[0][2]['res_id'], mail_id)

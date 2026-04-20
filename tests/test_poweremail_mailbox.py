@@ -400,7 +400,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
 
     @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
     @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
-    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
+    @patch('poweremail.poweremail_template.poweremail_templates.process_extra_attachment_in_template')
     @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
     @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
