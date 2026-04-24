@@ -1234,7 +1234,7 @@ class poweremail_templates(osv.osv):
             attachment_ids.extend(attachment_ids_extra)
 
             mailbox_vals = {
-                'pem_attachments_ids': [[6, 0, [attachment_ids]]],
+                'pem_attachments_ids': [[6, 0, attachment_ids]],
                 'mail_type': 'multipart/mixed'
             }
             res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
