@@ -24,9 +24,12 @@ The mailbox is an object which stores the actual email
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
 from __future__ import absolute_import
+
+import base64
 from osv import osv, fields
 import time
 from .poweremail_core import filter_send_emails, _priority_selection
+from .poweremail_template import get_value
 import netsvc
 from tools.translate import _
 from tools.config import config
@@ -39,6 +42,8 @@ import os
 import email
 from email.utils import make_msgid
 import qreu
+from six import PY3
+
 
 LOGGER = netsvc.Logger()
 
@@ -408,6 +413,34 @@ class PoweremailMailbox(osv.osv):
                     'pem_attachments_ids': [(6, 0, attachment_ids)]
                 })
         return res_id
+
+    def attach(self, cursor, uid, mail_id, record_id, file_name_expr, report, context=None):
+        if context is None:
+            context = {}
+        if isinstance(mail_id, (list, tuple)):
+            mail_id = mail_id[0]
+
+        attach_o = self.pool.get('ir.attachment')
+
+        mail = self.simple_browse(cursor, uid, mail_id, context=context)
+
+        binary, extension = report
+        if PY3:
+            binary = binary.encode()
+
+        attach_cv = {
+            'name': mail.pem_subject + ' (Email Attachment)',
+            'datas': base64.b64encode(binary),
+            'datas_fname': "{}.{}".format(
+                tools.ustr(get_value(cursor, uid, record_id, file_name_expr, mail.template_id, context=context) or 'Report'),
+                extension
+            ),
+            'description': mail.pem_subject or _("No Description"),
+            'res_model': 'poweremail.mailbox',
+            'res_id': mail_id
+        }
+
+        return attach_o.create(cursor, uid, attach_cv, context=context)
 
     _columns = {
         'template_id': fields.many2one(

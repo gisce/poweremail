@@ -494,12 +494,6 @@ class poweremail_templates(osv.osv):
         'report_template':fields.many2one(
                 'ir.actions.report.xml',
                 'Report to send'),
-        'report_template_object_reference': fields.char(
-            'Reference of the report', size=300, required=False,
-            help="The evaluation of this field should return the ID of the related object. "
-                 "For example, use: object.related_model_id.id. "
-                 "This ensures that the template can correctly reference the object."
-        ),
         #'report_template':fields.reference('Report to send',[('ir.actions.report.xml','Reports')],size=128),
         'allowed_groups':fields.many2many(
                 'res.groups',
@@ -1096,148 +1090,35 @@ class poweremail_templates(osv.osv):
         elif 'lang' not in ctx:
             ctx['lang'] = tools.config.get('lang', 'en_US')
 
-        if template.report_template:
-            self.set_dynamic_attachments(cursor, user, template, mail, record_ids, context=context)
-
+        self.set_dynamic_attachments(cursor, user, template, mail, record_ids, context=context)
         self.set_static_attachments(cursor, user, template, mail, record_ids, ctx['lang'], context=context)
 
         return True
 
-    def _get_records_from_report_template_object_reference(self, cursor, user, template, record_ids, context=None):
-        """
-        Evaluate the expression in report_template_object_reference field
-        to get the records to be used to generate the report.
-
-        :param cursor: Database Cursor
-        :param user: ID of User
-        :param template: Browse record of template
-        :param record_ids: IDs of objects to be used to evaluate the expression
-        :param context: Context arguments
-
-        :return: list of record IDs evaluated from the expression
-        """
-        res_ids = []
-        expr = template.report_template_object_reference.replace('object', 'rec')
-        for rec_brw in self.pool.get(template.object_name.model).simple_browse(cursor, user, record_ids, context=context):
-            try:
-                value = eval(expr, {}, {'rec': rec_brw})  # Es considera que el resultat es un ID. (e.g): rec.invoice_id.id
-            except Exception as e:
-                raise osv.except_osv(
-                    _("Error"),
-                    _("Error evaluating the expression in 'Reference of the report' field: %s") % e
-                )
-
-            if not value or not isinstance(value, six.integer_types):
-                raise osv.except_osv(
-                    _("Error"),
-                    _("The expression in 'Reference of the report' field returned an empty value or a value that is not an integer ID.")
-                )
-
-            res_ids.append(value)
-
-        return res_ids
-
-    def create_report_from_report_template_object_reference_reference(self, cursor, user, template, record_ids, context=None):
-        """
-        Generate report to be attached from the expression in report_template_object_reference field
-        and return it.
-
-        :param cursor: Database Cursor
-        :param user: ID of User
-        :param template: Browse record of template
-        :param record_ids: IDs of template object
-        :param context:
-        :return:
-        """
-        if 'object' not in template.report_template_object_reference:
-            raise osv.except_osv(
-                _("Error"),
-                _("The expression in 'Reference of the report' field must contain the 'object' variable.")
-            )
-
-        record_ref_ids = self._get_records_from_report_template_object_reference(
-            cursor, user, template, record_ids, context=context
-        )
-        if not record_ref_ids:
-            raise osv.except_osv(
-                _("Error"),
-                _("No records found evaluating the expression in 'Reference of the report' field.")
-            )
-
-        return self.create_report(cursor, user, template, record_ref_ids, context=context)
-
-    def get_dynamic_attachment(self, cursor, user, template, record_ids, context=None):
-        """
-        Generate report to be attached and return it. If contain a report_template_object_reference field,
-        it will generate the report from the records evaluated from the expression in that field. Ignoring
-        the record_ids parameter.
-
-        :param cursor: Database Cursor
-        :param user: ID of User
-        :param template: Browse record of template
-        :param record_ids: IDs of template object
-        :param context: Context arguments
-
-        :return: dict with 'file' and 'extension' keys with the report content and extension.
-                 Returns an empty dict if report generation fails.
-        """
-        res = {}
-        report_vals = ()
-        if template.report_template_object_reference:
-            report_vals = self.create_report_from_report_template_object_reference_reference(
-                cursor, user, template, record_ids, context=context
-            )
-        else:
-            report_vals = self.create_report(cursor, user, template, record_ids, context=context)
-
-        if report_vals: # If report generation failed, report_vals is ()
-            if PY3:
-                file_to_report = report_vals[0].encode()
-            else:
-                file_to_report = report_vals[0]
-
-            res = {
-                'file': base64.b64encode(file_to_report),
-                'extension': report_vals[1]
-            }
-        return res
-
     def set_dynamic_attachments(self, cursor, user, template, mail, record_ids, context=None):
         if context is None:
             context = {}
-        attachment_obj = self.pool.get('ir.attachment')
-        mailbox_obj = self.pool.get('poweremail.mailbox')
 
         res = False
-        dynamic_attachment = self.get_dynamic_attachment(cursor, user, template, record_ids, context=context)
+        attachment_ids = []
 
-        if dynamic_attachment:
-            attachment_ids = []
-            new_att_vals = {
-                'name': mail.pem_subject + ' (Email Attachment)',
-                'datas': dynamic_attachment.get('file', ''),
-                'datas_fname': tools.ustr(
-                    get_value(cursor, user, record_ids[0], template.file_name, template, context=context) or 'Report'
-                ) + "." + dynamic_attachment.get('extension', ''),
-                'description': mail.pem_subject or "No Description",
-                'res_model': 'poweremail.mailbox',
-                'res_id': mail.id
-            }
-            attachment_id = attachment_obj.create(cursor, user, new_att_vals, context=context)
-            if attachment_id:
-                attachment_ids.append(attachment_id)
+        if template.report_template:
+            report = self.create_report(cursor, user, template, record_ids, context=context)
+            attachment_id = mail.attach(record_ids[0], template.file_name, report, context=context)
+            attachment_ids.append(attachment_id)
 
-            data = {}
+        if template.tmpl_attachment_ids:
             attachment_ids_extra = self.process_extra_attachment_in_template(
-                cursor, user, template, record_ids[0], mail.id, data, context=context
+                cursor, user, template, record_ids[0], mail.id, {}, context=context
             )
             attachment_ids.extend(attachment_ids_extra)
 
+        if attachment_ids:
             mailbox_vals = {
                 'pem_attachments_ids': [[6, 0, attachment_ids]],
                 'mail_type': 'multipart/mixed'
             }
-            res = mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
+            res = mail.write(mailbox_vals, context=context)
         return res
 
     def get_static_attachments_ids_from_record(self, cursor, user, template, record_ids, context=None):
@@ -1606,7 +1487,7 @@ class poweremail_templates(osv.osv):
         if context is None:
             context = {}
 
-        attach_obj = self.pool.get('ir.attachment')
+        mail_o = self.pool.get('poweremail.mailbox')
 
         attachment_ids = []
         # For each extra attachment in template
@@ -1618,19 +1499,10 @@ class poweremail_templates(osv.osv):
             # Parse search params
             search_params = eval(get_value(cr, uid, src_rec_id, tmpl_attach.search_params, template, context=context))
             report_model_ids = model_obj.search(cr, uid, search_params, context=context)
-            file_name = get_value(cr, uid, src_rec_id, tmpl_attach.file_name, template, context)
             if report_model_ids:
                 service = netsvc.LocalService(reportname)
-                (result, format) = service.create(cr, uid, report_model_ids, data, context=context)
-                attach_vals = {
-                    'name': file_name,
-                    'datas': base64.b64encode(result),
-                    'datas_fname': file_name,
-                    'description': _("No Description"),
-                    'res_model': 'poweremail.mailbox',
-                    'res_id': mail_id
-                }
-                attachment_id = attach_obj.create(cr, uid, attach_vals, context=context)
+                report_file = service.create(cr, uid, report_model_ids, data, context=context)
+                attachment_id = mail_o.attach(cr, uid, mail_id, src_rec_id, tmpl_attach.file_name, report_file, context=context)
                 attachment_ids.append(attachment_id)
         return attachment_ids
 
