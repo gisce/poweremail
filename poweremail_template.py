@@ -1115,7 +1115,7 @@ class poweremail_templates(osv.osv):
 
         if attachment_ids:
             mailbox_vals = {
-                'pem_attachments_ids': [[6, 0, attachment_ids]],
+                'pem_attachments_ids': [[4, attachment_id] for attachment_id in attachment_ids],
                 'mail_type': 'multipart/mixed'
             }
             res = mail.write(mailbox_vals, context=context)
@@ -1184,7 +1184,7 @@ class poweremail_templates(osv.osv):
             new_attachment_ids.append(new_id)
         if new_attachment_ids:
             mailbox_vals = {
-                'pem_attachments_ids': [[6, 0, new_attachment_ids]],
+                'pem_attachments_ids': [[4, new_attachment_id] for new_attachment_id in new_attachment_ids],
                 'mail_type': 'multipart/mixed'
             }
             mailbox_obj.write(cursor, user, mail.id, mailbox_vals, context=context)
