@@ -429,11 +429,12 @@ p { color:red;}
     @mock.patch('poweremail.poweremail_template.get_value')
     def test_process_extra_attachment_in_template(self, mock_get_value, mock_local_service):
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mail_obj = self.openerp.pool.get('poweremail.mailbox')
         cursor = self.cursor
         uid = self.uid
 
         src_rec_id = 99
-        mail_id = 100
+        mail_id = mail_obj.search(cursor, uid, [('pem_message_id', '=', 333)])[0]
 
         class MockReport(object):
             report_name = 'test_report'
@@ -461,11 +462,107 @@ p { color:red;}
                 attachment_ids = tmpl_obj.process_extra_attachment_in_template(
                     cursor, uid, template, src_rec_id, mail_id, data
                 )
+                mail = mail_obj.simple_browse(cursor, uid, mail_id)
 
                 self.assertEqual(attachment_ids, [123])
                 mock_attach_create.assert_called_once()
                 call_args = mock_attach_create.call_args
-                self.assertEqual(call_args[0][2]['name'], 'my_file_name.pdf')
-                self.assertEqual(call_args[0][2]['datas_fname'], 'my_file_name.pdf')
+                self.assertEqual(call_args[0][2]['name'], mail.pem_subject + ' (Email Attachment)')
+                self.assertEqual(call_args[0][2]['datas_fname'], 'Report.pdf')
                 self.assertEqual(call_args[0][2]['res_model'], 'poweremail.mailbox')
                 self.assertEqual(call_args[0][2]['res_id'], mail_id)
+
+    @mock.patch('poweremail.poweremail_template.netsvc.LocalService')
+    def test_all_attachment_options_configured(self, mock_local_service):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        attach_obj = self.openerp.pool.get('ir.attachment')
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        report_obj = self.openerp.pool.get('ir.actions.report.xml')
+        tmpl_attach_obj = self.openerp.pool.get('poweremail.template.attachment')
+
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+
+        # Option 1: Create report template (ir.actions.report.xml) for report_template
+        report_id = report_obj.create(cursor, uid, {
+            'name': 'Test Report',
+            'report_name': 'test.report',
+            'model': 'res.partner',
+            'report_type': 'pdf',
+        })
+
+        # Create template with option 1 (report_template) and option 2 (attach_record_items)
+        tmpl_id = self.create_template({
+            'report_template': report_id,
+            'file_name': 'report_from_template',
+            'attach_record_items': True,
+        })
+
+        # Option 3: Static attachment on the template (ir_attachment_ids)
+        # Language suffix in datas_fname to match the language filter
+        attach_obj.create(cursor, uid, {
+            'name': 'static_attachment.pdf',
+            'datas': base64.b64encode(b'static content'),
+            'datas_fname': 'static_attachment.en_US.pdf',
+            'res_model': 'poweremail.templates',
+            'res_id': tmpl_id,
+        })
+
+        # Option 2: Record attachment for attach_record_items
+        attach_obj.create(cursor, uid, {
+            'name': 'record_attachment.pdf',
+            'datas': base64.b64encode(b'record content'),
+            'datas_fname': 'record_attachment.pdf',
+            'res_model': 'res.partner',
+            'res_id': partner_id,
+        })
+
+        # Create report for option 4 (tmpl_attachment_ids)
+        extra_report_id = report_obj.create(cursor, uid, {
+            'name': 'Extra Report',
+            'report_name': 'extra.report',
+            'model': 'res.partner',
+            'report_type': 'pdf',
+        })
+
+        # Option 4: Template attachment (tmpl_attachment_ids)
+        tmpl_attach_obj.create(cursor, uid, {
+            'report_id': extra_report_id,
+            'file_name': 'extra_attachment',
+            'search_params': "[]",
+            'template_id': tmpl_id,
+        })
+
+        # Mock the report service so no real report generation is needed
+        mock_service = mock.Mock()
+        mock_local_service.return_value = mock_service
+        mock_service.create.return_value = (b'pdf_content', 'pdf')
+
+        # Generate the email - this processes all 4 attachment types
+        mailbox_id = tmpl_obj.generate_mail_sync(cursor, uid, tmpl_id, [partner_id])
+
+        # Retrieve the mailbox with its attachments
+        mail = mailbox_obj.browse(cursor, uid, mailbox_id)
+        attachments = mail.pem_attachments_ids
+
+        # Verify all 4 attachment options produced attachments
+        self.assertEqual(len(attachments), 4)
+
+        datas_fnames = [att.datas_fname for att in attachments]
+
+        # Option 1: report_template → report_from_template.pdf
+        self.assertIn('report_from_template.pdf', datas_fnames)
+
+        # Option 2: attach_record_items → record_attachment.pdf
+        self.assertIn('record_attachment.pdf', datas_fnames)
+
+        # Option 3: ir_attachment_ids → static_attachment.pdf
+        self.assertIn('static_attachment.pdf', datas_fnames)
+
+        # Option 4: tmpl_attachment_ids → extra_attachment.pdf
+        self.assertIn('extra_attachment.pdf', datas_fnames)
