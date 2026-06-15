@@ -768,6 +768,54 @@ p { color:red;}
             # Verify success message is in history
             self.assertIn('Email sent successfully', mail['history'])
 
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_marks_body_image_attachments_inline(self, mock_send_mail):
+        """Test mailbox HTML attachment images are propagated inline."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            attachment_obj = self.openerp.pool.get('ir.attachment')
+
+            acc_id = self.create_account(cursor, uid)
+            attachment_id = attachment_obj.create(cursor, uid, {
+                'datas_fname': 'logo.png',
+                'name': 'logo.png',
+                'datas': base64.b64encode(b'testContent').decode('ascii'),
+            })
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_body_html': (
+                    '<p>Test</p><img src="attachment://{0}" />'.format(
+                        attachment_id
+                    )
+                ),
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+                'pem_attachments_ids': [(6, 0, [attachment_id])],
+            })
+            mock_send_mail.return_value = True
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            body = mock_send_mail.call_args[0][5]
+            payload = mock_send_mail.call_args[1]['payload']
+            self.assertEqual(payload['logo.png']['disposition'], 'inline')
+            self.assertEqual(
+                payload['logo.png']['content_id'],
+                'poweremail-attachment-{0}@local'.format(attachment_id)
+            )
+            self.assertIn(
+                'src="cid:poweremail-attachment-{0}@local"'.format(
+                    attachment_id
+                ),
+                body['html']
+            )
+
     def test_send_this_mail_no_recipient_error(self):
         """Test that when there's no recipient, an appropriate error is logged"""
         with Transaction().start(self.database) as txn:
