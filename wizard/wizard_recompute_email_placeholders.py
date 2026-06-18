@@ -61,6 +61,7 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             )
         return res_id
 
+    @readonly()
     def action_recompute(self, cursor, uid, ids, context=None):
         if context is None:
             context = {}
