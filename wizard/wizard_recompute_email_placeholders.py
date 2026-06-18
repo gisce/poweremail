@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from osv import osv, fields
 from tools.translate import _
+from tools.sql_utils import readonly
 
 
 class WizardRecomputeEmailPlaceholders(osv.osv_memory):
