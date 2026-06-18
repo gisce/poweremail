@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from contextlib import contextmanager
+
 from osv import osv, fields
 from tools.translate import _
 from tools.sql_utils import readonly
@@ -30,6 +32,14 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             'mail_type',
             'priority',
         ]
+
+    @contextmanager
+    def _get_update_cursor(self, cursor):
+        if getattr(cursor._cnx, 'readonly', False):
+            with self.api.db.cursor() as update_cursor:
+                yield update_cursor
+        else:
+            yield cursor
 
     def _validate_mail(self, cursor, uid, mail, context=None):
         if mail.folder != 'error':
@@ -79,7 +89,7 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
                 (field_name, values[field_name])
                 for field_name in fields_to_recompute
             )
-            with self.api.db.cursor() as update_cursor:
+            with self._get_update_cursor(cursor) as update_cursor:
                 mailbox_obj.write(update_cursor, uid, [mail.id], values, context=context)
                 mailbox_obj.historise(
                     update_cursor, uid, [mail.id],
@@ -87,10 +97,11 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
                     context=context
                 )
 
-        self.write(cursor, uid, ids, {
-            'wiz_state': 'end',
-            'updated_count': len(active_ids),
-        }, context=context)
+        with self._get_update_cursor(cursor) as update_cursor:
+            self.write(update_cursor, uid, ids, {
+                'wiz_state': 'end',
+                'updated_count': len(active_ids),
+            }, context=context)
         return True
 
     _columns = {
