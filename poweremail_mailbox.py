@@ -474,19 +474,9 @@ class PoweremailMailbox(osv.osv):
                 })
         return res_id
 
-    def _get_references(self, cr, uid, context=None):
-        dataobj = self.pool.get('ir.model')
-        ids = dataobj.search(cr, uid, [])
-        res = dataobj.read(cr, uid, ids, ['model', 'name'], context)
-        return [(r['model'], r['name']) for r in res]
-
     _columns = {
         'template_id': fields.many2one(
             'poweremail.templates', 'Template', readonly=True,
-        ),
-        'reference': fields.reference(
-            'Source document', selection=_get_references, size=128,
-            readonly=True,
         ),
         'create_date': fields.datetime('Created date', readonly=True),
         'write_date': fields.datetime('Date modified', readonly=True),

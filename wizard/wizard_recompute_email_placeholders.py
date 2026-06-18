@@ -33,6 +33,10 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             'priority',
         ]
 
+    def _has_reference_field(self):
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        return 'reference' in mailbox_obj._columns
+
     @contextmanager
     def _get_update_cursor(self, cursor):
         if getattr(cursor._cnx, 'readonly', False):
@@ -60,6 +64,14 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             raise osv.except_osv(
                 _('Error'),
                 _('Email %s has no template associated.') % mail.id
+            )
+        if not self._has_reference_field():
+            raise osv.except_osv(
+                _('Error'),
+                _(
+                    'Install poweremail_references to store the source '
+                    'document reference before recomputing email placeholders.'
+                )
             )
         model, res_id = self._parse_reference(mail.reference)
         if not model or not res_id:

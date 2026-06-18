@@ -1397,7 +1397,6 @@ class poweremail_templates(osv.osv):
             'mail_type': 'multipart/alternative',
             'priority': template.def_priority,
             'template_id': template.id,
-            'reference': '{},{}'.format(template.object_name.model, record_id),
         }
 
         if template.inline:

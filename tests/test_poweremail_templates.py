@@ -4,6 +4,7 @@ import mock
 from destral import testing
 from destral.transaction import Transaction
 from datetime import datetime, timedelta
+from osv import fields
 
 
 class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
@@ -72,6 +73,32 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'date_mail': date_mail,
         })
 
+    def add_reference_field_for_test(self):
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        previous_field = mailbox_obj._columns.get('reference')
+        mailbox_obj._columns['reference'] = fields.char(
+            'Source Object', size=128
+        )
+        self.cursor.execute("""
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'poweremail_mailbox'
+              AND column_name = 'reference'
+        """)
+        if not self.cursor.fetchone():
+            self.cursor.execute("""
+                ALTER TABLE poweremail_mailbox
+                ADD COLUMN reference varchar(128)
+            """)
+        return previous_field
+
+    def restore_reference_field_for_test(self, previous_field):
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        if previous_field:
+            mailbox_obj._columns['reference'] = previous_field
+        else:
+            mailbox_obj._columns.pop('reference', None)
+
     def test_creating_email_gets_default_priority(self):
 
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
@@ -95,10 +122,11 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         mail = mail_obj.browse(cursor, uid, mailbox_id)
         self.assertEqual(mail.priority, '2')
 
-    def test_creating_email_stores_source_reference(self):
+    def test_recompute_email_placeholders_requires_reference_module(self):
 
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         mail_obj = self.openerp.pool.get('poweremail.mailbox')
+        wizard_obj = self.openerp.pool.get('wizard.recompute.email.placeholders')
         imd_obj = self.openerp.pool.get('ir.model.data')
 
         cursor = self.cursor
@@ -113,11 +141,25 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         mailbox_id = tmpl_obj._generate_mailbox_item_from_template(
             cursor, uid, template, partner_id
         )
+        mail_obj.write(cursor, uid, [mailbox_id], {'folder': 'error'})
 
-        mail = mail_obj.browse(cursor, uid, mailbox_id)
-        self.assertEqual(mail.reference, 'res.partner,%s' % partner_id)
+        wiz_id = wizard_obj.create(cursor, uid, {})
+        wizard_obj.action_recompute(cursor, uid, [wiz_id], context={
+            'active_ids': [mailbox_id],
+        })
+
+        wiz = wizard_obj.browse(cursor, uid, wiz_id)
+        self.assertEqual(wiz.updated_count, 0)
+        self.assertIn('poweremail_references', wiz.error_info)
 
     def test_recompute_email_placeholders_updates_error_email(self):
+        previous_field = self.add_reference_field_for_test()
+        try:
+            self._test_recompute_email_placeholders_updates_error_email()
+        finally:
+            self.restore_reference_field_for_test(previous_field)
+
+    def _test_recompute_email_placeholders_updates_error_email(self):
 
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         mail_obj = self.openerp.pool.get('poweremail.mailbox')
@@ -151,6 +193,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'pem_subject': '',
             'pem_body_text': '',
             'pem_body_html': '',
+            'reference': 'res.partner,%s' % partner_id,
         })
 
         wiz_id = wizard_obj.create(cursor, uid, {})
@@ -171,6 +214,13 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         self.assertFalse(wiz.error_info)
 
     def test_recompute_email_placeholders_keeps_processing_after_error(self):
+        previous_field = self.add_reference_field_for_test()
+        try:
+            self._test_recompute_email_placeholders_keeps_processing_after_error()
+        finally:
+            self.restore_reference_field_for_test(previous_field)
+
+    def _test_recompute_email_placeholders_keeps_processing_after_error(self):
 
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         mail_obj = self.openerp.pool.get('poweremail.mailbox')
@@ -199,6 +249,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'folder': 'error',
             'pem_to': '',
             'pem_subject': '',
+            'reference': 'res.partner,%s' % partner_id,
         })
         mail_obj.write(cursor, uid, [invalid_mailbox_id], {
             'reference': 'res.partner,99999999',

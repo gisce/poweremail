@@ -8,7 +8,6 @@ def up(cursor, installed_version):
         return
 
     helper = MigrationHelper(cursor, 'poweremail')
-    helper.init_model(model_name='poweremail.mailbox')
     helper.init_model(model_name='wizard.recompute.email.placeholders')
     helper.update_xml_records(
         xml_path='wizard/wizard_recompute_email_placeholders.xml',
@@ -17,10 +16,6 @@ def up(cursor, installed_version):
             'value_wizard_recompute_email_placeholders',
             'view_wizard_recompute_email_placeholders',
         ],
-    )
-    helper.update_xml_records(
-        xml_path='poweremail_mailbox_view.xml',
-        update_record_ids=['view_poweremail_mailbox_2_form'],
     )
     load_data(
         cursor, 'poweremail', 'security/ir.model.access.csv', mode='update',
