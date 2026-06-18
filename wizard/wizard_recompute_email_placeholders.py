@@ -41,6 +41,15 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
         else:
             yield cursor
 
+    def _format_error(self, error):
+        name = getattr(error, 'name', False)
+        value = getattr(error, 'value', False)
+        if name and value:
+            return '%s: %s' % (name, value)
+        if value:
+            return value
+        return str(error)
+
     def _validate_mail(self, cursor, uid, mail, context=None):
         if mail.folder != 'error':
             raise osv.except_osv(
@@ -71,36 +80,53 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             )
         return res_id
 
+    def _recompute_mail(self, cursor, uid, mail_id, fields_to_recompute, context=None):
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        template_obj = self.pool.get('poweremail.templates')
+        mail = mailbox_obj.browse(cursor, uid, mail_id, context=context)
+        record_id = self._validate_mail(cursor, uid, mail, context=context)
+        values = template_obj.get_mailbox_values(
+            cursor, uid, mail.template_id, record_id, context=context
+        )
+        values = dict(
+            (field_name, values[field_name])
+            for field_name in fields_to_recompute
+        )
+        mailbox_obj.write(cursor, uid, [mail.id], values, context=context)
+        mailbox_obj.historise(
+            cursor, uid, [mail.id],
+            _('Template placeholders recomputed'),
+            context=context
+        )
+
     @readonly()
     def action_recompute(self, cursor, uid, ids, context=None):
         if context is None:
             context = {}
-        mailbox_obj = self.pool.get('poweremail.mailbox')
-        template_obj = self.pool.get('poweremail.templates')
         active_ids = context.get('active_ids') or []
         fields_to_recompute = self._get_fields_to_recompute()
+        updated_count = 0
+        errors = []
 
-        for mail in mailbox_obj.browse(cursor, uid, active_ids, context=context):
-            record_id = self._validate_mail(cursor, uid, mail, context=context)
-            values = template_obj.get_mailbox_values(
-                cursor, uid, mail.template_id, record_id, context=context
-            )
-            values = dict(
-                (field_name, values[field_name])
-                for field_name in fields_to_recompute
-            )
-            with self._get_update_cursor(cursor) as update_cursor:
-                mailbox_obj.write(update_cursor, uid, [mail.id], values, context=context)
-                mailbox_obj.historise(
-                    update_cursor, uid, [mail.id],
-                    _('Template placeholders recomputed'),
-                    context=context
+        for mail_id in active_ids:
+            try:
+                with self._get_update_cursor(cursor) as update_cursor:
+                    self._recompute_mail(
+                        update_cursor, uid, mail_id, fields_to_recompute,
+                        context=context
+                    )
+                updated_count += 1
+            except Exception as error:
+                errors.append(
+                    _('Email %s: %s') % (mail_id, self._format_error(error))
                 )
 
-        self.write(cursor, uid, ids, {
-            'wiz_state': 'end',
-            'updated_count': len(active_ids),
-        }, context=context)
+        with self._get_update_cursor(cursor) as update_cursor:
+            self.write(update_cursor, uid, ids, {
+                'wiz_state': 'end',
+                'updated_count': updated_count,
+                'error_info': '\n'.join(errors),
+            }, context=context)
         return True
 
     _columns = {
@@ -109,11 +135,13 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
             ('end', 'End'),
         ], 'State'),
         'updated_count': fields.integer('Updated emails', readonly=True),
+        'error_info': fields.text('Information', readonly=True),
     }
 
     _defaults = {
         'wiz_state': lambda *a: 'init',
         'updated_count': lambda *a: 0,
+        'error_info': lambda *a: '',
     }
 
 
