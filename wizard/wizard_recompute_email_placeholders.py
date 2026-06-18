@@ -79,12 +79,13 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
                 (field_name, values[field_name])
                 for field_name in fields_to_recompute
             )
-            mailbox_obj.write(cursor, uid, [mail.id], values, context=context)
-            mailbox_obj.historise(
-                cursor, uid, [mail.id],
-                _('Template placeholders recomputed'),
-                context=context
-            )
+            with self.api.db.cursor() as update_cursor:
+                mailbox_obj.write(update_cursor, uid, [mail.id], values, context=context)
+                mailbox_obj.historise(
+                    update_cursor, uid, [mail.id],
+                    _('Template placeholders recomputed'),
+                    context=context
+                )
 
         self.write(cursor, uid, ids, {
             'wiz_state': 'end',
