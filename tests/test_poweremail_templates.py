@@ -95,6 +95,78 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         mail = mail_obj.browse(cursor, uid, mailbox_id)
         self.assertEqual(mail.priority, '2')
 
+    def test_creating_email_stores_source_reference(self):
+
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mail_obj = self.openerp.pool.get('poweremail.mailbox')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+
+        cursor = self.cursor
+        uid = self.uid
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+
+        tmpl_id = self.create_template()
+        template = tmpl_obj.browse(cursor, uid, tmpl_id)
+
+        mailbox_id = tmpl_obj._generate_mailbox_item_from_template(
+            cursor, uid, template, partner_id
+        )
+
+        mail = mail_obj.browse(cursor, uid, mailbox_id)
+        self.assertEqual(mail.reference, 'res.partner,%s' % partner_id)
+
+    def test_recompute_email_placeholders_updates_error_email(self):
+
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mail_obj = self.openerp.pool.get('poweremail.mailbox')
+        wizard_obj = self.openerp.pool.get('wizard.recompute.email.placeholders')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+
+        cursor = self.cursor
+        uid = self.uid
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+
+        tmpl_id = self.create_template({
+            'def_to': '${"fixed@example.com"}',
+            'def_cc': '${"copy@example.com"}',
+            'def_bcc': '${"blind@example.com"}',
+            'def_subject': '${"Subject %s" % object.id}',
+            'def_body_text': '${"Body %s" % object.id}',
+            'def_body_html': '<p>${"Html %s" % object.id}</p>',
+        })
+        template = tmpl_obj.browse(cursor, uid, tmpl_id)
+
+        mailbox_id = tmpl_obj._generate_mailbox_item_from_template(
+            cursor, uid, template, partner_id
+        )
+        mail_obj.write(cursor, uid, [mailbox_id], {
+            'folder': 'error',
+            'pem_to': '',
+            'pem_cc': '',
+            'pem_bcc': '',
+            'pem_subject': '',
+            'pem_body_text': '',
+            'pem_body_html': '',
+        })
+
+        wiz_id = wizard_obj.create(cursor, uid, {})
+        wizard_obj.action_recompute(cursor, uid, [wiz_id], context={
+            'active_ids': [mailbox_id],
+        })
+
+        mail = mail_obj.browse(cursor, uid, mailbox_id)
+        self.assertEqual(mail.pem_to, 'fixed@example.com')
+        self.assertEqual(mail.pem_cc, 'copy@example.com')
+        self.assertEqual(mail.pem_bcc, 'blind@example.com')
+        self.assertEqual(mail.pem_subject, 'Subject %s' % partner_id)
+        self.assertEqual(mail.pem_body_text, 'Body %s' % partner_id)
+        self.assertEqual(mail.pem_body_html, '<p>Html %s</p>' % partner_id)
+        self.assertEqual(mail.folder, 'error')
+
     def test_send_wizards_gets_default_priority_from_template(self):
         imd_obj = self.openerp.pool.get('ir.model.data')
         send_obj = self.openerp.pool.get('poweremail.send.wizard')
