@@ -97,11 +97,10 @@ class WizardRecomputeEmailPlaceholders(osv.osv_memory):
                     context=context
                 )
 
-        with self._get_update_cursor(cursor) as update_cursor:
-            self.write(update_cursor, uid, ids, {
-                'wiz_state': 'end',
-                'updated_count': len(active_ids),
-            }, context=context)
+        self.write(cursor, uid, ids, {
+            'wiz_state': 'end',
+            'updated_count': len(active_ids),
+        }, context=context)
         return True
 
     _columns = {
