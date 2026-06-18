@@ -61,6 +61,7 @@
         'wizard/wizard_state_poweremail.xml',
         'wizard/wizard_send_email.xml',
         'wizard/wizard_poweremail.xml',
+        'wizard/wizard_recompute_email_placeholders.xml',
         'poweremail_workflow.xml',
         'poweremail_template_view.xml',
         'poweremail_send_wizard.xml',

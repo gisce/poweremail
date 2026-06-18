@@ -1,0 +1,159 @@
+# -*- coding: utf-8 -*-
+from contextlib import contextmanager
+
+from osv import osv, fields
+from tools.translate import _
+from tools.sql_utils import readonly
+
+
+class WizardRecomputeEmailPlaceholders(osv.osv_memory):
+    _name = 'wizard.recompute.email.placeholders'
+
+    def _parse_reference(self, reference):
+        if not reference or ',' not in reference:
+            return False, False
+        model, res_id = reference.rsplit(',', 1)
+        try:
+            res_id = int(res_id)
+        except (TypeError, ValueError):
+            return False, False
+        return model, res_id
+
+    def _get_fields_to_recompute(self):
+        return [
+            'pem_from',
+            'pem_to',
+            'pem_cc',
+            'pem_bcc',
+            'pem_subject',
+            'pem_body_text',
+            'pem_body_html',
+            'pem_account_id',
+            'mail_type',
+            'priority',
+        ]
+
+    def _has_reference_field(self):
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        return 'reference' in mailbox_obj._columns
+
+    @contextmanager
+    def _get_update_cursor(self, cursor):
+        if getattr(cursor._cnx, 'readonly', False):
+            with self.api.db.cursor() as update_cursor:
+                yield update_cursor
+        else:
+            yield cursor
+
+    def _format_error(self, error):
+        name = getattr(error, 'name', False)
+        value = getattr(error, 'value', False)
+        if name and value:
+            return '%s: %s' % (name, value)
+        if value:
+            return value
+        return str(error)
+
+    def _validate_mail(self, cursor, uid, mail, context=None):
+        if mail.folder != 'error':
+            raise osv.except_osv(
+                _('Error'),
+                _('Only emails in error folder can be recomputed.')
+            )
+        if not mail.template_id:
+            raise osv.except_osv(
+                _('Error'),
+                _('Email %s has no template associated.') % mail.id
+            )
+        if not self._has_reference_field():
+            raise osv.except_osv(
+                _('Error'),
+                _(
+                    'Install poweremail_references to store the source '
+                    'document reference before recomputing email placeholders.'
+                )
+            )
+        model, res_id = self._parse_reference(mail.reference)
+        if not model or not res_id:
+            raise osv.except_osv(
+                _('Error'),
+                _('Email %s has no valid source document reference.') % mail.id
+            )
+        if model != mail.template_id.object_name.model:
+            raise osv.except_osv(
+                _('Error'),
+                _('Email %s source document does not match its template model.') % mail.id
+            )
+        model_obj = self.pool.get(model)
+        if not model_obj or not model_obj.search(cursor, uid, [('id', '=', res_id)], context=context):
+            raise osv.except_osv(
+                _('Error'),
+                _('Email %s source document no longer exists.') % mail.id
+            )
+        return res_id
+
+    def _recompute_mail(self, cursor, uid, mail_id, fields_to_recompute, context=None):
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        template_obj = self.pool.get('poweremail.templates')
+        mail = mailbox_obj.browse(cursor, uid, mail_id, context=context)
+        record_id = self._validate_mail(cursor, uid, mail, context=context)
+        values = template_obj.get_mailbox_values(
+            cursor, uid, mail.template_id, record_id, context=context
+        )
+        values = dict(
+            (field_name, values[field_name])
+            for field_name in fields_to_recompute
+        )
+        mailbox_obj.write(cursor, uid, [mail.id], values, context=context)
+        mailbox_obj.historise(
+            cursor, uid, [mail.id],
+            _('Template placeholders recomputed'),
+            context=context
+        )
+
+    @readonly()
+    def action_recompute(self, cursor, uid, ids, context=None):
+        if context is None:
+            context = {}
+        active_ids = context.get('active_ids') or []
+        fields_to_recompute = self._get_fields_to_recompute()
+        updated_count = 0
+        errors = []
+
+        for mail_id in active_ids:
+            try:
+                with self._get_update_cursor(cursor) as update_cursor:
+                    self._recompute_mail(
+                        update_cursor, uid, mail_id, fields_to_recompute,
+                        context=context
+                    )
+                updated_count += 1
+            except Exception as error:
+                errors.append(
+                    _('Email %s: %s') % (mail_id, self._format_error(error))
+                )
+
+        self.write(cursor, uid, ids, {
+            'wiz_state': 'end',
+            'updated_count': updated_count,
+            'error_info': '\n'.join(errors),
+        }, context=context)
+        return True
+
+    _columns = {
+        'wiz_state': fields.selection([
+            ('init', 'Init'),
+            ('end', 'End'),
+        ], 'State'),
+        'updated_count': fields.integer('Updated emails', readonly=True),
+        'error_info': fields.text('Information', readonly=True),
+    }
+
+    _defaults = {
+        'wiz_state': lambda *a: 'init',
+        'updated_count': lambda *a: 0,
+        'error_info': lambda *a: '',
+    }
+
+
+WizardRecomputeEmailPlaceholders()

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="action_wizard_recompute_email_placeholders" model="ir.actions.act_window">
+            <field name="name">Recalcular camps de plantilla</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">wizard.recompute.email.placeholders</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="value_wizard_recompute_email_placeholders" model="ir.values">
+            <field name="object" eval="1"/>
+            <field name="name">Recalcular camps de plantilla</field>
+            <field name="key2">client_action_multi</field>
+            <field name="key">action</field>
+            <field name="model">poweremail.mailbox</field>
+            <field name="value"
+                   eval="'ir.actions.act_window,'+str(ref('action_wizard_recompute_email_placeholders'))"/>
+        </record>
+
+        <record id="view_wizard_recompute_email_placeholders" model="ir.ui.view">
+            <field name="name">wizard.recompute.email.placeholders.form</field>
+            <field name="model">wizard.recompute.email.placeholders</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Recalcular camps de plantilla">
+                    <field name="wiz_state" invisible="1"/>
+                    <group attrs="{'invisible': [('wiz_state','!=','init')]}">
+                        <label string="Es recalcularan els camps generats per la plantilla dels correus seleccionats." colspan="4"/>
+                        <group colspan="4" col="2">
+                            <button icon="gtk-close" special="cancel" string="Cancel·lar" type="object"/>
+                            <button name="action_recompute" icon="gtk-ok" string="Recalcular" type="object"/>
+                        </group>
+                    </group>
+                    <group attrs="{'invisible': [('wiz_state','!=','end')]}">
+                        <label string="Procés de recàlcul finalitzat." colspan="4"/>
+                        <field name="updated_count" readonly="1"/>
+                        <field name="error_info" readonly="1" colspan="4"
+                               attrs="{'invisible': [('error_info','=',False)]}"/>
+                        <newline/>
+                        <button icon="gtk-close" special="cancel" string="Finalitzar" type="object" colspan="4"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+    </data>
+</openerp>

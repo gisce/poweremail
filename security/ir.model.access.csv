@@ -35,3 +35,6 @@
 "access_wizard_emails_generats_model_r","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_peuserse",1,0,0,0
 "access_wizard_emails_generats_model_w","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_peusersi",1,1,1,0
 "access_wizard_emails_generats_model_u","wizard.emails.generats.model","model_wizard_emails_generats_model","poweremail.res_groups_pemanager",1,1,1,1
+"access_wizard_recompute_email_placeholders_r","wizard.recompute.email.placeholders","model_wizard_recompute_email_placeholders","poweremail.res_groups_peuserse",1,0,0,0
+"access_wizard_recompute_email_placeholders_w","wizard.recompute.email.placeholders","model_wizard_recompute_email_placeholders","poweremail.res_groups_peusersi",1,1,1,0
+"access_wizard_recompute_email_placeholders_u","wizard.recompute.email.placeholders","model_wizard_recompute_email_placeholders","poweremail.res_groups_pemanager",1,1,1,1
