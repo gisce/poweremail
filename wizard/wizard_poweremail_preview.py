@@ -155,7 +155,6 @@ class poweremail_preview(osv.osv_memory):
             )
         model_name, model_id = wizard.model_ref.split(',')
         model_id = int(model_id)
-
         if not isinstance(template_ids, (list, tuple)):
             template_ids = [template_ids]
 
@@ -167,6 +166,8 @@ class poweremail_preview(osv.osv_memory):
                 raise Exception("The requested template could not be loaded")
 
             ctx = context.copy()
+            if wizard.env:
+                ctx.update(eval(wizard.env))
             ctx['src_rec_id'] = model_id
             ctx['src_model'] = template.object_name.model
             mailbox_id = template_obj.generate_mail_sync(cursor, uid, template_id, model_id, context=ctx)
