@@ -847,6 +847,90 @@ p { color:red;}
             
             # Verify error message is in history
             self.assertIn('No recipient', mail['history'])
+
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.get_sender')
+    def test_send_this_mail_invalid_subject_header_error(self, mock_get_sender):
+        """Invalid subject headers are rejected before opening SMTP."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            acc_id = self.create_account(cursor, uid)
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email\nInjected: yes',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            })
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            mail = mailbox_obj.read(
+                cursor, uid, mail_id, ['folder', 'history', 'state']
+            )
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            self.assertIn('Header "Subject" contains a line break', mail['history'])
+            self.assertFalse(mock_get_sender.called)
+
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.get_sender')
+    def test_send_this_mail_invalid_recipient_header_error(self, mock_get_sender):
+        """Invalid recipient addresses are rejected before opening SMTP."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            acc_id = self.create_account(cursor, uid)
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'invalid-recipient',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            })
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            mail = mailbox_obj.read(
+                cursor, uid, mail_id, ['folder', 'history', 'state']
+            )
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            self.assertIn(
+                'Header "To" contains an invalid email address',
+                mail['history']
+            )
+            self.assertFalse(mock_get_sender.called)
+
+    def test_send_mail_invalid_extra_header_error(self):
+        """Invalid custom headers return a clear error instead of sending."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            core_obj = self.openerp.pool.get('poweremail.core_accounts')
+
+            acc_id = self.create_account(cursor, uid)
+            result = core_obj.send_mail(
+                cursor, uid, [acc_id], {
+                    'To': 'recipient@example.com',
+                    'FROM': 'test@example.com'
+                },
+                'Test email', {
+                    'text': 'Test body',
+                    'html': ''
+                },
+                context={'headers': {'X-Test\nInjected': 'value'}}
+            )
+
+            self.assertIn('Invalid email header "X-Test\\nInjected"', result)
+            self.assertIn('Header name contains invalid characters', result)
     
     def test_send_mail_cram_md5_login_casts_password_to_unicode(self):
         """
