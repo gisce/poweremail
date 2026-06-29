@@ -562,12 +562,19 @@ class poweremail_core_accounts(osv.osv):
                 not address or '@' not in address or
                 address.startswith('@') or address.endswith('@') or
                 any(char.isspace() for char in address) or
-                any(ord(char) < 33 for char in address)
+                any(ord(char) < 33 for char in address) or
+                not self._has_valid_email_domain(address)
             ):
                 return _("Header \"{}\" contains an invalid email address: {}").format(
                     header, tools.ustr(item)
                 )
         return False
+
+    def _has_valid_email_domain(self, address):
+        domain = address.rsplit('@', 1)[1]
+        if '.' not in domain or domain.startswith('.') or domain.endswith('.'):
+            return False
+        return all(part for part in domain.split('.'))
 
     def _validate_mail_headers(self, headers):
         for name, value in headers:

@@ -909,6 +909,74 @@ p { color:red;}
             )
             self.assertFalse(mock_get_sender.called)
 
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.get_sender')
+    def test_send_this_mail_recipient_domain_without_dot_error(
+        self, mock_get_sender
+    ):
+        """Provider-invalid recipient domains are rejected before opening SMTP."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            acc_id = self.create_account(cursor, uid)
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'pepito@foobar',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            })
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            mail = mailbox_obj.read(
+                cursor, uid, mail_id, ['folder', 'history', 'state']
+            )
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            self.assertIn(
+                'Header "To" contains an invalid email address: pepito@foobar',
+                mail['history']
+            )
+            self.assertFalse(mock_get_sender.called)
+
+    @patch('poweremail.poweremail_core.Email.send')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.get_sender')
+    def test_send_this_mail_subject_with_colon_sends(
+        self, mock_get_sender, mock_send
+    ):
+        """Colons in subject values are valid and must be encoded by qreu."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            mock_send.return_value = True
+            acc_id = self.create_account(cursor, uid)
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email: with colon',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            })
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            mail = mailbox_obj.read(
+                cursor, uid, mail_id, ['folder', 'history', 'state']
+            )
+            self.assertEqual(mail['folder'], 'sent')
+            self.assertEqual(mail['state'], 'na')
+            self.assertIn('Email sent successfully', mail['history'])
+            self.assertTrue(mock_get_sender.called)
+            self.assertTrue(mock_send.called)
+
     def test_send_mail_invalid_extra_header_error(self):
         """Invalid custom headers return a clear error instead of sending."""
         with Transaction().start(self.database) as txn:
