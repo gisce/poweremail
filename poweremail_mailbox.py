@@ -426,7 +426,8 @@ class PoweremailMailbox(osv.osv):
 
         binary, extension = report
         if PY3:
-            binary = binary.encode()
+            if isinstance(binary, str):
+                binary = binary.encode('utf-8')
 
         attach_cv = {
             'name': mail.pem_subject + ' (Email Attachment)',
