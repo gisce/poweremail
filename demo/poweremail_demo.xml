@@ -67,6 +67,7 @@ un mort de gana.
             <field name="state">read</field>
             <field name="folder">inbox</field>
             <field name="conversation_id" ref="poweremail_conversation_1"/>
+            <field name="pem_subject">Prova</field>
         </record>
 
         <!-- Attachments demo -->
