@@ -519,6 +519,82 @@ class poweremail_core_accounts(osv.osv):
         )
         return sender
 
+    def _validate_header_name(self, name):
+        if not name:
+            return _("Header name must not be empty")
+        name = tools.ustr(name)
+        if ':' in name or '\r' in name or '\n' in name:
+            return _("Header name contains invalid characters")
+        if any(ord(char) < 33 or ord(char) > 126 for char in name):
+            return _("Header name must contain only printable ASCII characters")
+        return False
+
+    def _validate_header_value(self, name, value):
+        if value in (None, False):
+            return False
+        if isinstance(value, (list, tuple, set)):
+            values = value
+        else:
+            values = [value]
+        for item in values:
+            if item in (None, False):
+                continue
+            item = tools.ustr(item)
+            if '\r' in item or '\n' in item:
+                return _("Header \"{}\" contains a line break").format(name)
+        return False
+
+    def _format_header_name(self, name):
+        return tools.ustr(name).replace('\r', '\\r').replace('\n', '\\n')
+
+    def _validate_email_address(self, header, value):
+        if value in (None, False, ''):
+            return False
+        if isinstance(value, (list, tuple, set)):
+            values = value
+        else:
+            values = [value]
+        for item in values:
+            if item in (None, False, ''):
+                continue
+            _display_name, address = parseaddr(tools.ustr(item))
+            if (
+                not address or '@' not in address or
+                address.startswith('@') or address.endswith('@') or
+                any(char.isspace() for char in address) or
+                any(ord(char) < 33 for char in address) or
+                not self._has_valid_email_domain(address)
+            ):
+                return _("Header \"{}\" contains an invalid email address: {}").format(
+                    header, tools.ustr(item)
+                )
+        return False
+
+    def _has_valid_email_domain(self, address):
+        domain = address.rsplit('@', 1)[1]
+        if '.' not in domain or domain.startswith('.') or domain.endswith('.'):
+            return False
+        return all(part for part in domain.split('.'))
+
+    def _validate_mail_headers(self, headers):
+        for name, value in headers:
+            error = self._validate_header_name(name)
+            if error:
+                return _("Invalid email header \"{}\": {}").format(
+                    self._format_header_name(name), error
+                )
+            error = self._validate_header_value(name, value)
+            if error:
+                return error
+        return False
+
+    def _validate_mail_addresses(self, headers):
+        for name, value in headers:
+            error = self._validate_email_address(name, value)
+            if error:
+                return error
+        return False
+
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
         def create_qreu(headers, payload, **kwargs):
@@ -640,6 +716,29 @@ class poweremail_core_accounts(osv.osv):
                 })
             elif 'Organitzation' in extra_headers:
                 extra_headers.pop('Organitzation')
+            invalid_header = self._validate_mail_headers([
+                ('Subject', subject),
+                ('From', sender_name),
+                ('To', addresses_list.get('To', [])),
+                ('Cc', addresses_list.get('CC', [])),
+                ('Bcc', addresses_list.get('BCC', [])),
+            ] + list(extra_headers.items()))
+            if invalid_header:
+                logger.notifyChannel(
+                    _("Power Email"), netsvc.LOG_ERROR, invalid_header
+                )
+                return invalid_header
+            invalid_address = self._validate_mail_addresses([
+                ('From', sender_name),
+                ('To', addresses_list.get('To', [])),
+                ('Cc', addresses_list.get('CC', [])),
+                ('Bcc', addresses_list.get('BCC', [])),
+            ])
+            if invalid_address:
+                logger.notifyChannel(
+                    _("Power Email"), netsvc.LOG_ERROR, invalid_address
+                )
+                return invalid_address
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
             with self.get_sender(account): # Returns a Sender context from qreu
