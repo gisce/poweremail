@@ -8,9 +8,8 @@ from mako.exceptions import html_error_template
 from osv import osv, fields
 from ..poweremail_template import get_value
 from tools.translate import _
-import tools
 from premailer import transform
-from osv.orm import Constraint, OnlyFieldsConstraint
+from osv.orm import OnlyFieldsConstraint
 from tools.safe_eval import safe_eval
 
 
@@ -129,24 +128,15 @@ class poweremail_preview(osv.osv_memory):
 
     def call_check_to(self, cr, uid, ids):
         """
-        Aquesta funció comprova que totes les adreces de correu electrònic
-        definides al camp 'to' siguin vàlides. El camp s'espera en format
-        text amb múltiples adreces separades per comes.
-        Per cada adreça:
-          - Es valida el format mitjançant tools.misc.get_validate_email_format
-          - Si alguna adreça no és vàlida, la funció retorna False
+        Comprova el camp 'to' amb les mateixes regles i separadors que
+        s'utilitzen en enviar el correu.
 
         :return: True si totes les adreces són vàlides, False en cas contrari
         """
 
+        mailbox_obj = self.pool.get('poweremail.mailbox')
         to = self.read(cr, uid, ids, ['to'])[0]['to']
-        res = True
-        separator = ','
-        for email in to.split(separator):
-            is_valid = tools.misc.get_validate_email_format(email)
-            if not is_valid:
-                res = False
-        return res
+        return bool(to) and mailbox_obj.check_email_valid(to)
 
     _constraints = [
         OnlyFieldsConstraint(call_check_to,
