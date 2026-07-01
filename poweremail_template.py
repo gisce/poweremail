@@ -1327,6 +1327,7 @@ class poweremail_templates(osv.osv):
     def generate_mail_sync(self, cursor, user, template_id, record_ids, context=None):
         if context is None:
             context = {}
+        mailbox_obj = self.pool.get('poweremail.mailbox')
         if not isinstance(record_ids, (list, tuple)):
             record_ids = [record_ids]
         template = self.browse(cursor, user, template_id, context=context)
@@ -1349,13 +1350,23 @@ class poweremail_templates(osv.osv):
         for record_id in record_ids:
             mailbox_id = self._generate_mailbox_item_from_template(cursor, user, template, record_id, context=context)
             mailbox_ids.append(mailbox_id)
-            mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
+            mail = mailbox_obj.simple_browse(cursor, user, mailbox_id, context=context)
             if context.get('add_attachments', True):
-                if template.single_email and len(report_record_ids) > 1:
-                    # The optional attachment will be generated as a single file for all these records
-                    self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
-                else:
-                    self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
+                try:
+                    if template.single_email and len(report_record_ids) > 1:
+                        # The optional attachment will be generated as a single file for all these records
+                        self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
+                    else:
+                        self._generate_attach_reports(cursor, user, template, [record_id], mail, context=context)
+                except Exception as e:
+                    error_msg = _(
+                        "Error generating email attachments: {}"
+                    ).format(tools.ustr(e))
+                    mailbox_obj.historise(
+                        cursor, user, [mailbox_id], error_msg,
+                        context=context, error=True
+                    )
+                    continue
             # Create a partner event
             cursor.execute("SELECT state from ir_module_module where state='installed' and name = 'mail_gateway'")
             mail_gateway = cursor.fetchall()
@@ -1366,15 +1377,12 @@ class poweremail_templates(osv.osv):
             # Emails before all the work is complete in
             # Generating email, attachments and event
             if not template.save_to_drafts:
-                pe_obj = self.pool.get('poweremail.mailbox')
                 send_immediately = template.send_immediately
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
-                    if not mail.pem_body_text:
-                        pe_obj.write(cursor, user, mailbox_id, {'folder': 'error'}, context=context)
-                    elif send_immediately:
-                        pe_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
+                    if send_immediately:
+                        mailbox_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
                     else:
-                        pe_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
+                        mailbox_obj.write(cursor, user, mailbox_id, {'folder': 'outbox'}, context=context)
 
         if len(mailbox_ids) > 1:
             return mailbox_ids

@@ -648,12 +648,10 @@ p { color:red;}
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
 
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
-    def test_save_to_mailbox_report_error_creates_error_email(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
+    def test_save_to_mailbox_report_error_creates_error_email(
+            self, mock_create_mail, mock_create_report):
         # Aquest test verifica que s'envia un email des de el wizar 'poweremail.send.wizard'
         #i dona error al generar el report aquest email es genera a la carpeta error.
 
@@ -762,12 +760,9 @@ p { color:red;}
             }
             mail_id = mailbox_obj.create(cursor, uid, mail_vals)
 
-            mock_function.return_value = mail_id
-            error_msg = u"Error generating the email report"
-            mock_function_2.side_effect = Exception(error_msg)
-            mock_function_3.return_value = []
-            mock_function_4.return_value = []
-            mock_function_5.return_value = [attachment_id]
+            mock_create_mail.return_value = mail_id
+            error_cause = u"Report service unavailable"
+            mock_create_report.side_effect = Exception(error_cause)
 
             context = {}
             context['template_id'] = template_id
@@ -780,16 +775,24 @@ p { color:red;}
             context['template_id'] = template_id
             context['active_id'] = fact_id
 
-            mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
-            self.assertEqual(mail_ids, [mail_id])
+            send_wizard_obj.send_mail(
+                cursor, uid, [wizard_id], context=context
+            )
 
-            mail_read = mailbox_obj.read(cursor, uid, mail_id, ['state', 'folder', 'history'])
+            mail_read = mailbox_obj.read(
+                cursor, uid, mail_id, ['state', 'folder', 'history']
+            )
             self.assertEqual(mail_read['folder'], 'error')
             self.assertEqual(mail_read['state'], 'na')
             history = mail_read.get('history') or u""
-            self.assertIn(error_msg, history)
+            self.assertIn('Error generating email attachments', history)
+            self.assertIn(error_cause, history)
 
-    def test_save_to_folder_error(self):
+    @patch(
+        'poweremail.poweremail_template.poweremail_templates.'
+        '_generate_attach_reports'
+    )
+    def test_save_to_folder_error(self, mock_generate_attachments):
         # Aquest test verifica que s'envia un email des de el wizar 'poweremail.preview'
         #i dona error al generar el report aquest email es genera a la carpeta error.
         with Transaction().start(self.database) as txn:
@@ -814,7 +817,7 @@ p { color:red;}
                         "<html>" \
                         "<head></head>" \
                         "<body>" \
-                        "<% env['hola']%>" \
+                        "<p>Valid email body</p>" \
                         "<br/>" \
                         "El importe de su factura de electricidad que comprende el periodo del <B>2021/06/01</B> al <B>2021/06/30</B> es de <B> 14.54€</B>.<br/>" \
                         "<br/>" \
@@ -835,6 +838,9 @@ p { color:red;}
             template = template_obj.simple_browse(cursor, uid, template_id)
             template_name = template.object_name.name
 
+            error_cause = u"Attachment rendering failed"
+            mock_generate_attachments.side_effect = Exception(error_cause)
+
             wiz_id = wizard_obj.create(cursor, uid, {
                 'model_ref': '{},{}'.format(template_name, 1),
             }, context={'active_ids': [template_id]})
@@ -845,8 +851,19 @@ p { color:red;}
             mail_error_ids_after = mailbox_obj.search(cursor, uid, [
                 ('folder', '=', 'error'),
             ])
-            self.assertTrue(
-                len(mail_error_ids_after) > len(mail_error_ids_before))
+            new_error_ids = list(
+                set(mail_error_ids_after) - set(mail_error_ids_before)
+            )
+            self.assertEqual(len(new_error_ids), 1)
+            mail = mailbox_obj.read(
+                cursor, uid, new_error_ids[0], ['folder', 'state', 'history']
+            )
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            self.assertIn(
+                'Error generating email attachments', mail['history']
+            )
+            self.assertIn(error_cause, mail['history'])
 
     @patch('poweremail.poweremail_mailbox.netsvc.Logger')
     @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
