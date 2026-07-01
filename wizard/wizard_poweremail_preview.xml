@@ -9,7 +9,7 @@
             <field name="arch" type="xml">
                 <form string="Power Email Preview">
                     <field name="state" invisible="1"/>
-                    <field name="model_ref" colspan="4"/>
+                    <field name="model_ref" colspan="4" on_change="onchange_model_ref(model_ref, context)"/>
                     <field name="enforce_from_account" colspan="4" readonly="1"/>
                     <field name="to" colspan="2"/>
                     <field name="cc" colspan="2"/>
