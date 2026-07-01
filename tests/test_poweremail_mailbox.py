@@ -1,6 +1,13 @@
 # coding=utf-8
 import base64
-import mock
+import hmac
+import qreu
+
+import six
+if six.PY2:
+    from mock import patch, Mock
+else:
+    from unittest.mock import patch, Mock
 from destral import testing
 from destral.transaction import Transaction
 
@@ -200,7 +207,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 2)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_attachments_and_report(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -264,7 +271,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 3)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_report_no_attachments(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -316,7 +323,7 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 1)
 
-    @mock.patch('poweremail.poweremail_template.poweremail_templates.create_report')
+    @patch('poweremail.poweremail_template.poweremail_templates.create_report')
     def generate_mail_with_attachments_and_report_multi_users(self, mock_function):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -391,11 +398,11 @@ class TestPoweremailMailbox(testing.OOTestCase):
             attach_ids = ir_attachment_obj.search(cursor, uid, [])
             self.assertEqual(len(attach_ids), 5)
 
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.process_extra_attachment_in_template')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
-    @mock.patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_template_attachments')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.add_attachment_documents')
+    @patch('poweremail.poweremail_template.poweremail_templates.process_extra_attachment_in_template')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_report_attachment')
+    @patch('poweremail.poweremail_send_wizard.poweremail_send_wizard.create_mail')
     def test_save_to_mailbox(self, mock_function, mock_function_2, mock_function_3, mock_function_4, mock_function_5):
         with Transaction().start(self.database) as txn:
             uid = txn.user
@@ -640,3 +647,269 @@ p { color:red;}
             mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
+
+    @patch('poweremail.poweremail_mailbox.netsvc.Logger')
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_exception_logs_error(self, mock_send_mail, mock_logger):
+        """Test that when send_this_mail raises an exception, the error is logged"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to raise an exception
+            mock_send_mail.side_effect = Exception("Connection refused")
+            mock_logger_instance = Mock()
+            mock_logger.return_value = mock_logger_instance
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify that the logger was called with the error
+            mock_logger_instance.notifyChannel.assert_called_once()
+            call_args = mock_logger_instance.notifyChannel.call_args
+            self.assertIn("Power Email", call_args[0])
+            self.assertIn("Connection refused", str(call_args[0]))
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history'])
+            self.assertEqual(mail['folder'], 'error')
+            
+            # Verify error is in history
+            self.assertIn('Traceback', mail['history'])
+
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_failure_historises_error(self, mock_send_mail):
+        """Test that when send_mail returns an error message, it's historised"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to return an error message (not True)
+            error_message = "SMTP authentication failed"
+            mock_send_mail.return_value = error_message
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'error')
+            self.assertEqual(mail['state'], 'na')
+            
+            # Verify error message is in history
+            self.assertIn(error_message, mail['history'])
+
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_success_moves_to_sent(self, mock_send_mail):
+        """Test that when send_mail succeeds, the mail is moved to sent folder"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail in outbox
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Mock send_mail to return True (success)
+            mock_send_mail.return_value = True
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to sent folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'sent')
+            self.assertEqual(mail['state'], 'na')
+            
+            # Verify success message is in history
+            self.assertIn('Email sent successfully', mail['history'])
+
+    @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')
+    def test_send_this_mail_marks_body_image_attachments_inline(self, mock_send_mail):
+        """Test mailbox HTML attachment images are propagated inline."""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            attachment_obj = self.openerp.pool.get('ir.attachment')
+
+            acc_id = self.create_account(cursor, uid)
+            attachment_id = attachment_obj.create(cursor, uid, {
+                'datas_fname': 'logo.png',
+                'name': 'logo.png',
+                'datas': base64.b64encode(b'testContent').decode('ascii'),
+            })
+            mail_id = mailbox_obj.create(cursor, uid, {
+                'pem_from': 'test@example.com',
+                'pem_to': 'recipient@example.com',
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_body_html': (
+                    '<p>Test</p><img src="attachment://{0}" />'.format(
+                        attachment_id
+                    )
+                ),
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+                'pem_attachments_ids': [(6, 0, [attachment_id])],
+            })
+            mock_send_mail.return_value = True
+
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+
+            body = mock_send_mail.call_args[0][5]
+            payload = mock_send_mail.call_args[1]['payload']
+            self.assertEqual(payload['logo.png']['disposition'], 'inline')
+            self.assertEqual(
+                payload['logo.png']['content_id'],
+                'poweremail-attachment-{0}@local'.format(attachment_id)
+            )
+            self.assertIn(
+                'src="cid:poweremail-attachment-{0}@local"'.format(
+                    attachment_id
+                ),
+                body['html']
+            )
+
+    def test_send_this_mail_no_recipient_error(self):
+        """Test that when there's no recipient, an appropriate error is logged"""
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+            
+            # Create an account
+            acc_id = self.create_account(cursor, uid)
+            
+            # Create a mail without recipient
+            mail_vals = {
+                'pem_from': 'test@example.com',
+                'pem_to': '',  # Empty recipient
+                'pem_subject': 'Test email',
+                'pem_body_text': 'Test body',
+                'pem_account_id': acc_id,
+                'folder': 'outbox',
+                'state': 'na',
+            }
+            mail_id = mailbox_obj.create(cursor, uid, mail_vals)
+            
+            # Send the mail
+            mailbox_obj.send_this_mail(cursor, uid, [mail_id])
+            
+            # Verify the mail was moved to error folder
+            mail = mailbox_obj.read(cursor, uid, mail_id, ['folder', 'history', 'state'])
+            self.assertEqual(mail['folder'], 'error')
+            
+            # Verify error message is in history
+            self.assertIn('No recipient', mail['history'])
+    
+    def test_send_mail_cram_md5_login_casts_password_to_unicode(self):
+        """
+        Test que comprova que es pot autenticar correctament
+        amb el mode CRAM-MD5 al moment de fer login a l'SMTP.
+
+        El test valida que el fix https://github.com/gisce/qreu/pull/68
+        funciona correctament.
+        """
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            core_obj = self.openerp.pool.get('poweremail.core_accounts')
+            imd_obj = self.openerp.pool.get('ir.model.data')
+
+            acc_id = imd_obj.get_object_reference(cursor, uid, 'poweremail', 'info_energia_from_email')[1]
+            acc1 = core_obj.simple_browse(cursor, uid, acc_id)
+
+            acc1.write({
+                'smtpuname': 'test',
+                'smtppass': 'test',
+                'smtpserver': '',
+            })
+            # with patch('qreu.sendcontext.SMTP.login', new=self.fake_login):
+            with patch.object(qreu.sendcontext.SMTP, 'login', side_effect=self.fake_login) as fake_login:
+                with patch('qreu.sendcontext.SMTP.close', new=self.fake_close):
+                    # desde l'ERP enviem un unicode a la llibreria qreu
+                    self.assertTrue(isinstance(acc1.smtppass, type(u"")))
+                    core_obj.send_mail(cursor, uid, [acc_id], {
+                            'To': 'a@a.cat',
+                            'FROM': 'b@b.cat'
+                        },
+                        "Test", {
+                            'text': "Test",
+                            'html': ''
+                        }
+                    )
+                    fake_login.assert_called_once()
+
+    def fake_login(self, user, password):
+        """Funció que replica part del comportament de l'autenticació a l'SMTP.
+        Realment no replica el login, només la part en que ens interessa per
+        validar el test_check_poweremail_get_sender
+        - Python 3: auth_cram_md5
+        - Python 2: encode_cram_md5
+        """
+        # abans del fix https://github.com/gisce/qreu/pull/68 password era
+        # unicode i petava. Amb el fix, es força un casting i hauria d'arribar
+        # un string
+        self.assertTrue(isinstance(password, str))
+        if six.PY2:
+            # replica el comportament de smtplib.SMTP.login.encode_cram_md5
+            from email.base64mime import encode as encode_base64
+            challenge = "PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+            challenge = base64.decodestring(challenge)
+            response = user + " " + hmac.HMAC(password, challenge).hexdigest()
+            return encode_base64(response, eol="")
+        else:
+            # replica el comportament de smtplib.SMTP.auth_cram_md5
+            challenge = b"PDE3MjgzOTEwMjMuNDU2N0BtYWlsLmV4YW1wbGUuY29tPg=="
+            if challenge is None:
+                return None
+            return user + " " + hmac.HMAC(password.encode('ascii'), challenge, 'md5').hexdigest()
+
+    def fake_close(self):
+        pass
