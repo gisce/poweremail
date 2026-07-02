@@ -843,6 +843,7 @@ p { color:red;}
 
             wiz_id = wizard_obj.create(cursor, uid, {
                 'model_ref': '{},{}'.format(template_name, 1),
+                'save_to_drafts_prev': True,
             }, context={'active_ids': [template_id]})
             wizard_obj.action_send_static_mail(
                 cursor, uid, [wiz_id], context={'active_ids': [template_id]}
