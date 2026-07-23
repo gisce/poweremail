@@ -92,13 +92,7 @@
                         <page string="Attachment settings">
                             <group string="Dynamic attachments (reports)" colspan="2">
                                 <field name="file_name" colspan="2"/>
-                                <field name="report_template_object_reference" colspan="2"/>
-                                <group attrs="{'invisible':[('report_template_object_reference', '!=', False)]}" colspan="2">
-                                    <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]"/>
-                                </group>
-                                <group attrs="{'invisible':[('report_template_object_reference', '=', False)]}" colspan="2">
-                                    <field name="report_template" colspan="2"/>
-                                </group>
+                                <field name="report_template" colspan="2" domain="[('model','=',model_int_name)]"/>
                                 <field name="attach_record_items" colspan="2"/>
                                 <group attrs="{'invisible':[('attach_record_items', '!=', True)]}" colspan="8">
                                     <newline/>
@@ -219,6 +213,13 @@
                             <separator string="Log partner events" colspan="4"/>
                             <field name="partner_event" colspan="4"/>
                         </page>
+                        <page string="Stats" icon="device-desktop-analytics">
+                            <field name="stats_interval"/>
+                            <group>
+                                <field name="last_send_date" widget="indicator" />
+                                <field name="send_count" widget="indicator" />
+                            </group>
+                        </page>
                     </notebook>
                 </form>
             </field>
@@ -239,6 +240,8 @@
                     <field name="use_sign" colspan="4" select="2" />
                     <field name="file_name" colspan="4" />
                     <field name="enforce_from_account" />
+                    <field name="last_send_date" select="2" />
+                    <field name="send_count" select="2" />
                 </tree>
             </field>
         </record>
