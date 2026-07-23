@@ -461,6 +461,9 @@ class poweremail_send_wizard(osv.osv_memory):
 
         ctx['single_email'] = bool(getattr(wiz, 'single_email', False))
         ctx['use_sign'] = bool(getattr(wiz, 'signature', False))
+        # The wizard decides the destination folder after generating the mail.
+        ctx['save_to_drafts'] = True
+        ctx['wizard_attachment_ids'] = [attachment.id for attachment in wiz.attachment_ids]
 
         ctx['wizard_overrides'] = {
             'to': getattr(wiz, 'to', False),
@@ -470,8 +473,11 @@ class poweremail_send_wizard(osv.osv_memory):
             'body_text': getattr(wiz, 'body_text', False),
             'body_html': getattr(wiz, 'body_html', False),
             'priority': getattr(wiz, 'priority', False),
+            'report': getattr(wiz, 'report', False),
         }
         mail_id = template_o.generate_mail_sync(cr, uid, template.id, src_rec_ids, context=ctx)
+        if not mail_id:
+            return []
         return list(mail_id) if isinstance(mail_id, (list, tuple)) else [mail_id]
 
 

@@ -490,6 +490,8 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(ctx.get('account_id'), 1)
             self.assertEqual(ctx.get('single_email'), False)
             self.assertEqual(ctx.get('use_sign'), False)
+            self.assertEqual(ctx.get('save_to_drafts'), True)
+            self.assertEqual(ctx.get('wizard_attachment_ids'), [])
 
             overrides = ctx.get('wizard_overrides', {})
             self.assertEqual(overrides.get('to'), 'aorellana@gisce.net')
@@ -499,14 +501,17 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(overrides.get('body_text'), body_text)
             self.assertEqual(overrides.get('body_html'), False)
             self.assertEqual(overrides.get('priority'), '1')
+            self.assertEqual(overrides.get('report'), False)
 
     def test_save_to_mailbox_inlining(self):
         with Transaction().start(self.database) as txn:
             uid = txn.user
             cursor = txn.cursor
+            users_obj = self.openerp.pool.get('res.users')
             mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
             pm_tmp_obj = self.openerp.pool.get('poweremail.templates')
             imd_obj = self.openerp.pool.get('ir.model.data')
+            attachment_obj = self.openerp.pool.get('ir.attachment')
             pw_account_obj = self.openerp.pool.get('poweremail.core_accounts')
             send_wizard_obj = self.openerp.pool.get('poweremail.send.wizard')
 
@@ -536,16 +541,25 @@ p { color:red;}
                 'state': 'approved',
             })
 
+            users_obj.write(cursor, uid, [uid], {'signature': 'User signature'})
             pm_tmp_obj.write(cursor, uid, template_id, {
                 'enforce_from_account': pw_account_id,
-                'inline': True
+                'inline': True,
+                'use_sign': True,
+            })
+            attachment_id = attachment_obj.create(cursor, uid, {
+                'name': 'wizard_attachment.txt',
+                'datas': base64.b64encode(b'wizard attachment'),
+                'datas_fname': 'wizard_attachment.txt',
+                'res_model': 'res.users',
+                'res_id': uid,
             })
 
             wizard_vals = {
                 'rel_model_ref': fact_id,
                 'requested': 1,
                 'from': pw_account_id,
-                'attachment_ids': [],
+                'attachment_ids': [[6, 0, [attachment_id]]],
                 'body_text': body_text,
                 'cc': False,
                 'body_html': False,
@@ -580,6 +594,11 @@ p { color:red;}
             mail_ids = send_wizard_obj.save_to_mailbox(cursor, uid, [wizard_id], context=context)
             pem_body_text = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_body_text'])['pem_body_text']
             self.assertEqual(pem_body_text, inlined_html)
+            mailbox_values = mailbox_obj.read(cursor, uid, mail_ids[0], ['pem_attachments_ids'])
+            attachment_names = [attachment.datas_fname for attachment in attachment_obj.browse(
+                cursor, uid, mailbox_values['pem_attachments_ids']
+            )]
+            self.assertIn('wizard_attachment.txt', attachment_names)
 
     @patch('poweremail.poweremail_mailbox.netsvc.Logger')
     @patch('poweremail.poweremail_core.poweremail_core_accounts.send_mail')

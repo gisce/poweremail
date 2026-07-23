@@ -1101,10 +1101,12 @@ class poweremail_templates(osv.osv):
 
         res = False
         attachment_ids = []
+        wizard_overrides = context.get('wizard_overrides') or {}
 
         if template.report_template:
             report = self.create_report(cursor, user, template, record_ids, context=context)
-            attachment_id = mail.attach(record_ids[0], template.file_name, report, context=context)
+            report_file_name = wizard_overrides.get('report', template.file_name)
+            attachment_id = mail.attach(record_ids[0], report_file_name, report, context=context)
             attachment_ids.append(attachment_id)
 
         if template.tmpl_attachment_ids:
@@ -1170,6 +1172,7 @@ class poweremail_templates(osv.osv):
         mailbox_obj = self.pool.get('poweremail.mailbox')
 
         attachment_ids = self.get_static_attachments_ids(cursor, user, template, record_ids, lang, context=context)
+        attachment_ids += context.get('wizard_attachment_ids', [])
         attachments = attachment_obj.simple_browse(cursor, user, attachment_ids, context=context)
 
         new_attachment_ids = []
@@ -1271,8 +1274,8 @@ class poweremail_templates(osv.osv):
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
             'pem_to': get_value(cursor, user, record_id, wiz_ov.get('to') or template.def_to, template, context=ctx),
-            'pem_cc': get_value(cursor, user, record_id,  wiz_ov.get('cc', template.def_cc), template, context=ctx),
-            'pem_bcc': get_value(cursor, user, record_id, wiz_ov.get('bcc', template.def_bcc), template, context=ctx),
+            'pem_cc': get_value(cursor, user, record_id, wiz_ov.get('cc', template.def_cc), template, context=ctx),
+            'pem_bcc': get_value(cursor, user, record_id,wiz_ov.get('bcc', template.def_bcc), template, context=ctx),
             'pem_subject': get_value(cursor, user, record_id, wiz_ov.get('subject') or template.def_subject, template, context=ctx),
             'pem_body_text': get_value(cursor, user, record_id, wiz_ov.get('body_text') or template.def_body_text, template, context=ctx),
             'pem_body_html': get_value(cursor, user, record_id, wiz_ov.get('body_html') or template.def_body_html, template, context=ctx),
@@ -1289,7 +1292,7 @@ class poweremail_templates(osv.osv):
             mailbox_values['pem_body_text'] = transform(mailbox_values['pem_body_text'])
 
         #Use signatures if allowed
-        use_sign = context.get('use_sign') or template.use_sign
+        use_sign = context.get('use_sign', template.use_sign)
         if use_sign:
             sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']
             if sign:
