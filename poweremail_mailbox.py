@@ -42,6 +42,7 @@ import os
 import email
 from email.utils import make_msgid
 import qreu
+from qreu.address import getaddresses
 from six import PY3
 
 
@@ -445,6 +446,73 @@ class PoweremailMailbox(osv.osv):
                     break
         return True
 
+    def _get_recipient_domains(self, vals):
+        recipients = [
+            tools.ustr(vals.get(field) or u'')
+            for field in ('pem_to', 'pem_cc', 'pem_bcc')
+        ]
+        domains = set()
+        for display_name, address in getaddresses(recipients):
+            if '@' not in address:
+                continue
+            domain = address.rsplit('@', 1)[1].strip().lower().rstrip('.')
+            if domain:
+                domains.add(domain)
+        return domains
+
+    def _get_forced_account_id(self, cursor, user, vals, context=None):
+        domains = self._get_recipient_domains(vals)
+        if not domains:
+            return False
+
+        domain_obj = self.pool.get('poweremail.account.domain')
+        rule_ids = domain_obj.search(
+            cursor, user, [('domain', 'in', list(domains))], context=context
+        )
+        if not rule_ids:
+            return False
+
+        rules = domain_obj.read(
+            cursor, user, rule_ids, ['domain', 'account_id'], context=context
+        )
+        account_ids = set(
+            rule['account_id'][0] for rule in rules if rule['account_id']
+        )
+        if len(account_ids) > 1:
+            details = u', '.join(
+                u'{} -> {}'.format(rule['domain'], rule['account_id'][1])
+                for rule in sorted(rules, key=lambda rule: rule['domain'])
+            )
+            raise osv.except_osv(
+                _('Conflicting forced email accounts'),
+                tools.ustr(_(
+                    'The recipient domains require different sending '
+                    'accounts: {}. Split the recipients into separate emails.'
+                )).format(details)
+            )
+        return account_ids.pop()
+
+    def _force_account_for_recipient_domains(
+            self, cursor, user, vals, context=None):
+        if vals.get('pem_mail_orig') or vals.get('folder') == 'inbox':
+            return
+
+        account_id = self._get_forced_account_id(
+            cursor, user, vals, context=context
+        )
+        if not account_id:
+            return
+
+        account = self.pool.get('poweremail.core_accounts').read(
+            cursor, user, account_id, ['name', 'email_id'], context=context
+        )
+        vals.update({
+            'pem_account_id': account_id,
+            'pem_from': u'{}<{}>'.format(
+                tools.ustr(account['name']), tools.ustr(account['email_id'])
+            ),
+        })
+
     def create(self, cursor, user, vals, context=None):
         if vals.get('pem_mail_orig', False):
             # If created from an email (imported from mail server)
@@ -454,6 +522,9 @@ class PoweremailMailbox(osv.osv):
         for field in ('pem_to', 'pem_cc', 'pem_bcc'):
             if field in vals:
                 vals[field] = filter_send_emails(vals[field])
+        self._force_account_for_recipient_domains(
+            cursor, user, vals, context=context
+        )
         res_id = super(PoweremailMailbox, self).create(cursor, user, vals,
                                                        context)
         if vals.get('pem_mail_orig', False):

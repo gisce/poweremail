@@ -187,6 +187,15 @@
 						<page string="security" attrs="{'invisible':[('company','!=','yes')]}">
 							<field name="allowed_groups" attrs="{'required':[('company','=','yes')]}" />
 						</page>
+						<page string="Domain routing" groups="res_groups_pemanager">
+							<separator string="Forced account by recipient domain" colspan="4" />
+							<label string="Outgoing emails addressed to any configured domain will always use this account." colspan="4" />
+							<field name="forced_domain_ids" colspan="4" nolabel="1">
+								<tree string="Forced recipient domains" editable="bottom">
+									<field name="domain" />
+								</tree>
+							</field>
+						</page>
 					</notebook>
 					<field name="state" select="1" colspan="2" />
 					<group col="2">
@@ -268,7 +277,6 @@
 
 	</data>
 </openerp>
-
 
 
 
