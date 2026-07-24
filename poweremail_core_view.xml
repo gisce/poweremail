@@ -187,7 +187,7 @@
 						<page string="security" attrs="{'invisible':[('company','!=','yes')]}">
 							<field name="allowed_groups" attrs="{'required':[('company','=','yes')]}" />
 						</page>
-						<page string="Domain routing" groups="res_groups_pemanager">
+						<page string="Domain routing" groups="poweremail.res_groups_pemanager">
 							<separator string="Forced account by recipient domain" colspan="4" />
 							<label string="Outgoing emails addressed to any configured domain will always use this account." colspan="4" />
 							<field name="forced_domain_ids" colspan="4" nolabel="1">
