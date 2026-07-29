@@ -74,7 +74,7 @@
 							<field name="template_id" colspan="2" select="2" readonly="1" attrs="{'invisible': [('folder', '=', 'inbox')]}"/>
 							<field name="state" readonly="1" />
 						</page>
-						<page string="Logs" icon="contract">
+						<page string="Logs" icon="vocabulary">
 							<field name="history" nolabel="1" colspan="4" height="400"/>
 						</page>
                         <page string="Raw content" attrs="{'invisible':[('folder','!=','inbox')]}">
