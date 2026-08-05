@@ -2,11 +2,16 @@ name: Run tests
 
 on:
   pull_request:
-    branches: [ v5_backport ]
+    branches: [ main ]
     types: [ labeled ]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request number"
+        required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{  github.event.label.name || github.ref }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{  github.event.label.name || inputs.pr_number }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -15,17 +20,35 @@ env:
   SCRIPTS_PATH: /home/ci_replicante/ci_scripts
   HELP_PATH: /home/ci_replicante/help
   CI_REPO: ${{ github.repository }}
-  CI_PULL_REQUEST: ${{ github.event.number }}
+  CI_PULL_REQUEST: ${{ github.event.pull_request.number || inputs.pr_number }}
 
 jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment PR
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          gh api repos/${{ github.repository }}/issues/${{ inputs.pr_number }}/comments \
+            -f body="🔄 *Starting tests execution...*
+            👉 [Track execution](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
   tests:
-    if: ${{ (github.event_name == 'pull_request' && github.event.label.name == 'to be merged') }}
+    needs: init
+    if: (github.event_name == 'pull_request' && github.event.label.name == 'to be merged') || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, Buda]
     strategy:
       fail-fast: false
       matrix:
         python-version: [ "2.7.18", "3.11.4" ]
     steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          path: custom_modules/${{ github.event.repository.name }}
+          ref: refs/pull/${{ inputs.pr_number || github.event.pull_request.number }}/merge
+
       - name: 'Set build id'
         id: build_id
         run: echo "id=$(date +%s)" >> $GITHUB_OUTPUT
@@ -33,11 +56,6 @@ jobs:
       - name: Update repositories
         run: |
           . $SCRIPTS_PATH/update_branches.sh
-
-      - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
-        with:
-            path: custom_modules/${{ github.event.repository.name }}
 
       - name: Checkout erp
         uses: actions/checkout@v4
@@ -126,11 +144,52 @@ jobs:
           cd ${{ github.workspace }}
           rm -r *
 
+      - name: Obtener el SHA del último commit de la PR
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          PR_COMMIT_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/commits | jq -r '.[-1].sha')
+          echo "PR_COMMIT_SHA=$PR_COMMIT_SHA" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Set mergeable check (manual execution)
+        if: github.event_name == 'workflow_dispatch' && steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ env.PR_COMMIT_SHA }} \
+            -f state="success" \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f description="Tests passed - Mergeable" \
+            -f context="Mergeable"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Set mergeable check
-        if: steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
+        if: github.event_name != 'workflow_dispatch' && steps.run_tests.outcome == 'success' && matrix.python-version == '2.7.18'
         uses: ouzi-dev/commit-status-updater@v2
         with:
           name: "Mergeable"
           status: "${{ steps.run_tests.outcome }}"
           url: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  end:
+    needs: tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment PR with results
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          STATUS="✅ *Tests passed!*"
+          if [ "${{ needs.tests.result }}" != "success" ]; then
+            STATUS="❌ *Tests failed!*"
+          fi
+
+          gh api repos/${{ github.repository }}/issues/${{ inputs.pr_number }}/comments \
+            -f body="🔄 *Tests execution finished.*
+            👉 [Track execution](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            **Result:**
+            $STATUS"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 

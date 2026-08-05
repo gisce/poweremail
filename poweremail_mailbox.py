@@ -24,9 +24,12 @@ The mailbox is an object which stores the actual email
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 #########################################################################
 from __future__ import absolute_import
+
+import base64
 from osv import osv, fields
 import time
 from .poweremail_core import filter_send_emails, _priority_selection
+from .poweremail_template import get_value
 import netsvc
 from tools.translate import _
 from tools.config import config
@@ -39,8 +42,15 @@ import os
 import email
 from email.utils import make_msgid
 import qreu
+from six import PY3
+
 
 LOGGER = netsvc.Logger()
+
+INLINE_IMAGE_RE = re.compile(
+    r'(<img\b[^>]*\bsrc=["\'])attachment://(\d+)(["\'][^>]*>)',
+    re.IGNORECASE | re.UNICODE
+)
 
 class PoweremailMailbox(osv.osv):
     _name = "poweremail.mailbox"
@@ -174,6 +184,38 @@ class PoweremailMailbox(osv.osv):
             context = {}
         core_obj = self.pool.get('poweremail.core_accounts')
         conv_obj = self.pool.get('poweremail.conversation')
+
+        def inline_content_id(attachment_id):
+            return 'poweremail-attachment-{0}@local'.format(attachment_id)
+
+        def inline_attachment_ids(body_html, attachment_ids):
+            if not body_html:
+                return []
+            attachment_ids = set(attachment_ids)
+            res = []
+            for attachment_id in INLINE_IMAGE_RE.findall(body_html):
+                attachment_id = int(attachment_id[1])
+                if attachment_id in attachment_ids and attachment_id not in res:
+                    res.append(attachment_id)
+            return res
+
+        def replace_inline_sources(body_html, inline_ids):
+            if not body_html or not inline_ids:
+                return body_html
+            inline_ids = set(inline_ids)
+
+            def replace(match):
+                attachment_id = int(match.group(2))
+                if attachment_id not in inline_ids:
+                    return match.group(0)
+                return '{0}cid:{1}{2}'.format(
+                    match.group(1),
+                    inline_content_id(attachment_id),
+                    match.group(3)
+                )
+
+            return INLINE_IMAGE_RE.sub(replace, body_html)
+
         for id in ids:
             try:
                 context['headers'] = {}
@@ -186,6 +228,25 @@ class PoweremailMailbox(osv.osv):
                                    context, error=True)
                     continue
                 payload = {}
+                inline_ids = set(
+                    context.get('inline_attachment_ids', [])
+                )
+                inline_content_ids = context.get(
+                    'inline_attachment_content_ids', {}
+                )
+                body_inline_attachment_ids = inline_attachment_ids(
+                    values.get('pem_body_html') or '',
+                    values.get('pem_attachments_ids') or []
+                )
+                for attid in body_inline_attachment_ids:
+                    inline_ids.add(attid)
+                    inline_content_ids.setdefault(attid, inline_content_id(attid))
+                for attid in inline_ids:
+                    inline_content_ids.setdefault(attid, inline_content_id(attid))
+                pem_body_html = replace_inline_sources(
+                    values.get('pem_body_html') or '',
+                    body_inline_attachment_ids
+                )
                 if values['pem_attachments_ids']:
                     #Get filenames & binary of attachments
                     for attid in values['pem_attachments_ids']:
@@ -196,7 +257,16 @@ class PoweremailMailbox(osv.osv):
                             att_name = "%s%d" % ( attachment.datas_fname or attachment.name, counter )
                             counter += 1
                         att_name = att_name.replace("/", "-")
-                        payload[att_name] = attachment.datas
+                        if attid in inline_ids:
+                            payload[att_name] = {
+                                'datas': attachment.datas,
+                                'disposition': 'inline',
+                                'content_id': inline_content_ids.get(
+                                    attid, inline_content_ids.get(str(attid))
+                                ),
+                            }
+                        else:
+                            payload[att_name] = attachment.datas
                 if values['conversation_id']:
                     mails = conv_obj.browse(cr, uid,
                                             values['conversation_id'][0]).mails
@@ -237,7 +307,7 @@ class PoweremailMailbox(osv.osv):
                     },
                     values['pem_subject'] or u'', {
                         'text': values.get('pem_body_text') or u'',
-                        'html': values.get('pem_body_html') or u''
+                        'html': pem_body_html
                     }, payload=payload, context=ctx
                 )
                 if result == True:
@@ -408,6 +478,35 @@ class PoweremailMailbox(osv.osv):
                     'pem_attachments_ids': [(6, 0, attachment_ids)]
                 })
         return res_id
+
+    def attach(self, cursor, uid, mail_id, record_id, file_name_expr, report, context=None):
+        if context is None:
+            context = {}
+        if isinstance(mail_id, (list, tuple)):
+            mail_id = mail_id[0]
+
+        attach_o = self.pool.get('ir.attachment')
+
+        mail = self.simple_browse(cursor, uid, mail_id, context=context)
+
+        binary, extension = report
+        if PY3:
+            if isinstance(binary, str):
+                binary = binary.encode('utf-8')
+
+        attach_cv = {
+            'name': mail.pem_subject + ' (Email Attachment)',
+            'datas': base64.b64encode(binary),
+            'datas_fname': "{}.{}".format(
+                tools.ustr(get_value(cursor, uid, record_id, file_name_expr, mail.template_id, context=context) or 'Report'),
+                extension
+            ),
+            'description': mail.pem_subject or _("No Description"),
+            'res_model': 'poweremail.mailbox',
+            'res_id': mail_id
+        }
+
+        return attach_o.create(cursor, uid, attach_cv, context=context)
 
     _columns = {
         'template_id': fields.many2one(

@@ -494,9 +494,35 @@ class poweremail_core_accounts(osv.osv):
             result['all'].extend(ids_as_list)
         return result
 
+    def get_not_debug_sender(self, account):
+        return SMTPSender(
+            host=account.smtpserver,
+            port=account.smtpport,
+            user=account.smtpuname,
+            passwd=account.smtppass,
+            tls=account.smtptls,
+            ssl=account.smtpssl
+        )
+
+    def get_sender(self, account):
+        sender = (
+            Sender(
+                host=account.smtpserver,
+                port=account.smtpport,
+                user=account.smtpuname,
+                passwd=account.smtppass,
+                tls=account.smtptls,
+                ssl=account.smtpssl
+            )
+            if config.get('debug_mode', False)
+            else self.get_not_debug_sender(account)
+        )
+        return sender
+
     def send_mail(self, cr, uid, ids,
                   addresses, subject='', body=None, payload=None, context=None):
         def create_qreu(headers, payload, **kwargs):
+            has_inline_attachment = False
             mail = Email(**{
                 'subject': kwargs.get('subject'),
                 'from': kwargs.get('from'),
@@ -510,15 +536,35 @@ class poweremail_core_accounts(osv.osv):
                 mail.add_header(header, value)
             # Add all attachments (if any)
             for file_name in payload.keys():
+                attachment_payload = payload[file_name]
+                attachment_kwargs = {}
+                if isinstance(attachment_payload, dict):
+                    attachment_data = attachment_payload.get('datas', '')
+                    disposition = attachment_payload.get(
+                        'disposition', 'attachment'
+                    )
+                    content_id = attachment_payload.get('content_id')
+                    attachment_kwargs.update({
+                        'disposition': disposition,
+                        'content_id': content_id,
+                    })
+                    has_inline_attachment = (
+                        has_inline_attachment or disposition == 'inline'
+                    )
+                else:
+                    attachment_data = attachment_payload
                 # Decode b64 from raw base64 attachment and write it to a buffer
                 attachment_buffer = StringIO()
                 attachment_buffer.write(
-                    base64.b64decode(payload[file_name]))
+                    base64.b64decode(attachment_data))
                 mail.add_attachment(
                     input_buff=attachment_buffer,
-                    attname=file_name
+                    attname=file_name,
+                    **attachment_kwargs
                 )
                 del attachment_buffer
+            if has_inline_attachment:
+                mail.email.set_type('multipart/related')
             return mail
 
         def parse_body_html(pem_body_html, pem_body_text):
@@ -596,14 +642,7 @@ class poweremail_core_accounts(osv.osv):
                 extra_headers.pop('Organitzation')
             # Use sender if debug is set
             sender = (Sender if config.get('debug_mode', False) else SMTPSender)
-            with sender(
-                host=account.smtpserver,
-                port=account.smtpport,
-                user=account.smtpuname,
-                passwd=account.smtppass,
-                tls=account.smtptls,
-                ssl=account.smtpssl
-            ):
+            with self.get_sender(account): # Returns a Sender context from qreu
                 mail = Email()
                 try:
                     mail = create_qreu(

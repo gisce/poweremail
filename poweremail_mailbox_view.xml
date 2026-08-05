@@ -31,67 +31,72 @@
 				</tree>
 			</field>
 		</record>
-		<!-- Power Email Template PReview -->
+		<!-- Power Email Template Preview -->
 		<record model="ir.ui.view" id="poweremail_mailbox_form">
 			<field name="name">poweremail.mailbox.form</field>
 			<field name="model">poweremail.mailbox</field>
 			<field name="type">form</field>
 			<field name="arch" type="xml">
 				<form string="Power Email Inbox">
-					<group col="4" colspan="2">
+					<group col="8" colspan="4">
+						<field name="pem_subject" colspan="6" select="1"/>
+						<field name="date_mail" colspan="2" select="2" attrs="{'invisible': [('folder', '!=', 'inbox')]}" readonly="1"/>
+						<field name="pem_recd" colspan="2" select="1" attrs="{'invisible': [('folder', '=', 'inbox')]}" readonly="1"/>
 						<field name="pem_from" colspan="4" select="1"/>
+						<field name="pem_to" colspan="4" required="1" select="1"/>
 						<field name="pem_cc" colspan="4" select="1"/>
-						<field name="date_mail" colspan="4" select="2"/>
-						<field name="pem_recd" colspan="4" select="1"/>
-						<field name="template_id" colspan="4" select="2" readonly="1"/>
-					</group>
-					<group col="4" colspan="2">
-						<field name="pem_to" colspan="4" required="1" select="1" />
 						<field name="pem_bcc" colspan="4" select="2"/>
-						<field name="pem_subject" colspan="4" select="1"/>
-						<field name="priority" colspan="4" select="2"/>
 					</group>
 					<notebook colspan="4">
-						<page string="Standard Body">
-							<separator colspan="4" string="Standard Body" />
-							<notebook colspan="4">
-								<page string="Standard Body (Text)">
-									<field name="pem_body_text" nolabel="1" colspan="4" select="1"/>
-								</page>
-								<page string="Body (HTML-Web Client Only)">
-									<field name="pem_body_html" nolabel="1" colspan="4" widget="text_html"/>
-									<!--<label string="Note: HTML body can't be edited with GTK desktop client." colspan="4"/>
-								--></page>
-
-							</notebook>
+						<page string="Content">
+                            <card title="Preview" colspan="2" icon="eye">
+                                <field name="pem_body_text" nolabel="1" colspan="4" select="1" widget="html_preview"/>
+                            </card>
+                            <card title="Editor (HTML)" colspan="2" icon="code">
+                                <field name="pem_body_text" nolabel="1" colspan="4" widget="codeeditor" widget_props="{'lang': 'html'}"/>
+                                <!--<label string="Note: HTML body can't be edited with GTK desktop client." colspan="4"/>-->
+                            </card>
 						</page>
 
 
-						<page string="Attachments">
+						<page string="Attachments" icon="link">
 							<group col="4">
-								<separator colspan="4" string="Attachments" />
 								<field name="pem_attachments_ids" colspan="4" nolabel="1" height="400"/>
 							</group>
 						</page>
-						<page string="Advanced">
-							<group col="4">
-								<field name="pem_account_id" colspan="2" />
-								<field name="server_ref" colspan="2" />
-								<field name="mail_type" colspan="2" />
-								<field name="folder" colspan="2" select="2"/>
-								<separator string="History" colspan="4" />
-								<field name="history" nolabel="1" colspan="4" height="400"/>
-							</group>
+						<page string="Advanced" icon="settings">
+							<field name="pem_account_id" colspan="2" />
+							<field name="priority" colspan="2" select="2"/>
 						</page>
-                        <page string="Raw content">
+						<page string="Information" icon="info-circle">
+							<field name="server_ref" colspan="2" attrs="{'invisible': [('folder', '=', 'inbox')]}"/>
+							<field name="mail_type" colspan="2" />
+							<field name="template_id" colspan="2" select="2" readonly="1" attrs="{'invisible': [('folder', '=', 'inbox')]}"/>
+							<field name="state" readonly="1" />
+						</page>
+						<page string="Logs" icon="vocabulary">
+							<field name="history" nolabel="1" colspan="4" height="400"/>
+						</page>
+                        <page string="Raw content" attrs="{'invisible':[('folder','!=','inbox')]}">
                             <field name="pem_mail_orig" nolabel="1" readonly="1" height="400" colspan="4"/>
                         </page>
 					</notebook>
-					<separator colspan="4" string="" />
-					<group col="4" colspan="4">
-						<field name="state" colspan="2" readonly="1" />
-						<button name="complete_mail" type="object" string="Download Full Mail" colspan="2" states="read,unread" />
-						<button name="send_this_mail" type="object" string="Send Mail" />
+					<group col="8" colspan="4">
+						<field name="folder" colspan="2" select="2"/>
+						<button name="complete_mail"
+								type="object"
+								string="Download Full Mail"
+								colspan="2" states="read,unread"
+								primary="1"
+								icon="download"
+								attrs="{'invisible': [('folder', '!=', 'inbox')]}"/>
+						<button name="send_this_mail"
+								type="object"
+								string="Send Mail"
+								colspan="2"
+								primary="1"
+								icon="send"
+								attrs="{'invisible': [('folder', '=', 'inbox')]}"/>
 					</group>
 				</form>
 			</field>
@@ -106,9 +111,6 @@
 		    <field name="arch" type="xml">
 		       <data>
 				   <xpath expr="//field[@name='pem_body_text']" position="attributes">
-					   <attribute name="widget">html_preview</attribute>
-				   </xpath>
-				   <xpath expr="//field[@name='pem_body_html']" position="attributes">
 					   <attribute name="widget">html_preview</attribute>
 				   </xpath>
 			   </data>
@@ -342,6 +344,15 @@
 			<field name="view_id" ref="poweremail_trashbox_tree" />
 			<field name="domain">[('folder','=','trash'),('pem_user','=',uid)]</field>
 		</record>
+        <!--ERROR-->
+        <record model="ir.actions.act_window" id="action_poweremail_error_tree_personal">
+			<field name="name">Mailbox: Error</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form,tree</field>
+			<field name="view_id" ref="poweremail_errorbox_tree" />
+			<field name="domain">[('folder', '=', 'error'),('pem_user','=',uid)]</field>
+		</record>
 		<!--company-->
 		<!--ALL EMAILS-->
 		<record model="ir.actions.act_window" id="action_poweremail_all_emails_tree_company">
@@ -433,29 +444,56 @@
 			<field name="context">{'company':True}</field>
 		</record>
 		<!--8888888888888888888888888888888888 MENUS 8888888888888888888888888888888888888888-->
-		<menuitem name="MailBox" id="menu_poweremail_mailbox_all_main2" parent="menu_poweremail_administration_server" />
-		<menuitem name="Personal" id="menu_poweremail_personal" parent="menu_poweremail_mailbox_all_main2" />
-		<menuitem name="All emails" id="menu_poweremail_all_emails" parent="menu_poweremail_personal" action="action_poweremail_all_emails_tree" />
-		<menuitem name="Inbox" id="menu_poweremail_inbox" parent="menu_poweremail_personal" action="action_poweremail_inbox_tree" />
-		<menuitem name="Inbox Conversations" id="menu_poweremail_inbox_conversation" parent="menu_poweremail_personal" action="action_poweremail_conversation_tree" />
-		<menuitem name="Drafts" id="menu_poweremail_drafts" parent="menu_poweremail_personal" action="action_poweremail_drafts_tree" />
-		<menuitem name="Outbox" id="menu_poweremail_outbox" parent="menu_poweremail_personal" action="action_poweremail_outbox_tree" />
-		<menuitem name="Follow-up" id="menu_poweremail_follow" parent="menu_poweremail_personal" action="action_poweremail_follow_tree" />
-		<menuitem name="Sent" id="menu_poweremail_sent" parent="menu_poweremail_personal" action="action_poweremail_sent_tree" />
-		<menuitem name="Sending" id="menu_action_poweremail_sending_tree" parent="poweremail.menu_poweremail_personal" action="action_poweremail_sending_tree" />
-		<menuitem name="Trash" id="menu_poweremail_trash" parent="menu_poweremail_personal" action="action_poweremail_trash_tree" />
+		<menuitem name="MailBox" id="menu_poweremail_mailbox_all_main2" parent="menu_poweremail_administration_server" icon="mailbox" />
 
-		<menuitem name="Company" id="menu_poweremail_company" parent="menu_poweremail_mailbox_all_main2" />
-		<menuitem name="All emails" id="menu_poweremail_all_emails_company" parent="menu_poweremail_company" action="action_poweremail_all_emails_tree_company" />.
-		<menuitem name="Inbox" id="menu_poweremail_inbox_company" parent="menu_poweremail_company" action="action_poweremail_inbox_tree_company" />
-		<menuitem name="Drafts" id="menu_poweremail_drafts_company" parent="menu_poweremail_company" action="action_poweremail_drafts_tree_company" />
-		<menuitem name="Outbox" id="menu_poweremail_outbox_company" parent="menu_poweremail_company" action="action_poweremail_outbox_tree_company" />
-		<menuitem name="Follow-up" id="menu_poweremail_follow_company" parent="menu_poweremail_company" action="action_poweremail_follow_tree_company" />
-		<menuitem name="Sent" id="menu_poweremail_sent_company" parent="menu_poweremail_company" action="action_poweremail_sent_tree_company" />
-		<menuitem name="Sending" id="menu_action_poweremail_sending_tree_company" parent="poweremail.menu_poweremail_company" action="action_poweremail_sending_tree_company" />
-		<menuitem name="Trash" id="menu_poweremail_trash_company" parent="menu_poweremail_company" action="action_poweremail_trash_tree_company" />
-		<menuitem name="Error" id="menu_poweremail_error_company" parent="menu_poweremail_company" action="action_poweremail_error_tree_company" />
+		<!-- PERSONAL -->
+		<menuitem name="Personal" id="menu_poweremail_personal" parent="menu_poweremail_mailbox_all_main2" icon="user" />
+		<menuitem name="All emails" id="menu_poweremail_all_emails" parent="menu_poweremail_personal" action="action_poweremail_all_emails_tree" icon="mail" />
+		<menuitem name="Sent" id="menu_poweremail_sent" parent="menu_poweremail_personal" action="action_poweremail_sent_tree" icon="send" />
+		<menuitem name="Error" id="menu_poweremail_error_personal" parent="menu_poweremail_personal" action="action_poweremail_error_tree_personal" icon="alert-circle" />
+		<!-- OTHERS -->
+		<menuitem name="Others" id="menu_poweremail_personal_others" parent="menu_poweremail_personal" icon="folder" />
+		<menuitem name="Inbox" id="menu_poweremail_inbox" parent="menu_poweremail_personal_others" action="action_poweremail_inbox_tree" icon="mail-down" />
+		<menuitem name="Outbox" id="menu_poweremail_outbox" parent="menu_poweremail_personal_others" action="action_poweremail_outbox_tree" icon="mail-up" />
+		<menuitem name="Inbox Conversations" id="menu_poweremail_inbox_conversation" parent="menu_poweremail_personal_others" action="action_poweremail_conversation_tree" icon="messages" />
+		<menuitem name="Drafts" id="menu_poweremail_drafts" parent="menu_poweremail_personal_others" action="action_poweremail_drafts_tree" icon="edit" />
+		<menuitem name="Follow-up" id="menu_poweremail_follow" parent="menu_poweremail_personal_others" action="action_poweremail_follow_tree" icon="clock" />
+		<menuitem name="Sending" id="menu_action_poweremail_sending_tree" parent="menu_poweremail_personal_others" action="action_poweremail_sending_tree" icon="loader" />
+		<menuitem name="Trash" id="menu_poweremail_trash" parent="menu_poweremail_personal_others" action="action_poweremail_trash_tree" icon="trash" />
 
+		<!-- COMPANY -->
+		<menuitem name="Company" id="menu_poweremail_company" parent="menu_poweremail_mailbox_all_main2" icon="building" />
+		<menuitem name="All emails" id="menu_poweremail_all_emails_company" parent="menu_poweremail_company" action="action_poweremail_all_emails_tree_company" icon="mail" />
+		<menuitem name="Sent" id="menu_poweremail_sent_company" parent="menu_poweremail_company" action="action_poweremail_sent_tree_company" icon="send" />
+		<menuitem name="Error" id="menu_poweremail_error_company" parent="menu_poweremail_company" action="action_poweremail_error_tree_company" icon="alert-circle" />
+		<!-- OTHERS -->
+		<menuitem name="Others" id="menu_poweremail_company_others" parent="menu_poweremail_company" icon="folder" />
+		<menuitem name="Inbox" id="menu_poweremail_inbox_company" parent="menu_poweremail_company_others" action="action_poweremail_inbox_tree_company" icon="mail-down" />
+		<menuitem name="Outbox" id="menu_poweremail_outbox_company" parent="menu_poweremail_company_others" action="action_poweremail_outbox_tree_company" icon="mail-up" />
+		<menuitem name="Drafts" id="menu_poweremail_drafts_company" parent="menu_poweremail_company_others" action="action_poweremail_drafts_tree_company" icon="edit" />
+		<menuitem name="Follow-up" id="menu_poweremail_follow_company" parent="menu_poweremail_company_others" action="action_poweremail_follow_tree_company" icon="clock" />
+		<menuitem name="Sending" id="menu_action_poweremail_sending_tree_company" parent="menu_poweremail_company_others" action="action_poweremail_sending_tree_company" icon="loader" />
+		<menuitem name="Trash" id="menu_poweremail_trash_company" parent="menu_poweremail_company_others" action="action_poweremail_trash_tree_company" icon="trash" />
+
+		<!-- LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
+		<record model="ir.actions.act_window" id="action_template_emails">
+			<field name="name">Template emails</field>
+			<field name="src_model">poweremail.templates</field>
+			<field name="res_model">poweremail.mailbox</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+			<field name="domain">[('template_id', '=',active_id)]</field>
+			<field name="view_id" ref="poweremail_all_emails_tree"/>
+		</record>
+		<record id="value_template_emails" model="ir.values">
+			<field name="object" eval="1"/>
+			<field name="name">Template emails</field>
+			<field name="key2">client_action_relate</field>
+			<field name="key">action</field>
+			<field name="model">poweremail.templates</field>
+			<field name="value" eval="'ir.actions.act_window,'+str(ref('action_template_emails'))" />
+		</record>
+		<!-- END LIST THE MAILS GENERATED WITH THE SAME TEMPLATE -->
 	</data>
 </openerp>
 

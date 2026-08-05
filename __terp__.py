@@ -53,9 +53,10 @@
     """,
     "init_xml": ['poweremail_scheduler_data.xml'],
     "demo_xml": [
-        'poweremail_demo.xml'
+        'demo/poweremail_demo.xml'
     ],
     "update_xml": [
+        'data/res_config.xml',
         'security/poweremail_security.xml',
         'poweremail_core_view.xml',
         'wizard/wizard_poweremail_preview.xml',
