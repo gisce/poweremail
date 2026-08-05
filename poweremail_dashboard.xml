@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <openerp>
-      <!-- Definicio del dashboard -->
+      <!-- Definition of the dashboard -->
     <data>
         <record model="ir.actions.act_window" id="action_menu_poweremail_dashboard">
             <field name="name">Poweremail</field>
@@ -24,23 +24,23 @@
             <field name="context" eval="{b'active_id': ref('poweremail_dashboard')}"/>
         </record>
     </data>
-    <!-- FI Definicio del dashboard -->
-    <!-- Emails en error -->
+    <!-- End Definition of the dashboard -->
+    <!-- Emails in error -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_en_error">
-            <field name="name">Emails en error</field>
+            <field name="name">Emails in error</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
-                <graph type="indicator" color="green:value==0;red:value&gt;0;"
-                   icon="check-circle:value==0;exclamation-circle:value>0;">
+                <graph type="indicator" color="red:value&gt;29;orange:value&gt;14 and value &lt; 30;green:value&lt;15"
+                   icon="frown:value&gt;29;meh:value&gt;14 and value &lt; 30;smile:value&lt;15">
                     <field name="id"/>
                 </graph>
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_emails_en_error">
-            <field name="name">Emails en error</field>
+            <field name="name">Emails in error</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
@@ -55,29 +55,29 @@
             <field name="act_window_id" ref="action_poweremail_emails_en_error"/>
         </record>
         <record model="board.board.line" id="board_poweremail_emails_en_error">
-            <field name="name">Emails en error</field>
+            <field name="name">Emails in error</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
             <field name="action_id" ref="action_poweremail_emails_en_error"/>
         </record>
     </data>
-     <!-- FI emails en error -->
-    <!-- Email enviats avui -->
+     <!-- End emails in error -->
+    <!-- Emails sent today -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_enviats_avui">
-            <field name="name">Email enviats avui</field>
+            <field name="name">Emails sent today</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
                 <graph type="indicator"
-                        icon="mail">
+                        icon="send">
                     <field name="id"/>
                 </graph>
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_enviats_avui">
-            <field name="name">Email enviats avui</field>
+            <field name="name">Emails sent today</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
@@ -92,29 +92,29 @@
             <field name="act_window_id" ref="action_poweremail_enviats_avui"/>
         </record>
         <record model="board.board.line" id="board_poweremail_enviats_avui">
-            <field name="name">Emails enviats avui</field>
+            <field name="name">Emails sent today</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
             <field name="action_id" ref="action_poweremail_enviats_avui"/>
         </record>
     </data>
-    <!-- FI Email enviats avui-->
-    <!-- Emails rebuts avui -->
+    <!-- End Email sent today-->
+    <!-- Emails received today -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_rebuts_avui">
-            <field name="name">Email Rebuts avui</field>
+            <field name="name">Emails received today</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
                 <graph type="indicator"
-                        icon="mail">
+                        icon="mail-down">
                     <field name="id"/>
                 </graph>
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_emails_rebuts_avui">
-            <field name="name">Emails rebuts avui</field>
+            <field name="name">Emails received today</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
@@ -129,29 +129,29 @@
             <field name="act_window_id" ref="action_poweremail_emails_rebuts_avui"/>
         </record>
         <record model="board.board.line" id="board_poweremail_emails_rebuts_avui">
-            <field name="name">Emails rebuts avui</field>
+            <field name="name">Emails received today</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
             <field name="action_id" ref="action_poweremail_emails_rebuts_avui"/>
         </record>
     </data>
-    <!-- FI mails rebuts avui -->
-    <!-- Emails per enviar-->
+    <!-- End mails received today -->
+    <!-- Emails to send -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_per_enviar">
-            <field name="name">Emails per enviar</field>
+            <field name="name">Emails to send</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
                 <graph type="indicator"
-                        icon="mail">
+                        icon="mail-up">
                     <field name="id"/>
                 </graph>
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_emails_per_enviar">
-            <field name="name">Emails per enviar</field>
+            <field name="name">Emails to send</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
@@ -166,29 +166,29 @@
             <field name="act_window_id" ref="action_poweremail_emails_per_enviar"/>
         </record>
         <record model="board.board.line" id="board_poweremail_emails_per_enviar">
-            <field name="name">Emails per enviar</field>
+            <field name="name">Emails to send</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
             <field name="action_id" ref="action_poweremail_emails_per_enviar"/>
         </record>
     </data>
-    <!-- FI mails per enviar -->
-    <!-- Emails esborrany-->
+    <!-- End mails to send -->
+    <!-- Emails in draft -->
     <data>
         <record model="ir.ui.view" id="view_poweremail_emails_esborrany">
-            <field name="name">Emails en esborrany</field>
+            <field name="name">Emails in draft</field>
             <field name="model">poweremail.mailbox</field>
             <field name="type">graph</field>
             <field name="version" eval="2"/>
             <field name="arch" type="xml">
                 <graph type="indicator"
-                        icon="mail">
+                        icon="edit">
                     <field name="id"/>
                 </graph>
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_poweremail_emails_esborrany">
-            <field name="name">Emails en esborrany</field>
+            <field name="name">Emails in draft</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">form</field>
             <field name="view_mode">graph,tree,form</field>
@@ -203,11 +203,11 @@
             <field name="act_window_id" ref="action_poweremail_emails_esborrany"/>
         </record>
         <record model="board.board.line" id="board_poweremail_emails_esborrany">
-            <field name="name">Emails en esborrany</field>
+            <field name="name">Emails in draft</field>
             <field name="board_id" ref="poweremail_dashboard"/>
             <field name="sequence" eval="0"/>
             <field name="action_id" ref="action_poweremail_emails_esborrany"/>
         </record>
     </data>
-    <!-- Fi mails esborrany -->
+    <!-- End mails in draft -->
 </openerp>
