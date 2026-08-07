@@ -25,6 +25,7 @@
         <menuitem id="menu_wizard_emails_generats"
                   action="action_wizard_emails_generats_model"
                   parent="menu_poweremail_administration_server"
+                  icon="bolt"
         />
 
     </data>
