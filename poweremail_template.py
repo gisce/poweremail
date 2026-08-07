@@ -1271,20 +1271,30 @@ class poweremail_templates(osv.osv):
         template = self.browse(cursor, user, template.id, context=ctx)
 
         wiz_ov = context.get('wizard_overrides') or {}
+        wizard_values = {
+            'to': template.def_to,
+            'cc': template.def_cc,
+            'bcc': template.def_bcc,
+            'subject': template.def_subject,
+            'body_text': template.def_body_text,
+            'body_html': template.def_body_html,
+            'priority': template.def_priority,
+        }
+        wizard_values.update(wiz_ov)
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, wiz_ov.get('to') or template.def_to, template, context=ctx),
-            'pem_cc': get_value(cursor, user, record_id, wiz_ov.get('cc', template.def_cc), template, context=ctx),
-            'pem_bcc': get_value(cursor, user, record_id,wiz_ov.get('bcc', template.def_bcc), template, context=ctx),
-            'pem_subject': get_value(cursor, user, record_id, wiz_ov.get('subject') or template.def_subject, template, context=ctx),
-            'pem_body_text': get_value(cursor, user, record_id, wiz_ov.get('body_text') or template.def_body_text, template, context=ctx),
-            'pem_body_html': get_value(cursor, user, record_id, wiz_ov.get('body_html') or template.def_body_html, template, context=ctx),
+            'pem_to': get_value(cursor, user, record_id, wizard_values['to'], template, context=ctx),
+            'pem_cc': get_value(cursor, user, record_id, wizard_values['cc'], template, context=ctx),
+            'pem_bcc': get_value(cursor, user, record_id, wizard_values['bcc'], template, context=ctx),
+            'pem_subject': get_value(cursor, user, record_id, wizard_values['subject'], template, context=ctx),
+            'pem_body_text': get_value(cursor, user, record_id, wizard_values['body_text'], template, context=ctx),
+            'pem_body_html': get_value(cursor, user, record_id, wizard_values['body_html'], template, context=ctx),
             'pem_account_id': from_account['id'],
             #This is a mandatory field when automatic emails are sent
             'state': 'na',
             'folder': 'drafts',
             'mail_type': 'multipart/alternative',
-            'priority': wiz_ov.get('priority') or template.def_priority,
+            'priority': wizard_values['priority'],
             'template_id': template.id,
         }
 

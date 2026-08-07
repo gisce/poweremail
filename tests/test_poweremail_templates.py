@@ -95,6 +95,35 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         mail = mail_obj.browse(cursor, uid, mailbox_id)
         self.assertEqual(mail.priority, '2')
 
+    def test_wizard_overrides_preserve_empty_values(self):
+        tmpl_obj = self.openerp.pool.get('poweremail.templates')
+        mail_obj = self.openerp.pool.get('poweremail.mailbox')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+
+        cursor = self.cursor
+        uid = self.uid
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        tmpl_id = self.create_template({
+            'def_subject': 'Template subject',
+            'def_body_text': 'Template body',
+        })
+
+        mailbox_id = tmpl_obj.generate_mail_sync(cursor, uid, tmpl_id, [partner_id], context={
+            'wizard_overrides': {
+                'subject': False,
+                'body_text': False,
+            },
+            'save_to_drafts': True,
+        })
+        mailbox_values = mail_obj.read(
+            cursor, uid, mailbox_id, ['pem_subject', 'pem_body_text']
+        )
+
+        self.assertFalse(mailbox_values['pem_subject'])
+        self.assertFalse(mailbox_values['pem_body_text'])
+
     def test_send_wizards_gets_default_priority_from_template(self):
         imd_obj = self.openerp.pool.get('ir.model.data')
         send_obj = self.openerp.pool.get('poweremail.send.wizard')
