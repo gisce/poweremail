@@ -12,10 +12,11 @@
         <menuitem
             id="menu_poweremail_dashboard"
             name="Dashboard Poweremail"
-            parent="board.dashboard_menu"
+            parent="menu_poweremail_administration_server"
             action="action_menu_poweremail_dashboard"
             icon="terp-project"
-            string="Dashboard Poweremail"/>
+            string="Dashboard Poweremail"
+            sequence="0"/>
         <record model="board.board" id="poweremail_dashboard">
             <field name="name">Poweremail Dashboard</field>
             <field name="menu_id" ref="menu_poweremail_dashboard"/>
