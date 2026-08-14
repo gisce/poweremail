@@ -72,6 +72,66 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'date_mail': date_mail,
         })
 
+    def test_preview_recovers_after_fixing_scope(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        preview_obj = self.openerp.pool.get('poweremail.preview')
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        template_id = self.create_template({
+            'def_to': 'recipient@example.com',
+            'def_body_text': '<a href="${button_url}">Sign</a>',
+        })
+        context = {
+            'active_id': template_id,
+            'active_ids': [template_id],
+        }
+        preview_id = preview_obj.create(cursor, uid, {
+            'model_ref': 'res.partner,{}'.format(partner_id),
+        }, context=context)
+
+        preview_obj.action_generate_static_mail(
+            cursor, uid, [preview_id], context=context
+        )
+        preview = preview_obj.browse(cursor, uid, preview_id)
+        self.assertEqual(preview.state, 'error')
+
+        preview_obj.write(cursor, uid, [preview_id], {
+            'env': (
+                "{'extra_render_values': "
+                "{'button_url': 'https://sign.example.com'}}"
+            ),
+        }, context=context)
+        preview_obj.action_generate_static_mail(
+            cursor, uid, [preview_id], context=context
+        )
+        preview = preview_obj.browse(cursor, uid, preview_id)
+        self.assertEqual(preview.state, 'init')
+        self.assertIn('https://sign.example.com', preview.body_text)
+
+    def test_preview_accepts_supported_recipient_separators(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        preview_obj = self.openerp.pool.get('poweremail.preview')
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus'
+        )[1]
+        template_id = self.create_template()
+        preview_id = preview_obj.create(cursor, uid, {
+            'model_ref': 'res.partner,{}'.format(partner_id),
+            'to': 'first@example.com, second@example.com; third@example.com',
+        }, context={
+            'active_id': template_id,
+            'active_ids': [template_id],
+        })
+
+        self.assertTrue(preview_id)
+
     def test_creating_email_gets_default_priority(self):
 
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
