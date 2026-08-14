@@ -284,27 +284,27 @@ class poweremail_send_wizard(osv.osv_memory):
         wiz = self.simple_browse(cr, uid, ids[0], context=context)
         ctx = context.copy()
 
-        from_val = getattr(wiz, 'from', False)
+        from_val = wiz['from']
         if isinstance(from_val, (list, tuple)):
             from_val = from_val[0]
         if from_val:
             ctx['account_id'] = int(from_val)
 
-        ctx['single_email'] = bool(getattr(wiz, 'single_email', False))
-        ctx['use_sign'] = bool(getattr(wiz, 'signature', False))
+        ctx['single_email'] = wiz.single_email
+        ctx['use_sign'] = wiz.signature
         # The wizard decides the destination folder after generating the mail.
         ctx['save_to_drafts'] = True
         ctx['wizard_attachment_ids'] = [attachment.id for attachment in wiz.attachment_ids]
 
         ctx['wizard_overrides'] = {
-            'to': getattr(wiz, 'to', False),
-            'cc': getattr(wiz, 'cc', False),
-            'bcc': getattr(wiz, 'bcc', False),
-            'subject': getattr(wiz, 'subject', False),
-            'body_text': getattr(wiz, 'body_text', False),
-            'body_html': getattr(wiz, 'body_html', False),
-            'priority': getattr(wiz, 'priority', False),
-            'report': getattr(wiz, 'report', False),
+            'to': wiz.to,
+            'cc': wiz.cc,
+            'bcc': wiz.bcc,
+            'subject': wiz.subject,
+            'body_text': wiz.body_text,
+            'body_html': wiz.body_html,
+            'priority': wiz.priority,
+            'report': wiz.report,
         }
         mail_id = template_o.generate_mail_sync(cr, uid, template.id, src_rec_ids, context=ctx)
         if not mail_id:
