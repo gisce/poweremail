@@ -29,6 +29,8 @@ ecords). If you don't check it, an email with its optional attachment will be se
                         <label string=" " colspan="8"/>
                         <label string=" " colspan="3"/>
                         <field name="single_email" colspan="4"/>
+                        <separator string="Extra scope variables" colspan="8"/>
+                        <field name="env" colspan="8" widget="codeeditor" widget_props="{'lang': 'json'}" height="100" nolabel="1"/>
                         <label string=" " colspan="8"/>
                         <label string=" " colspan="8"/>
                         <label string=" " colspan="8"/>
@@ -45,13 +47,17 @@ ecords). If you don't check it, an email with its optional attachment will be se
                         <button icon="gtk-ok" name="compute_second_step" string="OK" type="object" colspan="2"/>
                     </group>
 					<group col="4" colspan="4" attrs="{'invisible':[('state','=','send_type')]}">
-                        <group col="4" colspan="4">
+                        <group string="Email settings" icon="settings" col="4" colspan="4">
                             <field name="rel_model" colspan="2" />
+                            <field name="model_ref" colspan="2"/>
                             <field name="from" attrs="{'required':[('state','!=','send_type')]}" colspan="2" />
                             <field name="priority" colspan="2"/>
                         </group>
+                        <group string="Extra template variables" icon="adjustments" colspan="4">
+                            <field name="env" colspan="4" widget="codeeditor" widget_props="{'lang': 'json'}" height="100" nolabel="1"/>
+                        </group>
                         <group col="4" colspan="4">
-                            <group col="6" colspan="4">
+                            <group string="Message details" icon="mail" col="6" colspan="4">
                                 <field name="to" select="1" colspan="4" />
                                 <newline />
                                 <field name="cc" select="2" colspan="4" />
@@ -62,16 +68,18 @@ ecords). If you don't check it, an email with its optional attachment will be se
                                 <newline />
                                 <field name="report" colspan="4" />
                             </group>
-                            <separator string="" colspan="4" />
                             <notebook colspan="4">
-                                <page string="Body (Plain Text)">
+                                <page string="Body preview" icon="eye">
+                                    <field name="body_preview" colspan="4" widget="html_preview" nolabel="1"/>
+                                </page>
+                                <page string="Body (Plain Text)" icon="file-text">
                                     <field name="body_text" select="2" colspan="4" nolabel="1" height="400" width="700"/>
                                 </page>
-                                <page string="Body (HTML)">
+                                <page string="Body (HTML)" icon="file-type-html">
                                     <field name="body_html" select="2" colspan="4" nolabel="1" height="400" width="700"/>
                                     <!--<label string="Note: HTML body can't be edited with GTK desktop client." colspan="4"/>-->
                                 </page>
-                                <page string="Attachments">
+                                <page string="Attachments" icon="link">
                                     <label string="Add here all attachments of the current document you want to include in the e-mail." colspan="4"/>
                                     <field name="attachment_ids" colspan="4" nolabel="1"/>
                                 </page>
@@ -79,9 +87,10 @@ ecords). If you don't check it, an email with its optional attachment will be se
                             <field name="signature" colspan="4" />
                         </group>
                         <group col="4" colspan="4" attrs="{'invisible':[('state','!=','single')]}">
-                            <button icon="gtk-apply" name="sav_to_drafts" string="Save in Drafts" type="object" />
-                            <button icon="gtk-ok" name="send_mail" string="Send now" type="object" />
-                            <button icon="gtk-cancel" special="cancel" string="Discard Mail" />
+                            <button icon="gtk-cancel" danger="1" special="cancel" string="Discard Mail" />
+                            <button icon="eye" name="preview_mail" string="Preview Email" type="object" />
+                            <button icon="device-floppy" name="sav_to_drafts" string="Save in Drafts" type="object" />
+                            <button icon="send" primary="1" name="send_mail" string="Send now" type="object" />
                         </group>
                         <group col="4" colspan="4" attrs="{'invisible':[('state','=','single')]}">
                             <label string="Tip: Multiple emails are sent in the same language (the first one is proposed). We suggest you send emails in groups according to langu
@@ -92,13 +101,26 @@ age." colspan="4"/>
                             <button icon="gtk-cancel" special="cancel" string="Discard Mail" colspan="2" states="multi" />
                         </group>
                         <button icon="gtk-ok" special="cancel" string="Close" colspan="4" states="done" />
-                        <field name="state" />
-                        <newline />
-                        <label string="After clicking send all mails, mails will be sent to outbox and cleared in next Send/Recieve" colspan="4"/>
+                        <group string="Sending status" icon="info-circle">
+                            <field name="state" />
+                            <label string="After clicking send all mails, mails will be sent to outbox and cleared in next Send/Recieve" colspan="4"/>
+                        </group>
                     </group>
                 </form>
 			</field>
 		</record>
+
+        <record id="action_poweremail_template_preview" model="ir.actions.act_window">
+            <field name="name">Preview Template</field>
+            <field name="res_model">poweremail.send.wizard</field>
+            <field name="src_model">poweremail.templates</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="poweremail_send_wizard_form"/>
+            <field name="target">new</field>
+            <field name="context">{'template_id': active_id}</field>
+        </record>
 	</data>
 </openerp>
 

@@ -72,9 +72,9 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'date_mail': date_mail,
         })
 
-    def test_preview_recovers_after_fixing_scope(self):
+    def test_send_wizard_preview_uses_extra_scope(self):
         imd_obj = self.openerp.pool.get('ir.model.data')
-        preview_obj = self.openerp.pool.get('poweremail.preview')
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
         cursor = self.cursor
         uid = self.uid
 
@@ -86,51 +86,46 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
             'def_body_text': '<a href="${button_url}">Sign</a>',
         })
         context = {
-            'active_id': template_id,
-            'active_ids': [template_id],
+            'template_id': template_id,
+            'src_model': 'res.partner',
+            'src_rec_ids': [partner_id],
+            'active_id': partner_id,
         }
-        preview_id = preview_obj.create(cursor, uid, {
-            'model_ref': 'res.partner,{}'.format(partner_id),
+        wizard_id = send_obj.create(cursor, uid, {
+            'env': "{'extra_render_values': {'button_url': 'https://sign.example.com'}}",
         }, context=context)
+        wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+        self.assertFalse(wizard.body_preview)
 
-        preview_obj.action_generate_static_mail(
-            cursor, uid, [preview_id], context=context
-        )
-        preview = preview_obj.browse(cursor, uid, preview_id)
-        self.assertEqual(preview.state, 'error')
+        send_obj.preview_mail(cursor, uid, [wizard_id], context=context)
+        wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+        self.assertIn('https://sign.example.com', wizard.body_preview)
 
-        preview_obj.write(cursor, uid, [preview_id], {
-            'env': (
-                "{'extra_render_values': "
-                "{'button_url': 'https://sign.example.com'}}"
-            ),
-        }, context=context)
-        preview_obj.action_generate_static_mail(
-            cursor, uid, [preview_id], context=context
-        )
-        preview = preview_obj.browse(cursor, uid, preview_id)
-        self.assertEqual(preview.state, 'init')
-        self.assertIn('https://sign.example.com', preview.body_text)
-
-    def test_preview_accepts_supported_recipient_separators(self):
+    def test_template_preview_uses_send_wizard(self):
         imd_obj = self.openerp.pool.get('ir.model.data')
-        preview_obj = self.openerp.pool.get('poweremail.preview')
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
         cursor = self.cursor
         uid = self.uid
 
         partner_id = imd_obj.get_object_reference(
             cursor, uid, 'base', 'res_partner_asus'
         )[1]
-        template_id = self.create_template()
-        preview_id = preview_obj.create(cursor, uid, {
-            'model_ref': 'res.partner,{}'.format(partner_id),
-            'to': 'first@example.com, second@example.com; third@example.com',
-        }, context={
-            'active_id': template_id,
-            'active_ids': [template_id],
+        template_id = self.create_template({
+            'def_to': 'recipient@example.com',
+            'def_subject': 'Template preview',
         })
+        context = {
+            'active_id': template_id,
+            'template_id': template_id,
+        }
 
-        self.assertTrue(preview_id)
+        wizard_id = send_obj.create(cursor, uid, {
+            'model_ref': 'res.partner,{}'.format(partner_id),
+        }, context=context)
+        send_obj.preview_mail(cursor, uid, [wizard_id], context=context)
+
+        wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+        self.assertEqual(wizard.subject, 'Template preview')
 
     def test_creating_email_gets_default_priority(self):
 
@@ -377,6 +372,8 @@ p { color:red;}
         template = tmpl_obj.browse(cursor, uid, tmpl_id)
         self.assertTrue(template.ref_ir_act_window)
         self.assertTrue(template.ref_ir_value)
+        action = template.ref_ir_act_window
+        self.assertEqual(action.res_model, 'poweremail.send.wizard')
         template = tmpl_obj.browse(cursor, uid, tmpl_id)
 
         template.remove_action_reference({})

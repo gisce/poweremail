@@ -29,6 +29,7 @@ from tools.translate import _
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
 from premailer import transform
+from tools.safe_eval import safe_eval
 
 
 class poweremail_send_wizard(osv.osv_memory):
@@ -121,7 +122,8 @@ class poweremail_send_wizard(osv.osv_memory):
 
         template = template_obj.browse(cr, uid, template_ids[0], context)
 
-        lang = self.get_value(cr, uid, template, template.lang, context)
+        lang = context.get('src_rec_ids') and self.get_value(
+            cr, uid, template, template.lang, context)
         if lang:
             # Use translated template if necessary
             ctx = context.copy()
@@ -129,18 +131,85 @@ class poweremail_send_wizard(osv.osv_memory):
             template = template_obj.browse(cr, uid, template.id, ctx)
         return template
 
+    def _get_rel_model(self, cr, uid, context=None):
+        if context is None:
+            context = {}
+        result = False
+        model_name = context.get('src_model')
+        if not model_name and context.get('template_id'):
+            template = self.pool.get('poweremail.templates').simple_browse(
+                cr, uid, int(context['template_id']), context=context)
+            model_name = template.object_name.model
+        if model_name:
+            result = self.pool.get('ir.model').search(
+                cr, uid, [('model', '=', model_name)], context=context)[0]
+        return result
+
+    def _get_preview_models(self, cr, uid, context=None):
+        result = []
+        template = self._get_template(cr, uid, context)
+        if template:
+            result = [(template.object_name.model, template.object_name.name)]
+        return result
+
+    def _get_source_context(self, cr, uid, wizard, context=None):
+        if context is None:
+            context = {}
+        ctx = context.copy()
+        if not ctx.get('src_rec_ids'):
+            model_name, record_id = wizard.model_ref.split(',', 1)
+            record_id = int(record_id)
+            ctx['src_model'] = model_name
+            ctx['src_rec_ids'] = [record_id]
+            ctx['active_id'] = record_id
+        return ctx
+
     def _get_template_value(self, cr, uid, field, context=None):
         template = self._get_template(cr, uid, context)
         if not template:
             return False
-        if len(context['src_rec_ids']) > 1: # Multiple Mail: Gets original template values for multiple email change
-            return getattr(template, field)
-        else: # Simple Mail: Gets computed template values
-            value = self.get_value(cr, uid, template, getattr(template, field), context)
-            if template.inline and field == 'def_body_text':
-                value = transform(value)
 
+        template_values = {
+            'def_to': template.def_to,
+            'def_cc': template.def_cc,
+            'def_bcc': template.def_bcc,
+            'def_subject': template.def_subject,
+            'def_body_text': template.def_body_text,
+            'def_body_html': template.def_body_html,
+            'file_name': template.file_name,
+            'single_email': template.single_email,
+            'def_priority': template.def_priority,
+        }
+        value = template_values[field]
+        if not context.get('src_rec_ids') or len(context['src_rec_ids']) > 1:
             return value
+
+        value = self.get_value(cr, uid, template, value, context)
+        if template.inline and field == 'def_body_text':
+            value = transform(value)
+        return value
+
+    def _get_preview_values(self, cr, uid, context=None):
+        template = self._get_template(cr, uid, context)
+        return {
+            'to': filter_send_emails(
+                self._get_template_value(cr, uid, 'def_to', context)),
+            'cc': filter_send_emails(
+                self._get_template_value(cr, uid, 'def_cc', context)),
+            'bcc': filter_send_emails(
+                self._get_template_value(cr, uid, 'def_bcc', context)),
+            'subject': self._get_template_value(
+                cr, uid, 'def_subject', context),
+            'body_text': self._get_template_value(
+                cr, uid, 'def_body_text', context),
+            'body_html': self._get_template_value(
+                cr, uid, 'def_body_html', context),
+            'report': self._get_template_value(
+                cr, uid, 'file_name', context),
+            'signature': template.use_sign,
+            'priority': self._get_template_value(
+                cr, uid, 'def_priority', context),
+        }
 
     _columns = {
         'state':fields.selection([
@@ -150,13 +219,14 @@ class poweremail_send_wizard(osv.osv_memory):
                         ('done','Wizard Complete')
                                   ],'Status',readonly=True),
         'ref_template':fields.many2one('poweremail.templates','Template',readonly=True),
+        'model_ref': fields.reference('Template reference', selection=_get_preview_models, size=64, required=True),
         'rel_model':fields.many2one('ir.model','Model',readonly=True),
-        'rel_model_ref':fields.integer('Referred Document',readonly=True),
         'from':fields.selection(_get_accounts,'From Account',select=True),
         'to':fields.char('To',size=250,required=True),
         'cc':fields.char('CC',size=250,),
         'bcc':fields.char('BCC',size=250,),
         'subject':fields.char('Subject',size=200),
+        'body_preview':fields.text('Body Preview', readonly=True),
         'body_text':fields.text('Body',),
         'body_html':fields.text('Body',),
         'report':fields.char('Report File Name',size=100,),
@@ -168,12 +238,16 @@ class poweremail_send_wizard(osv.osv_memory):
         'attachment_ids': fields.many2many('ir.attachment','send_wizard_attachment_rel', 'wizard_id', 'attachment_id', 'Attachments'),
         'single_email': fields.boolean("Single email", help="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these records). If you don't check it, an email with its optional attachment will be send for each record."),
         'priority': fields.selection(_priority_selection, 'Priority'),
+        'env': fields.text('Extra scope variables'),
     }
 
     _defaults = {
-        'state': lambda self,cr,uid,ctx: len(ctx['src_rec_ids']) > 1 and 'send_type' or 'single',
-        'rel_model': lambda self,cr,uid,ctx: self.pool.get('ir.model').search(cr,uid,[('model','=',ctx['src_model'])],context=ctx)[0],
-        'rel_model_ref': lambda self,cr,uid,ctx: ctx['active_id'],
+        'state': lambda self, cr, uid, ctx:
+            len(ctx.get('src_rec_ids', [])) > 1 and 'send_type' or 'single',
+        'rel_model': _get_rel_model,
+        'model_ref': lambda self, cr, uid, ctx: (
+            ctx.get('src_model') and len(ctx.get('src_rec_ids', [])) == 1
+            and '%s,%s' % (ctx['src_model'], ctx['src_rec_ids'][0]) or False),
         'to': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_to', ctx)),
         'cc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_cc', ctx)),
         'bcc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_bcc', ctx)),
@@ -183,12 +257,11 @@ class poweremail_send_wizard(osv.osv_memory):
         'report': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'file_name', ctx),
         'signature': lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).use_sign,
         'ref_template':lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).id,
-        'requested':lambda self,cr,uid,ctx: len(ctx['src_rec_ids']),
+        'requested': lambda self, cr, uid, ctx: len(ctx.get('src_rec_ids', [])),
         'full_success': lambda *a: False,
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
         'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_priority', ctx),
     }
-
 
     def fields_get(self, cr, uid, fields=None, context=None, read_access=True):
         if context is None:
@@ -198,6 +271,18 @@ class poweremail_send_wizard(osv.osv_memory):
             result['attachment_ids']['domain'] = [('res_model','=',context['src_model']),('res_id','=',context['active_id'])]
         return result
 
+    def preview_mail(self, cr, uid, ids, context=None):
+        if context is None:
+            context = {}
+
+        wizard = self.simple_browse(cr, uid, ids[0], context=context)
+        ctx = self._get_source_context(cr, uid, wizard, context)
+        ctx.update(safe_eval(wizard.env or '{}'))
+        ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
+        values = self._get_preview_values(cr, uid, ctx)
+        values['body_preview'] = values['body_text']
+        return self.write(cr, uid, ids, values, context=context)
+
     def compute_second_step(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
@@ -206,19 +291,11 @@ class poweremail_send_wizard(osv.osv_memory):
             return self.write(cr, uid, ids, {'state': 'multi'}, context)
         # We send a single email for several records. We compute the values from the first record
         ctx = context.copy()
+        ctx.update(safe_eval(wizard.env or '{}'))
         ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
-        values = {
-            'to': self._get_template_value(cr, uid, 'def_to', ctx),
-            'cc': self._get_template_value(cr, uid, 'def_cc', ctx),
-            'bcc': self._get_template_value(cr, uid, 'def_bcc', ctx),
-            'subject': self._get_template_value(cr, uid, 'def_subject', ctx),
-            'body_text': self._get_template_value(cr, uid, 'def_body_text', ctx),
-            'body_html': self._get_template_value(cr, uid, 'def_body_html', ctx),
-            'report': self._get_template_value(cr, uid, 'file_name', ctx),
-            'signature': self._get_template(cr, uid, ctx).use_sign,
-            'ref_template': self._get_template(cr, uid, ctx).id,
-            'state': 'single',
-        }
+        values = self._get_preview_values(cr, uid, ctx)
+        values['ref_template'] = self._get_template(cr, uid, ctx).id
+        values['state'] = 'single'
         return self.write(cr, uid, ids, values, context = context)
 
     def sav_to_drafts(self, cr, uid, ids, context=None):
@@ -278,11 +355,11 @@ class poweremail_send_wizard(osv.osv_memory):
 
         template_o = self.pool.get('poweremail.templates')
 
-        template = self._get_template(cr, uid, context)
-        src_rec_ids = (context.get('src_rec_ids', []))[:]
-
         wiz = self.simple_browse(cr, uid, ids[0], context=context)
-        ctx = context.copy()
+        ctx = self._get_source_context(cr, uid, wiz, context)
+        ctx.update(safe_eval(wiz.env or '{}'))
+        template = self._get_template(cr, uid, ctx)
+        src_rec_ids = ctx['src_rec_ids'][: ]
 
         from_val = wiz['from']
         if isinstance(from_val, (list, tuple)):
