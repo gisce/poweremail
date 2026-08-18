@@ -158,7 +158,7 @@ class PoweremailMailbox(osv.osv):
         #get ids of mails in outbox
         ids = self._get_mails_to_send(cr, uid, context=context)
         LOGGER.notifyChannel('Power Email', netsvc.LOG_INFO,
-                             'Sending All mail (PID: %s)' % os.getpid())
+                             'Sending All mail (PID: %s) (Emails to send: %s)' % (os.getpid(), len(ids)))
         # To prevent resend the same emails in several send_all_mail() calls
         # We put this in a new cursor/transaction to avoid concurrent
         # transaction isolation problems
