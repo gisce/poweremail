@@ -29,6 +29,7 @@ from tools.translate import _
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
 from premailer import transform
+from mako.exceptions import html_error_template
 from tools.safe_eval import safe_eval
 
 
@@ -95,6 +96,13 @@ class poweremail_send_wizard(osv.osv_memory):
             else:
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_ERROR, _("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
                 raise osv.except_osv(_("Power Email"),_("No personal email accounts are configured for you. \nEither ask admin to enforce an account for this template or get yourself a personal power email account."))
+
+    def _get_default_from(self, cr, uid, context=None):
+        result = False
+        template = self._get_template(cr, uid, context)
+        if template and template.enforce_from_account:
+            result = template.enforce_from_account.id
+        return result
 
     def get_value(self, cursor, user, template, message, context=None, id=None):
         """Gets the value of the message parsed with the content of object id (or the first 'src_rec_ids' if id is not given)"""
@@ -218,6 +226,10 @@ class poweremail_send_wizard(osv.osv_memory):
                         ('send_type','Send Type'),
                         ('done','Wizard Complete')
                                   ],'Status',readonly=True),
+        'steps': fields.selection([
+            ('step1', 'Configuration'),
+            ('step2', 'Preview'),
+        ]),
         'ref_template':fields.many2one('poweremail.templates','Template',readonly=True),
         'model_ref': fields.reference('Template reference', selection=_get_preview_models, size=64, required=True),
         'rel_model':fields.many2one('ir.model','Model',readonly=True),
@@ -227,6 +239,7 @@ class poweremail_send_wizard(osv.osv_memory):
         'bcc':fields.char('BCC',size=250,),
         'subject':fields.char('Subject',size=200),
         'body_preview':fields.text('Body Preview', readonly=True),
+        'preview_error': fields.boolean('Preview Error', readonly=True),
         'body_text':fields.text('Body',),
         'body_html':fields.text('Body',),
         'report':fields.char('Report File Name',size=100,),
@@ -242,6 +255,9 @@ class poweremail_send_wizard(osv.osv_memory):
     }
 
     _defaults = {
+        'steps': lambda *a: 'step1',
+        'preview_error': lambda *a: False,
+        'from': _get_default_from,
         'state': lambda self, cr, uid, ctx:
             len(ctx.get('src_rec_ids', [])) > 1 and 'send_type' or 'single',
         'rel_model': _get_rel_model,
@@ -278,10 +294,29 @@ class poweremail_send_wizard(osv.osv_memory):
         wizard = self.simple_browse(cr, uid, ids[0], context=context)
         ctx = self._get_source_context(cr, uid, wizard, context)
         ctx.update(safe_eval(wizard.env or '{}'))
+        ctx['raise_exception'] = True
         ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
-        values = self._get_preview_values(cr, uid, ctx)
-        values['body_preview'] = values['body_text']
+        try:
+            values = self._get_preview_values(cr, uid, ctx)
+            values['body_preview'] = values['body_text']
+            values['preview_error'] = False
+        except Exception:
+            values = {
+                'body_preview': html_error_template().render(),
+                'preview_error': True
+            }
+        values['steps'] = 'step2'
         return self.write(cr, uid, ids, values, context=context)
+
+    def onchange_body_text(self, cr, uid, ids, body_text, context=None):
+        return {'value': {'body_preview': body_text}}
+
+    def action_previous(self, cr, uid, ids, context=None):
+        if context is None:
+            context = {}
+        return self.write(
+            cr, uid, ids, {'steps': 'step1', 'preview_error': False},
+            context=context)
 
     def compute_second_step(self, cr, uid, ids, context=None):
         if context is None:
