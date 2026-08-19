@@ -93,12 +93,14 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         }
         wizard_id = send_obj.create(cursor, uid, {
             'env': "{'extra_render_values': {'button_url': 'https://sign.example.com'}}",
+            'body_text': "Custom <a href='${button_url}'>Sign</a>",
         }, context=context)
         wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
         self.assertFalse(wizard.body_preview)
 
         send_obj.preview_mail(cursor, uid, [wizard_id], context=context)
         wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+        self.assertIn('Custom', wizard.body_preview)
         self.assertIn('https://sign.example.com', wizard.body_preview)
 
     def test_template_preview_uses_send_wizard(self):

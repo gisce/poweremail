@@ -7,44 +7,17 @@
 			<field name="model">poweremail.send.wizard</field>
 			<field name="type">form</field>
 			<field name="arch" type="xml">
-				<form string="Send mail Wizard">
-					<group col="8" colspan="4" attrs="{'invisible':[('state','!=','send_type')]}">
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these r
-ecords). If you don't check it, an email with its optional attachment will be send for each record." colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="3"/>
-                        <field name="single_email" colspan="4"/>
-                        <separator string="Extra scope variables" colspan="8"/>
-                        <field name="env" colspan="8" widget="codeeditor" widget_props="{'lang': 'json'}" height="100" nolabel="1"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <label string=" " colspan="8"/>
-                        <button icon="gtk-cancel" special="cancel" string="Cancel" colspan="2"/>
-                        <label string=" "/>
-                        <label string=" "/>
-                        <label string=" "/>
-                        <label string=" "/>
-                        <button icon="gtk-ok" name="compute_second_step" string="OK" type="object" colspan="2"/>
+				<form string="Send email">
+					<group attrs="{'invisible':[('state','!=','send_type')]}">
+                        <card title="Information" icon="info-circle">
+                            <label string="Select this option to send one email for all selected records. Its optional attachment will be generated as a single file. Otherwise, one email and its optional attachment will be generated for each record." colspan="8"/>
+                            <field name="single_email" widget="switch" colspan="4"/>
+                        </card>
+                        <group col="10">
+                            <label colspan="6"/>
+                            <button icon="gtk-cancel" special="cancel" string="Close" danger="1" colspan="2"/>
+                            <button icon="chevron-right" name="compute_second_step" string="Continue" type="object" primary="1" colspan="2"/>
+                        </group>
                     </group>
 					<group col="4" colspan="4" attrs="{'invisible':[('state','=','send_type')]}">
                         <field name="preview_error" invisible="1"/>
@@ -58,7 +31,7 @@ ecords). If you don't check it, an email with its optional attachment will be se
                             <field name="model_ref" colspan="2"/>
                             <field name="from" attrs="{'required':[('state','!=','send_type')]}" colspan="2" />
                             <field name="priority" colspan="2"/>
-                            <field name="signature" colspan="4"/>
+                            <field name="signature" widget="switch" colspan="4"/>
                         </card>
                         <group>
                             <card title="Message details" icon="mail" col="6" colspan="4" attrs="{'invisible':[('steps','!=','step1')]}">
@@ -68,24 +41,27 @@ ecords). If you don't check it, an email with its optional attachment will be se
                                 <field name="subject" select="2" colspan="4" attrs="{'required':[('state','=','single')]}" />
                                 <field name="report" colspan="4" />
                             </card>
-                            <card title="Extra template variables" icon="adjustments" colspan="4" attrs="{'invisible':[('steps','!=','step1')]}">
+                            <card title="Additional template variables" icon="adjustments" colspan="4" attrs="{'invisible':[('steps','!=','step1')]}">
                                 <field name="env" colspan="4" widget="codeeditor" widget_props="{'lang': 'json'}" height="100" nolabel="1"/>
                             </card>
                             <group attrs="{'invisible':[('steps','!=','step2')]}">
                                 <notebook colspan="4">
-                                    <page string="Body preview" icon="eye">
+                                    <page string="Email preview" icon="eye">
                                         <group>
                                             <field name="body_preview" colspan="2" widget="html_preview" nolabel="1"/>
                                             <field name="body_text" select="2" colspan="2" nolabel="1" height="550" on_change="onchange_body_text(body_text)"/>
                                         </group>
                                     </page>
                                     <page string="Attachments" icon="link">
-                                        <label string="Add here all attachments of the current document you want to include in the e-mail." colspan="4"/>
+                                        <label string="Add attachments from the current document to include in this email." colspan="4"/>
                                         <field name="attachment_ids" colspan="4" nolabel="1"/>
                                     </page>
                                     <page string="Status" icon="info-circle">
                                         <field name="state" />
-                                        <label string="After clicking send all mails, mails will be sent to outbox and cleared in next Send/Recieve" colspan="4"/>
+                                        <label string="When sent, generated emails are placed in the Outbox and will be sent during the next Send/Receive." colspan="4"/>
+                                        <label string="For multiple emails, the language of the first record is used. Send records in language-specific groups when needed." colspan="4"/>
+                                        <field name="requested" />
+                                        <field name="generated" />
                                     </page>
                                 </notebook>
                             </group>
@@ -96,25 +72,28 @@ ecords). If you don't check it, an email with its optional attachment will be se
                             <button icon="eye" name="preview_mail" string="Preview Email" type="object" colspan="2" />
                         </group>
                         <group col="10" attrs="{'invisible':[('steps','!=','step2')]}">
-                            <label colspan="4"/>
+                            <label colspan="2"/>
                             <group colspan="4" attrs="{'invisible':[('preview_error','=',False)]}">
                                 <label colspan="4" string=""/>
                             </group>
-                            <button name="action_previous" string="Back" type="object" icon="arrow-left" colspan="2" />
+                            <group col="10" attrs="{'invisible':[('preview_error','=',False)]}">
+                                <label colspan="6"/>
+                                <button name="action_previous" string="Back" type="object" icon="arrow-left" colspan="2" />
+                            </group>
                             <group col="4" colspan="4" attrs="{'invisible':[('preview_error','=',True)]}">
-                                <group col="4" colspan="4" attrs="{'invisible':[('state','!=','single')]}">
+                                <group col="10" attrs="{'invisible':[('state','!=','single')]}">
+                                    <label colspan="4"/>
+                                    <button name="action_previous" string="Back" type="object" icon="arrow-left" colspan="2" />
                                     <button icon="device-floppy" name="sav_to_drafts" string="Save in Drafts" type="object" colspan="2" />
                                     <button icon="send" primary="1" name="send_mail" string="Send now" type="object" colspan="2" />
                                 </group>
-                                <group col="4" colspan="4" attrs="{'invisible':[('state','=','single')]}">
-                                    <label string="Tip: Multiple emails are sent in the same language (the first one is proposed). We suggest you send emails in groups according to language." colspan="4"/>
-                                    <field name="requested" />
-                                    <field name="generated" />
-                                    <button icon="gtk-ok" name="get_generated" string="Send all mails" type="object" states="multi" colspan="2" />
-                                    <button icon="gtk-cancel" special="cancel" string="Discard Mail" colspan="2" states="multi" />
-                                </group>
-                                <button icon="gtk-ok" special="cancel" string="Close" colspan="4" states="done" />
+                                 <group col="10" attrs="{'invisible':[('state','!=','multi')]}">
+                                     <label colspan="6"/>
+                                     <button name="action_previous" string="Back" type="object" icon="arrow-left" colspan="2" />
+                                     <button icon="send" name="get_generated" string="Send all mails" type="object" primary="1" colspan="2" />
+                                 </group>
                             </group>
+
                         </group>
                     </group>
                 </form>

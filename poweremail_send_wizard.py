@@ -172,6 +172,15 @@ class poweremail_send_wizard(osv.osv_memory):
             ctx['active_id'] = record_id
         return ctx
 
+    def _get_wizard_context(self, cr, uid, wizard, context=None):
+        ctx = self._get_source_context(cr, uid, wizard, context)
+        try:
+            ctx.update(safe_eval(wizard.env or '{}'))
+        except Exception:
+            raise osv.except_osv(
+                _('Power Email'), _('Invalid extra template variables.'))
+        return ctx
+
     def _get_template_value(self, cr, uid, field, context=None):
         template = self._get_template(cr, uid, context)
         if not template:
@@ -197,27 +206,29 @@ class poweremail_send_wizard(osv.osv_memory):
             value = transform(value)
         return value
 
-    def _get_preview_values(self, cr, uid, context=None):
+    def _get_preview_values(self, cr, uid, wizard, context=None):
         template = self._get_template(cr, uid, context)
-        return {
+        result = {
             'to': filter_send_emails(
-                self._get_template_value(cr, uid, 'def_to', context)),
+                self.get_value(cr, uid, template, wizard.to, context)),
             'cc': filter_send_emails(
-                self._get_template_value(cr, uid, 'def_cc', context)),
+                self.get_value(cr, uid, template, wizard.cc, context)),
             'bcc': filter_send_emails(
-                self._get_template_value(cr, uid, 'def_bcc', context)),
-            'subject': self._get_template_value(
-                cr, uid, 'def_subject', context),
-            'body_text': self._get_template_value(
-                cr, uid, 'def_body_text', context),
-            'body_html': self._get_template_value(
-                cr, uid, 'def_body_html', context),
-            'report': self._get_template_value(
-                cr, uid, 'file_name', context),
-            'signature': template.use_sign,
-            'priority': self._get_template_value(
-                cr, uid, 'def_priority', context),
+                self.get_value(cr, uid, template, wizard.bcc, context)),
+            'subject': self.get_value(
+                cr, uid, template, wizard.subject, context),
+            'body_text': self.get_value(
+                cr, uid, template, wizard.body_text, context),
+            'body_html': self.get_value(
+                cr, uid, template, wizard.body_html, context),
+            'report': self.get_value(
+                cr, uid, template, wizard.report, context),
+            'signature': wizard.signature,
+            'priority': wizard.priority,
         }
+        if template.inline:
+            result['body_text'] = transform(result['body_text'])
+        return result
 
     _columns = {
         'state':fields.selection([
@@ -292,14 +303,19 @@ class poweremail_send_wizard(osv.osv_memory):
             context = {}
 
         wizard = self.simple_browse(cr, uid, ids[0], context=context)
-        ctx = self._get_source_context(cr, uid, wizard, context)
-        ctx.update(safe_eval(wizard.env or '{}'))
-        ctx['raise_exception'] = True
-        ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
+        ctx = self._get_wizard_context(cr, uid, wizard, context)
         try:
-            values = self._get_preview_values(cr, uid, ctx)
-            values['body_preview'] = values['body_text']
-            values['preview_error'] = False
+            ctx['raise_exception'] = True
+            ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
+            values = self._get_preview_values(cr, uid, wizard, ctx)
+            if wizard.state == 'multi':
+                values = {
+                    'body_preview': values['body_text'],
+                    'preview_error': False,
+                }
+            else:
+                values['body_preview'] = values['body_text']
+                values['preview_error'] = False
         except Exception:
             values = {
                 'body_preview': html_error_template().render(),
@@ -325,10 +341,9 @@ class poweremail_send_wizard(osv.osv_memory):
         if not wizard.single_email:
             return self.write(cr, uid, ids, {'state': 'multi'}, context)
         # We send a single email for several records. We compute the values from the first record
-        ctx = context.copy()
-        ctx.update(safe_eval(wizard.env or '{}'))
+        ctx = self._get_wizard_context(cr, uid, wizard, context)
         ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
-        values = self._get_preview_values(cr, uid, ctx)
+        values = self._get_preview_values(cr, uid, wizard, ctx)
         values['ref_template'] = self._get_template(cr, uid, ctx).id
         values['state'] = 'single'
         return self.write(cr, uid, ids, values, context = context)
@@ -382,6 +397,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 }, context)
             else:
                 raise osv.except_osv(_("Power Email"),_("Email sending failed for one or more objects."))
+            return {'type': 'ir.actions.act_window_close'}
         return True
 
     def save_to_mailbox(self, cr, uid, ids, context=None):
@@ -391,8 +407,7 @@ class poweremail_send_wizard(osv.osv_memory):
         template_o = self.pool.get('poweremail.templates')
 
         wiz = self.simple_browse(cr, uid, ids[0], context=context)
-        ctx = self._get_source_context(cr, uid, wiz, context)
-        ctx.update(safe_eval(wiz.env or '{}'))
+        ctx = self._get_wizard_context(cr, uid, wiz, context)
         template = self._get_template(cr, uid, ctx)
         src_rec_ids = ctx['src_rec_ids'][: ]
 
