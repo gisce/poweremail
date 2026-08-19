@@ -14,8 +14,6 @@ def up(cursor, installed_version):
         update_record_ids=[
             'poweremail_send_wizard_form',
             'action_poweremail_template_preview',
-            'poweremail_template_form',
-            'poweremail_basic_template_form',
         ]
     )
     helper.update_xml_records(
