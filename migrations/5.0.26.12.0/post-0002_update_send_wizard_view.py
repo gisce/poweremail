@@ -18,6 +18,13 @@ def up(cursor, installed_version):
             'poweremail_basic_template_form',
         ]
     )
+    helper.update_xml_records(
+        xml_path='poweremail_template_view.xml',
+        update_record_ids=[
+            'poweremail_template_form',
+            'poweremail_basic_template_form',
+        ]
+    )
     trans_load(cursor, '{}/{}/i18n/ca_ES.po'.format(config['addons_path'], 'poweremail'), 'ca_ES')
     trans_load(cursor, '{}/{}/i18n/es_ES.po'.format(config['addons_path'], 'poweremail'), 'es_ES')
 
