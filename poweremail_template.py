@@ -1101,10 +1101,12 @@ class poweremail_templates(osv.osv):
 
         res = False
         attachment_ids = []
+        wizard_overrides = context.get('wizard_overrides') or {}
 
         if template.report_template:
             report = self.create_report(cursor, user, template, record_ids, context=context)
-            attachment_id = mail.attach(record_ids[0], template.file_name, report, context=context)
+            report_file_name = wizard_overrides.get('report', template.file_name)
+            attachment_id = mail.attach(record_ids[0], report_file_name, report, context=context)
             attachment_ids.append(attachment_id)
 
         if template.tmpl_attachment_ids:
@@ -1170,6 +1172,7 @@ class poweremail_templates(osv.osv):
         mailbox_obj = self.pool.get('poweremail.mailbox')
 
         attachment_ids = self.get_static_attachments_ids(cursor, user, template, record_ids, lang, context=context)
+        attachment_ids += context.get('wizard_attachment_ids', [])
         attachments = attachment_obj.simple_browse(cursor, user, attachment_ids, context=context)
 
         new_attachment_ids = []
@@ -1229,6 +1232,7 @@ class poweremail_templates(osv.osv):
             context = {}
 
         users_obj = self.pool.get('res.users')
+        core_accounts_obj = self.pool.get('poweremail.core_accounts')
 
         # Millor compatibilitat amb multicompany: si el objecte te el camp "company_id" o "company" el passem per context
         # per decidir millor desde on enviem el correu
@@ -1254,7 +1258,10 @@ class poweremail_templates(osv.osv):
                     else:
                         ctx_company['company_id'] = False
 
-        from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
+        if context.get('account_id'):
+            from_account = core_accounts_obj.read(cursor, user, int(context['account_id']), ['id', 'name', 'email_id'], context=context)
+        else:
+            from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
         ctx.update({
@@ -1263,20 +1270,31 @@ class poweremail_templates(osv.osv):
         })
         template = self.browse(cursor, user, template.id, context=ctx)
 
+        wiz_ov = context.get('wizard_overrides') or {}
+        wizard_values = {
+            'to': template.def_to,
+            'cc': template.def_cc,
+            'bcc': template.def_bcc,
+            'subject': template.def_subject,
+            'body_text': template.def_body_text,
+            'body_html': template.def_body_html,
+            'priority': template.def_priority,
+        }
+        wizard_values.update(wiz_ov)
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, template.def_to, template, context=ctx),
-            'pem_cc': get_value(cursor, user, record_id, template.def_cc, template, context=ctx),
-            'pem_bcc': get_value(cursor, user, record_id, template.def_bcc, template, context=ctx),
-            'pem_subject': get_value(cursor, user, record_id, template.def_subject, template, context=ctx),
-            'pem_body_text': get_value(cursor, user, record_id, template.def_body_text, template, context=ctx),
-            'pem_body_html': get_value(cursor, user, record_id, template.def_body_html, template, context=ctx),
+            'pem_to': get_value(cursor, user, record_id, wizard_values['to'], template, context=ctx),
+            'pem_cc': get_value(cursor, user, record_id, wizard_values['cc'], template, context=ctx),
+            'pem_bcc': get_value(cursor, user, record_id, wizard_values['bcc'], template, context=ctx),
+            'pem_subject': get_value(cursor, user, record_id, wizard_values['subject'], template, context=ctx),
+            'pem_body_text': get_value(cursor, user, record_id, wizard_values['body_text'], template, context=ctx),
+            'pem_body_html': get_value(cursor, user, record_id, wizard_values['body_html'], template, context=ctx),
             'pem_account_id': from_account['id'],
             #This is a mandatory field when automatic emails are sent
             'state': 'na',
             'folder': 'drafts',
             'mail_type': 'multipart/alternative',
-            'priority': template.def_priority,
+            'priority': wizard_values['priority'],
             'template_id': template.id,
         }
 
@@ -1284,7 +1302,8 @@ class poweremail_templates(osv.osv):
             mailbox_values['pem_body_text'] = transform(mailbox_values['pem_body_text'])
 
         #Use signatures if allowed
-        if template.use_sign:
+        use_sign = context.get('use_sign', template.use_sign)
+        if use_sign:
             sign = users_obj.read(cursor, user, user, ['signature'], context=context)['signature']
             if sign:
                 if mailbox_values['pem_body_text']:
@@ -1333,6 +1352,10 @@ class poweremail_templates(osv.osv):
         if not template:
             raise Exception("The requested template could not be loaded")
 
+        single_email = context.get('single_email', template.single_email)
+        save_to_drafts = context.get('save_to_drafts', template.save_to_drafts)
+        send_immediately = context.get('send_immediately', template.send_immediately)
+
         if template.use_filter and template.filter:
             filtered_record_ids = []
             for record in self.pool.get(template.object_name.model).browse(cursor, user, record_ids, context=context):
@@ -1341,7 +1364,7 @@ class poweremail_templates(osv.osv):
             record_ids = filtered_record_ids
 
         report_record_ids = record_ids[:]
-        if template.single_email and len(record_ids) > 1:
+        if single_email and len(record_ids) > 1:
             # We send a single email for several records
             record_ids = record_ids[:1]
 
@@ -1351,7 +1374,7 @@ class poweremail_templates(osv.osv):
             mailbox_ids.append(mailbox_id)
             mail = self.pool.get('poweremail.mailbox').browse(cursor, user, mailbox_id, context=context)
             if context.get('add_attachments', True):
-                if template.single_email and len(report_record_ids) > 1:
+                if single_email and len(report_record_ids) > 1:
                     # The optional attachment will be generated as a single file for all these records
                     self._generate_attach_reports(cursor, user, template, report_record_ids, mail, context=context)
                 else:
@@ -1365,9 +1388,8 @@ class poweremail_templates(osv.osv):
             # This prevents attempts by the scheduler to send
             # Emails before all the work is complete in
             # Generating email, attachments and event
-            if not template.save_to_drafts:
+            if not save_to_drafts:
                 pe_obj = self.pool.get('poweremail.mailbox')
-                send_immediately = template.send_immediately
                 if self.check_outbox(cursor, user, mailbox_id, context=context):
                     if send_immediately:
                         pe_obj.send_this_mail(cursor, user, [mailbox_id], context=context)
