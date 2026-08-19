@@ -21,3 +21,6 @@ def down(cursor, installed_version):
     pass
 
 
+migrate = up
+
+
