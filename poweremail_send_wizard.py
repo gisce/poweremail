@@ -241,7 +241,6 @@ class poweremail_send_wizard(osv.osv_memory):
             ('step1', 'Configuration'),
             ('step2', 'Preview'),
         ]),
-        'ref_template':fields.many2one('poweremail.templates','Template',readonly=True),
         'model_ref': fields.reference('Template reference', selection=_get_preview_models, size=64, required=True),
         'rel_model':fields.many2one('ir.model','Model',readonly=True),
         'from':fields.selection(_get_accounts,'From Account',select=True),
@@ -258,7 +257,6 @@ class poweremail_send_wizard(osv.osv_memory):
         #'filename':fields.text('File Name'),
         'requested':fields.integer('No of requested Mails',readonly=True),
         'generated':fields.integer('No of generated Mails',readonly=True),
-        'full_success':fields.boolean('Complete Success',readonly=True),
         'attachment_ids': fields.many2many('ir.attachment','send_wizard_attachment_rel', 'wizard_id', 'attachment_id', 'Attachments'),
         'single_email': fields.boolean("Single email", help="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these records). If you don't check it, an email with its optional attachment will be send for each record."),
         'priority': fields.selection(_priority_selection, 'Priority'),
@@ -283,9 +281,7 @@ class poweremail_send_wizard(osv.osv_memory):
         'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
         'report': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'file_name', ctx),
         'signature': lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).use_sign,
-        'ref_template':lambda self,cr,uid,ctx: self._get_template(cr, uid, ctx).id,
         'requested': lambda self, cr, uid, ctx: len(ctx.get('src_rec_ids', [])),
-        'full_success': lambda *a: False,
         'single_email':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'single_email', ctx),
         'priority': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_priority', ctx),
     }
@@ -344,7 +340,6 @@ class poweremail_send_wizard(osv.osv_memory):
         ctx = self._get_wizard_context(cr, uid, wizard, context)
         ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
         values = self._get_preview_values(cr, uid, wizard, ctx)
-        values['ref_template'] = self._get_template(cr, uid, ctx).id
         values['state'] = 'single'
         return self.write(cr, uid, ids, values, context = context)
 

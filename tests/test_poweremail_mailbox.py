@@ -433,7 +433,6 @@ class TestPoweremailMailbox(testing.OOTestCase):
                         "</html>"
 
             wizard_vals = {
-                'rel_model_ref': fact_id,
                 'requested': 1,
                 'from': 1,
                 'attachment_ids': [],
@@ -444,14 +443,12 @@ class TestPoweremailMailbox(testing.OOTestCase):
                 'priority': '1',
                 'to': 'aorellana@gisce.net',
                 'state': 'single',
-                'ref_template': template_id,
                 'single_email': 0,
                 'rel_model': 301,
                 'signature': 0,
                 'report': False,
                 'subject': 'Factura electricidad False',
                 'generated': False,
-                'full_success': False,
             }
 
             # Creem un mailbox
@@ -556,7 +553,6 @@ p { color:red;}
             })
 
             wizard_vals = {
-                'rel_model_ref': fact_id,
                 'requested': 1,
                 'from': pw_account_id,
                 'attachment_ids': [[6, 0, [attachment_id]]],
@@ -567,14 +563,12 @@ p { color:red;}
                 'priority': '1',
                 'to': 'example@example.org',
                 'state': 'single',
-                'ref_template': template_id,
                 'single_email': 0,
                 'rel_model': 301,
                 'signature': False,
                 'report': False,
                 'subject': 'Factura electricidad False',
                 'generated': False,
-                'full_success': False,
             }
 
             wizard_id = send_wizard_obj.create(cursor, uid, wizard_vals)
