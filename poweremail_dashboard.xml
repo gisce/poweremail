@@ -3,7 +3,7 @@
       <!-- Definition of the dashboard -->
     <data>
         <record model="ir.actions.act_window" id="action_menu_poweremail_dashboard">
-            <field name="name">Poweremail</field>
+            <field name="name">Poweremail Dashboard</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">dashboard</field>
             <field name="view_mode">dashboard,form</field>
@@ -11,11 +11,11 @@
         </record>
         <menuitem
             id="menu_poweremail_dashboard"
-            name="Dashboard Poweremail"
+            name="Poweremail Dashboard"
             parent="menu_poweremail_administration_server"
             action="action_menu_poweremail_dashboard"
             icon="terp-project"
-            string="Dashboard Poweremail"
+            string="Dashboard"
             sequence="0"/>
         <record model="board.board" id="poweremail_dashboard">
             <field name="name">Poweremail Dashboard</field>
