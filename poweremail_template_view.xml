@@ -84,7 +84,7 @@
                             </notebook>
                             <label colspan="2"/>
                             <button
-                                name="%(wizard_poweremail_preview)d"
+                                name="%(action_poweremail_template_preview)d"
                                 string="Preview Template" type="action"
                                 colspan="2" target="new" icon="gtk-execute"
                             />
@@ -284,7 +284,11 @@
                     <field name="def_subject" colspan="4" required="1" />
                     <separator colspan="4" string="Email body"/>
                     <field name="def_body_text" colspan="4" nolabel="1" />
-                    <button icon="gtk-go-forward" name="%(wizard_poweremail_preview)d" string="Preview Template" type="action" colspan="4"/>
+                    <button
+                        name="%(action_poweremail_template_preview)d"
+                        string="Preview Template" type="action"
+                        colspan="2" target="new" icon="gtk-execute"
+                    />
                 </form>
             </field>
         </record>
