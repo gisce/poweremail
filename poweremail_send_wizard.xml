@@ -10,8 +10,7 @@
 				<form string="Send email">
 					<group attrs="{'invisible':[('state','!=','send_type')]}">
                         <card title="Information" icon="info-circle">
-                            <label string="Select this option to send one email for all selected records. Its optional attachment will be generated as a single file. Otherwise, one email and its optional attachment will be generated for each record." colspan="8"/>
-                            <field name="single_email" widget="switch" colspan="4"/>
+                            <field name="single_email" string="Send a single email for all selected records" widget="switch" colspan="4"/>
                         </card>
                         <group col="10">
                             <label colspan="6"/>
@@ -27,8 +26,7 @@
                             <label colspan="1" string=""/>
                         </group>
                         <card title="Email settings" icon="settings" col="4" colspan="4" attrs="{'invisible':[('steps','!=','step1')]}">
-                            <field name="rel_model" colspan="2" />
-                            <field name="model_ref" colspan="2"/>
+                            <field name="model_ref" colspan="2" attrs="{'invisible':[('requested','!=',0)]}"/>
                             <field name="from" attrs="{'required':[('state','!=','send_type')]}" colspan="2" />
                             <field name="priority" colspan="2"/>
                             <field name="signature" widget="switch" colspan="4"/>
@@ -49,19 +47,23 @@
                                     <page string="Email preview" icon="eye">
                                         <group>
                                             <field name="body_preview" colspan="2" widget="html_preview" nolabel="1"/>
-                                            <field name="body_text" select="2" colspan="2" nolabel="1" height="550" on_change="onchange_body_text(body_text)"/>
+                                            <field name="body_text" select="2" colspan="2" nolabel="1" height="550" widget="codeeditor" widget_props="{'lang':'html'}" on_change="onchange_body_text(body_text)"/>
                                         </group>
+                                        <card title="Status" icon="info-circle">
+                                            <field name="state" colspan="2"/>
+                                            <group attrs="{'invisible':[('hide_model_ref','=',True)]}">
+                                                <group attrs="{'invisible':[('state','=','single')]}">
+                                                    <field name="requested" colspan="2"/>
+                                                    <field name="generated" colspan="2"/>
+                                                    <label string="The preview is generated using the first selected record. When sending multiple emails, each email is generated using its record’s language."/>
+                                                </group>
+                                            </group>
+                                            <label string="Generated emails are placed in the Outbox and will be sent during the next Send/Receive."/>
+                                        </card>
                                     </page>
                                     <page string="Attachments" icon="link">
                                         <label string="Add attachments from the current document to include in this email." colspan="4"/>
                                         <field name="attachment_ids" colspan="4" nolabel="1"/>
-                                    </page>
-                                    <page string="Status" icon="info-circle">
-                                        <field name="state" />
-                                        <label string="When sent, generated emails are placed in the Outbox and will be sent during the next Send/Receive." colspan="4"/>
-                                        <label string="For multiple emails, the language of the first record is used. Send records in language-specific groups when needed." colspan="4"/>
-                                        <field name="requested" />
-                                        <field name="generated" />
                                     </page>
                                 </notebook>
                             </group>
@@ -69,7 +71,7 @@
                         <group col="10" attrs="{'invisible':[('steps','!=','step1')]}">
                             <label colspan="6"/>
                             <button icon="gtk-cancel" danger="1" special="cancel" string="Discard Mail" colspan="2" />
-                            <button icon="eye" name="preview_mail" string="Preview Email" type="object" colspan="2" />
+                            <button icon="eye" name="preview_mail" string="Preview Email" type="object" primary="1" colspan="2" />
                         </group>
                         <group col="10" attrs="{'invisible':[('steps','!=','step2')]}">
                             <label colspan="2"/>
@@ -88,12 +90,16 @@
                                     <button icon="send" primary="1" name="send_mail" string="Send now" type="object" colspan="2" />
                                 </group>
                                  <group col="10" attrs="{'invisible':[('state','!=','multi')]}">
-                                     <label colspan="6"/>
+                                     <label colspan="4"/>
                                      <button name="action_previous" string="Back" type="object" icon="arrow-left" colspan="2" />
+                                     <button icon="device-floppy" name="sav_to_drafts" string="Save all in Drafts" type="object" colspan="2" />
                                      <button icon="send" name="get_generated" string="Send all mails" type="object" primary="1" colspan="2" />
                                  </group>
+                                 <group col="10" attrs="{'invisible':[('state','!=','done')]}">
+                                     <label colspan="8"/>
+                                     <button icon="gtk-close" special="cancel" string="Close" colspan="2" />
+                                 </group>
                             </group>
-
                         </group>
                     </group>
                 </form>
@@ -109,7 +115,7 @@
             <field name="view_mode">form</field>
             <field name="view_id" ref="poweremail_send_wizard_form"/>
             <field name="target">new</field>
-            <field name="context">{'template_id': active_id}</field>
+            <field name="context">{'template_id': active_id, 'hide_model_ref': True}</field>
         </record>
 	</data>
 </openerp>

@@ -198,10 +198,9 @@ class poweremail_send_wizard(osv.osv_memory):
             'def_priority': template.def_priority,
         }
         value = template_values[field]
-        if not context.get('src_rec_ids') or len(context['src_rec_ids']) > 1:
+        if not context.get('src_rec_ids') or len(context['src_rec_ids']) == 1:
             return value
 
-        value = self.get_value(cr, uid, template, value, context)
         if template.inline and field == 'def_body_text':
             value = transform(value)
         return value
@@ -241,7 +240,7 @@ class poweremail_send_wizard(osv.osv_memory):
             ('step1', 'Configuration'),
             ('step2', 'Preview'),
         ]),
-        'model_ref': fields.reference('Template reference', selection=_get_preview_models, size=64, required=True),
+        'model_ref': fields.reference('Template reference', selection=_get_preview_models, size=64),
         'rel_model':fields.many2one('ir.model','Model',readonly=True),
         'from':fields.selection(_get_accounts,'From Account',select=True),
         'to':fields.char('To',size=250,required=True),
@@ -258,7 +257,10 @@ class poweremail_send_wizard(osv.osv_memory):
         'requested':fields.integer('No of requested Mails',readonly=True),
         'generated':fields.integer('No of generated Mails',readonly=True),
         'attachment_ids': fields.many2many('ir.attachment','send_wizard_attachment_rel', 'wizard_id', 'attachment_id', 'Attachments'),
-        'single_email': fields.boolean("Single email", help="Check it if you want to send a single email for several records (the optional attachment will be generated as a single file for all these records). If you don't check it, an email with its optional attachment will be send for each record."),
+        'single_email': fields.boolean(
+            'Single email',
+            help='Send one email for all selected records. Optional attachments are generated as a single file. Leave this option unchecked to send one email, with its optional attachment, for each record.'
+        ),
         'priority': fields.selection(_priority_selection, 'Priority'),
         'env': fields.text('Extra scope variables'),
     }
@@ -273,9 +275,9 @@ class poweremail_send_wizard(osv.osv_memory):
         'model_ref': lambda self, cr, uid, ctx: (
             ctx.get('src_model') and len(ctx.get('src_rec_ids', [])) == 1
             and '%s,%s' % (ctx['src_model'], ctx['src_rec_ids'][0]) or False),
-        'to': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_to', ctx)),
-        'cc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_cc', ctx)),
-        'bcc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_bcc', ctx)),
+        'to': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_to', ctx),
+        'cc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_cc', ctx),
+        'bcc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_bcc', ctx),
         'subject':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_subject', ctx),
         'body_text':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_text', ctx),
         'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
@@ -335,13 +337,18 @@ class poweremail_send_wizard(osv.osv_memory):
             context = {}
         wizard = self.browse(cr, uid, ids[0], context)
         if not wizard.single_email:
-            return self.write(cr, uid, ids, {'state': 'multi'}, context)
+            values = {
+                'state': 'multi',
+                'requested': len(context.get('src_rec_ids', [])),
+            }
+            return self.write(cr, uid, ids, values, context)
         # We send a single email for several records. We compute the values from the first record
         ctx = self._get_wizard_context(cr, uid, wizard, context)
         ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
         values = self._get_preview_values(cr, uid, wizard, ctx)
         values['state'] = 'single'
-        return self.write(cr, uid, ids, values, context = context)
+        values['requested'] = len(ctx['src_rec_ids'])
+        return self.write(cr, uid, ids, values, context=context)
 
     def sav_to_drafts(self, cr, uid, ids, context=None):
         if context is None:
@@ -392,7 +399,7 @@ class poweremail_send_wizard(osv.osv_memory):
                 }, context)
             else:
                 raise osv.except_osv(_("Power Email"),_("Email sending failed for one or more objects."))
-            return {'type': 'ir.actions.act_window_close'}
+            return True
         return True
 
     def save_to_mailbox(self, cr, uid, ids, context=None):
