@@ -5,6 +5,9 @@
 "access_pe_core_settings_manager","poweremail.core","model_poweremail_core_accounts","res_groups_pemanager",1,1,1,1
 "access_pe_core_external_users","poweremail.core","model_poweremail_core_accounts","res_groups_peuserse",1,1,1,0
 "access_pe_core_internal_users","poweremail.core","model_poweremail_core_accounts","res_groups_peusersi",1,1,1,0
+"access_pe_account_domain_manager","poweremail.account.domain","model_poweremail_account_domain","res_groups_pemanager",1,1,1,1
+"access_pe_account_domain_external_users","poweremail.account.domain","model_poweremail_account_domain","res_groups_peuserse",1,0,0,0
+"access_pe_account_domain_internal_users","poweremail.account.domain","model_poweremail_account_domain","res_groups_peusersi",1,0,0,0
 "access_pe_template_settings_manager","poweremail.templates","model_poweremail_templates","res_groups_pemanager",1,1,1,1
 "access_pe_template_external_users","poweremail.templates","model_poweremail_templates","res_groups_peuserse",1,1,0,0
 "access_pe_template_internal_users","poweremail.templates","model_poweremail_templates","res_groups_peusersi",1,1,0,0

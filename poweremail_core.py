@@ -156,6 +156,12 @@ class poweremail_core_accounts(osv.osv):
                         string="Allowed User Groups",
                         help="Only users from these groups will be " \
                         "allowed to send mails from this ID."),
+        'forced_domain_ids': fields.one2many(
+                        'poweremail.account.domain',
+                        'account_id',
+                        'Forced recipient domains',
+                        help="Outgoing emails addressed to one of these "
+                        "domains will always use this account."),
         'company':fields.selection([
                         ('yes', 'Yes'),
                         ('no', 'No')
@@ -1233,6 +1239,83 @@ class poweremail_core_accounts(osv.osv):
         return text2
 
 poweremail_core_accounts()
+
+
+class poweremail_account_domain(osv.osv):
+    """Map a recipient domain to the account that must send its emails."""
+
+    _name = 'poweremail.account.domain'
+    _description = 'Forced account by recipient domain'
+    _rec_name = 'domain'
+    _order = 'domain'
+
+    def _normalize_domain(self, domain):
+        domain = tools.ustr(domain or u'').strip().lower()
+        if domain.startswith('@'):
+            domain = domain[1:]
+        return domain.rstrip('.')
+
+    def _check_domain(self, cursor, uid, ids, context=None):
+        domains = self.read(cursor, uid, ids, ['domain'], context=context)
+        for values in domains:
+            domain = values.get('domain') or ''
+            labels = domain.split('.')
+            if (
+                not domain or '@' in domain or
+                any(char.isspace() for char in domain) or
+                any(
+                    not label or label.startswith('-') or label.endswith('-') or
+                    any(not char.isalnum() and char != '-' for char in label)
+                    for label in labels
+                )
+            ):
+                return False
+        return True
+
+    def create(self, cursor, uid, vals, context=None):
+        vals = vals.copy()
+        vals['domain'] = self._normalize_domain(vals.get('domain'))
+        return super(poweremail_account_domain, self).create(
+            cursor, uid, vals, context=context
+        )
+
+    def write(self, cursor, uid, ids, vals, context=None):
+        vals = vals.copy()
+        if 'domain' in vals:
+            vals['domain'] = self._normalize_domain(vals['domain'])
+        return super(poweremail_account_domain, self).write(
+            cursor, uid, ids, vals, context=context
+        )
+
+    _columns = {
+        'domain': fields.char(
+            'Recipient domain', size=253, required=True,
+            help="Domain without '@', for example: example.com."
+        ),
+        'account_id': fields.many2one(
+            'poweremail.core_accounts', 'Email account', required=True,
+            ondelete='cascade'
+        ),
+    }
+
+    _constraints = [
+        (
+            _check_domain,
+            "The recipient domain is not valid.",
+            ['domain']
+        ),
+    ]
+
+    _sql_constraints = [
+        (
+            'domain_uniq',
+            'unique (domain)',
+            'A forced email account is already configured for this domain.'
+        ),
+    ]
+
+
+poweremail_account_domain()
 
 
 class PoweremailSelectFolder(osv.osv_memory):
