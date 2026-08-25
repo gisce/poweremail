@@ -494,11 +494,18 @@ class PoweremailMailbox(osv.osv):
             if isinstance(binary, str):
                 binary = binary.encode('utf-8')
 
+        if context.get('file_name_is_rendered'):
+            file_name = file_name_expr
+        else:
+            file_name = get_value(
+                cursor, uid, record_id, file_name_expr, mail.template_id,
+                context=context)
+
         attach_cv = {
             'name': mail.pem_subject + ' (Email Attachment)',
             'datas': base64.b64encode(binary),
             'datas_fname': "{}.{}".format(
-                tools.ustr(get_value(cursor, uid, record_id, file_name_expr, mail.template_id, context=context) or 'Report'),
+                tools.ustr(file_name or 'Report'),
                 extension
             ),
             'description': mail.pem_subject or _("No Description"),

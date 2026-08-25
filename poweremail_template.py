@@ -1109,11 +1109,18 @@ class poweremail_templates(osv.osv):
         res = False
         attachment_ids = []
         force_values = context.get('force_values') or {}
+        render_values = context.get('render_values') or {}
 
         if template.report_template:
             report = self.create_report(cursor, user, template, record_ids, context=context)
-            report_file_name = force_values.get('report', template.file_name)
-            attachment_id = mail.attach(record_ids[0], report_file_name, report, context=context)
+            report_file_name = render_values.get('report', template.file_name)
+            attachment_context = context.copy()
+            if 'report' in force_values:
+                report_file_name = force_values['report']
+                attachment_context['file_name_is_rendered'] = True
+            attachment_id = mail.attach(
+                record_ids[0], report_file_name, report,
+                context=attachment_context)
             attachment_ids.append(attachment_id)
 
         if template.tmpl_attachment_ids:
@@ -1241,33 +1248,35 @@ class poweremail_templates(osv.osv):
         users_obj = self.pool.get('res.users')
         core_accounts_obj = self.pool.get('poweremail.core_accounts')
 
-        # Millor compatibilitat amb multicompany: si el objecte te el camp "company_id" o "company" el passem per context
-        # per decidir millor desde on enviem el correu
-        ctx_company = context.copy()
-        if not ctx_company.get("company_id") and template.object_name:
-            record_model = self.pool.get(template.object_name.model)
-            if record_model:
-                record_model_fields = record_model.fields_get(cursor, user)
-                if 'company_id' in record_model_fields:
-                    company_field = 'company_id'
-                elif 'company' in record_model_fields:
-                    company_field = 'company'
-                else:
-                    company_field = False
-                if company_field:
-                    record_company_type = record_model_fields[company_field]['type']
-                    record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
-
-                    if record_company and record_company_type == 'many2one':
-                        ctx_company['company_id'] = record_company[0]
-                    elif record_company and record_company_type == 'integer':
-                        ctx_company['company_id'] = record_company
-                    else:
-                        ctx_company['company_id'] = False
-
         if context.get('account_id'):
             from_account = core_accounts_obj.read(cursor, user, int(context['account_id']), ['id', 'name', 'email_id'], context=context)
         else:
+            # Millor compatibilitat amb multicompany: si el objecte te el camp
+            # "company_id" o "company" el passem per context per decidir millor
+            # desde on enviem el correu.
+            ctx_company = context.copy()
+            if not ctx_company.get("company_id") and template.object_name:
+                record_model = self.pool.get(template.object_name.model)
+                if record_model:
+                    record_model_fields = record_model.fields_get(cursor, user)
+                    if 'company_id' in record_model_fields:
+                        company_field = 'company_id'
+                    elif 'company' in record_model_fields:
+                        company_field = 'company'
+                    else:
+                        company_field = False
+                    if company_field:
+                        record_company_type = record_model_fields[company_field]['type']
+                        record_company = record_model.read(
+                            cursor, user, record_id, [company_field],
+                            context=context)[company_field]
+
+                        if record_company and record_company_type == 'many2one':
+                            ctx_company['company_id'] = record_company[0]
+                        elif record_company and record_company_type == 'integer':
+                            ctx_company['company_id'] = record_company
+                        else:
+                            ctx_company['company_id'] = False
             from_account = self.get_from_account_id_from_template(cursor, user, template.id, context=ctx_company)
 
         ctx = context.copy()
@@ -1278,6 +1287,7 @@ class poweremail_templates(osv.osv):
         template = self.browse(cursor, user, template.id, context=ctx)
 
         force_values = context.get('force_values') or {}
+        render_values = context.get('render_values') or {}
         mail_values = {
             'to': template.def_to,
             'cc': template.def_cc,
@@ -1287,16 +1297,18 @@ class poweremail_templates(osv.osv):
             'body_html': template.def_body_html,
             'priority': template.def_priority,
         }
-        mail_values.update(force_values)
-        rendered_values = get_values(
-            cursor, user, record_id, {
-                'to': mail_values['to'],
-                'cc': mail_values['cc'],
-                'bcc': mail_values['bcc'],
-                'subject': mail_values['subject'],
-                'body_text': mail_values['body_text'],
-                'body_html': mail_values['body_html'],
-            }, template, context=ctx)
+        mail_values.update(render_values)
+        rendered_values = {}
+        values_to_render = {}
+        for field_name in (
+                'to', 'cc', 'bcc', 'subject', 'body_text', 'body_html'):
+            if field_name in force_values:
+                rendered_values[field_name] = force_values[field_name]
+            else:
+                values_to_render[field_name] = mail_values[field_name]
+        rendered_values.update(get_values(
+            cursor, user, record_id, values_to_render, template,
+            context=ctx))
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
             'pem_to': rendered_values['to'],
@@ -1310,11 +1322,12 @@ class poweremail_templates(osv.osv):
             'state': 'na',
             'folder': 'drafts',
             'mail_type': 'multipart/alternative',
-            'priority': mail_values['priority'],
+            'priority': force_values['priority']
+            if 'priority' in force_values else mail_values['priority'],
             'template_id': template.id,
         }
 
-        if template.inline:
+        if template.inline and 'body_text' not in force_values:
             mailbox_values['pem_body_text'] = transform(mailbox_values['pem_body_text'])
 
         #Use signatures if allowed
