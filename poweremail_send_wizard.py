@@ -227,29 +227,38 @@ class poweremail_send_wizard(osv.osv_memory):
     def sav_to_drafts(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
-        mailid = self.save_to_mailbox(cr, uid, ids, context)
-        if self.pool.get('poweremail.mailbox').write(cr, uid, mailid, {'folder':'drafts'}, context):
-            return {'type':'ir.actions.act_window_close' }
+        mailbox_obj = self.pool.get('poweremail.mailbox')
+        mail_ids = self.save_to_mailbox(cr, uid, ids, context)
+        draft_ids = mailbox_obj.search(cr, uid, [
+            ('id', 'in', mail_ids),
+            ('folder', '!=', 'error'),
+        ], context=context)
+        if draft_ids:
+            mailbox_obj.write(
+                cr, uid, draft_ids, {'folder': 'drafts'}, context
+            )
+        return {'type': 'ir.actions.act_window_close'}
 
     def send_mail(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
         mailbox_obj = self.pool.get('poweremail.mailbox')
         folder = context.get('folder', 'outbox')
-        values = {'folder': folder}
-
         mail_ids = self.save_to_mailbox(cr, uid, ids, context)
 
         if mail_ids:
             for mail_id in mail_ids:
+                mailbox_v = mailbox_obj.read(
+                    cr, uid, mail_id, ['folder', 'history'], context=context
+                )
+                if mailbox_v['folder'] == 'error':
+                    continue
+                values = {'folder': folder}
                 if not mailbox_obj.is_valid(cr, uid, mail_id):
                     values['folder'] = 'error'
-                    mailbox_v = mailbox_obj.read(cr, uid, mail_id, ['history'], context=context)
                     values['history'] = '{}\n{}'.format(
                         _(u'Not valid destiny email'), mailbox_v['history'] or ''
                     )
-                else:
-                    values['folder'] = folder
                 mailbox_obj.write(cr, uid, [mail_id], values, context)
 
         return {'type': 'ir.actions.act_window_close'}
@@ -265,7 +274,15 @@ class poweremail_send_wizard(osv.osv_memory):
             #Means there are multiple items selected for email.
             mail_ids = self.save_to_mailbox(cr, uid, ids, context)
             if mail_ids:
-                self.pool.get('poweremail.mailbox').write(cr, uid, mail_ids, {'folder': folder}, context)
+                mailbox_obj = self.pool.get('poweremail.mailbox')
+                generated_ids = mailbox_obj.search(cr, uid, [
+                    ('id', 'in', mail_ids),
+                    ('folder', '!=', 'error'),
+                ], context=context)
+                if generated_ids:
+                    mailbox_obj.write(
+                        cr, uid, generated_ids, {'folder': folder}, context
+                    )
                 logger.notifyChannel(_("Power Email"), netsvc.LOG_INFO, _("Emails for multiple items saved in outbox."))
                 self.write(cr, uid, ids, {
                     'generated':len(mail_ids),
@@ -488,25 +505,33 @@ class poweremail_send_wizard(osv.osv_memory):
             # Ensure report is rendered using template's language. If not found, user's launguage is used.
             ctx = context.copy()
             ctx['lang'] = template_o.get_email_lang(cr, uid, template, src_rec_id, context=ctx)
-            attachment_id = self.create_report_attachment(
-                cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx
-            )
-            if attachment_id:
-                attachment_ids.append(attachment_id)
+
             data = {}
-            attachment_ids_extra = template_o.process_extra_attachment_in_template(
-                cr, uid, template, src_rec_id, mail_id, data, context=ctx
-            )
-            attachment_ids.extend(attachment_ids_extra)
-            # Add document attachments
-            attachment_ids_doc = self.add_attachment_documents(cr, uid, screen_vals, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_doc)
-            # Add template attachments
-            attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
-            attachment_ids.extend(attachment_ids_templ)
-            # Add record attachments
-            attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
-            attachment_ids.extend(attachment_ids_record)
+            try:
+                attachment_id = self.create_report_attachment(cr, uid, template, vals, screen_vals, mail_id, report_record_ids, src_rec_id, context=ctx)
+                if attachment_id:
+                    attachment_ids.append(attachment_id)
+
+                attachment_ids_extra = template_o.process_extra_attachment_in_template(cr, uid, template, src_rec_id, mail_id, data, context=ctx)
+                attachment_ids.extend(attachment_ids_extra)
+
+                attachment_ids_doc = self.add_attachment_documents(
+                    cr, uid, screen_vals, mail_id, context=ctx
+                )
+                attachment_ids.extend(attachment_ids_doc)
+
+                attachment_ids_templ = self.add_template_attachments(cr, uid, template, mail_id, context=ctx)
+                attachment_ids.extend(attachment_ids_templ)
+
+                attachment_ids_record = self.add_record_attachments(cr, uid, template, src_rec_id, context=ctx)
+                attachment_ids.extend(attachment_ids_record)
+
+            except Exception as e:
+                error_msg = _(
+                    "Error generating email attachments: {}"
+                ).format(tools.ustr(e))
+                mailbox_obj.historise(cr, uid, [mail_id], error_msg, context=ctx, error=True)
+                continue
 
             if attachment_ids:
                 mailbox_vals = {
