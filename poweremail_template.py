@@ -180,43 +180,46 @@ def new_register_all(db):
 
 report.interface.register_all = new_register_all
 
-def get_value(cursor, user, recid, message=None, template=None, context=None):
-    """
-    Evaluates an expression and returns its value
-    @param cursor: Database Cursor
-    @param user: ID of current user
-    @param recid: ID of the target record under evaluation
-    @param message: The expression to be evaluated
-    @param template: BrowseRecord object of the current template
-    @param context: Open ERP Context
-    @return: Computed message (unicode) or u""
-    """
+def get_values(cursor, user, recid, messages, template=None, context=None):
+    """Evaluates template expressions with a shared render context."""
+    if context is None:
+        context = {}
+    result = {}
+    messages = messages or {}
+    messages_to_render = dict(
+        (name, message) for name, message in messages.iteritems() if message
+    )
+    if not messages_to_render:
+        return dict((name, message or '') for name, message in messages.iteritems())
+
     pool = pooler.get_pool(cursor.dbname)
-    if message is None:
-        message = {}
-    #Returns the computed expression
-    if message:
+    ctx = context.copy()
+    ctx['browse_reference'] = True
+    ctx['lang'] = template._context.get('lang', context.get('lang', False))
+    if not ctx['lang']:
+        ctx['lang'] = get_email_default_lang()
+    object = pool.get(template.object_name.model).simple_browse(
+        cursor, user, recid, context=ctx)
+    render_user = pool.get('res.users').simple_browse(
+        cursor, user, user, context=ctx)
+    addons_lookup = None
+    localize = None
+    if template.template_language == 'mako':
+        addons_lookup = TemplateLookup(
+            directories=[config['addons_path']], input_encoding='utf-8')
+        localize = Localizer(cursor, user, ctx['lang'])
+
+    for name, message in messages.iteritems():
+        if not message:
+            result[name] = message or ''
+            continue
         try:
             message = tools.ustr(message)
-            if not context:
-                context = {}
-            ctx = context.copy()
-            ctx['browse_reference'] = True
-            ctx['lang'] = template._context.get('lang', context.get('lang', False))
-            if not ctx['lang']:
-                ctx['lang'] = get_email_default_lang()
-            object = pool.get(template.object_name.model).simple_browse(cursor, user, recid, context=ctx)
             env = context.copy()
-            env.update({
-                'user': pool.get('res.users').simple_browse(cursor, user, user, context=ctx),
-                'db': cursor.dbname
-            })
+            env.update({'user': render_user, 'db': cursor.dbname})
             if template.template_language == 'mako':
-                addons_lookup = TemplateLookup(
-                    directories=[config['addons_path']], input_encoding='utf-8'
-                )
-                templ = MakoTemplate(message, input_encoding='utf-8', lookup=addons_lookup)
-                extra_render_values = env.get('extra_render_values', {}) or {}
+                templ = MakoTemplate(
+                    message, input_encoding='utf-8', lookup=addons_lookup)
                 values = {
                     'pool': object.pool,
                     'cursor': cursor,
@@ -227,31 +230,35 @@ def get_value(cursor, user, recid, message=None, template=None, context=None):
                     'format_exceptions': True,
                     'template': template,
                     'lang': ctx['lang'],
-                    'localize': Localizer(cursor, user, ctx['lang'])
+                    'localize': localize,
                 }
-                values.update(extra_render_values)
+                values.update(env.get('extra_render_values', {}) or {})
                 reply = templ.render_unicode(**values)
-                if reply == 'False':
-                    reply = False
             elif template.template_language == 'django':
-                templ = DjangoTemplate(message)
-                env['object'] = object
-                env['peobject'] = object
-                reply = templ.render(Context(env))
-                if reply == 'False':
-                    reply = False
-            return reply or False
+                env.update({'object': object, 'peobject': object})
+                reply = DjangoTemplate(message).render(Context(env))
+            else:
+                reply = message
+            if reply == 'False':
+                reply = False
+            result[name] = reply or False
         except Exception as e:
-            msg = (_('An error occurred while rendering template id {}:  {}'.format(template.id, str(e))))
+            msg = _(
+                'An error occurred while rendering template id {}:  {}'.format(
+                    template.id, str(e)))
             sentry_sdk.capture_message(msg, 'warning')
             if context.get('raise_exception', False):
                 raise
-            else:
-                import traceback
-                traceback.print_exc()
-                return u""
-    else:
-        return message or ''
+            import traceback
+            traceback.print_exc()
+            result[name] = u''
+    return result
+
+
+def get_value(cursor, user, recid, message=None, template=None, context=None):
+    """Evaluates a single expression using the shared renderer."""
+    return get_values(
+        cursor, user, recid, {'value': message}, template, context)['value']
 
 
 class poweremail_templates(osv.osv):
@@ -1101,11 +1108,11 @@ class poweremail_templates(osv.osv):
 
         res = False
         attachment_ids = []
-        wizard_overrides = context.get('wizard_overrides') or {}
+        force_values = context.get('force_values') or {}
 
         if template.report_template:
             report = self.create_report(cursor, user, template, record_ids, context=context)
-            report_file_name = wizard_overrides.get('report', template.file_name)
+            report_file_name = force_values.get('report', template.file_name)
             attachment_id = mail.attach(record_ids[0], report_file_name, report, context=context)
             attachment_ids.append(attachment_id)
 
@@ -1240,7 +1247,7 @@ class poweremail_templates(osv.osv):
         if not ctx_company.get("company_id") and template.object_name:
             record_model = self.pool.get(template.object_name.model)
             if record_model:
-                record_model_fields = record_model.fields_get(cursor, user).keys()
+                record_model_fields = record_model.fields_get(cursor, user)
                 if 'company_id' in record_model_fields:
                     company_field = 'company_id'
                 elif 'company' in record_model_fields:
@@ -1248,7 +1255,7 @@ class poweremail_templates(osv.osv):
                 else:
                     company_field = False
                 if company_field:
-                    record_company_type = record_model.fields_get(cursor, user)[company_field]['type']
+                    record_company_type = record_model_fields[company_field]['type']
                     record_company = record_model.read(cursor, user, record_id, [company_field], context=context)[company_field]
 
                     if record_company and record_company_type == 'many2one':
@@ -1270,8 +1277,8 @@ class poweremail_templates(osv.osv):
         })
         template = self.browse(cursor, user, template.id, context=ctx)
 
-        wiz_ov = context.get('wizard_overrides') or {}
-        wizard_values = {
+        force_values = context.get('force_values') or {}
+        mail_values = {
             'to': template.def_to,
             'cc': template.def_cc,
             'bcc': template.def_bcc,
@@ -1280,21 +1287,30 @@ class poweremail_templates(osv.osv):
             'body_html': template.def_body_html,
             'priority': template.def_priority,
         }
-        wizard_values.update(wiz_ov)
+        mail_values.update(force_values)
+        rendered_values = get_values(
+            cursor, user, record_id, {
+                'to': mail_values['to'],
+                'cc': mail_values['cc'],
+                'bcc': mail_values['bcc'],
+                'subject': mail_values['subject'],
+                'body_text': mail_values['body_text'],
+                'body_html': mail_values['body_html'],
+            }, template, context=ctx)
         mailbox_values = {
             'pem_from': tools.ustr(from_account['name']) + "<" + tools.ustr(from_account['email_id']) + ">",
-            'pem_to': get_value(cursor, user, record_id, wizard_values['to'], template, context=ctx),
-            'pem_cc': get_value(cursor, user, record_id, wizard_values['cc'], template, context=ctx),
-            'pem_bcc': get_value(cursor, user, record_id, wizard_values['bcc'], template, context=ctx),
-            'pem_subject': get_value(cursor, user, record_id, wizard_values['subject'], template, context=ctx),
-            'pem_body_text': get_value(cursor, user, record_id, wizard_values['body_text'], template, context=ctx),
-            'pem_body_html': get_value(cursor, user, record_id, wizard_values['body_html'], template, context=ctx),
+            'pem_to': rendered_values['to'],
+            'pem_cc': rendered_values['cc'],
+            'pem_bcc': rendered_values['bcc'],
+            'pem_subject': rendered_values['subject'],
+            'pem_body_text': rendered_values['body_text'],
+            'pem_body_html': rendered_values['body_html'],
             'pem_account_id': from_account['id'],
             #This is a mandatory field when automatic emails are sent
             'state': 'na',
             'folder': 'drafts',
             'mail_type': 'multipart/alternative',
-            'priority': wizard_values['priority'],
+            'priority': mail_values['priority'],
             'template_id': template.id,
         }
 

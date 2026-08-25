@@ -490,15 +490,15 @@ class TestPoweremailMailbox(testing.OOTestCase):
             self.assertEqual(ctx.get('save_to_drafts'), True)
             self.assertEqual(ctx.get('wizard_attachment_ids'), [])
 
-            overrides = ctx.get('wizard_overrides', {})
-            self.assertEqual(overrides.get('to'), 'aorellana@gisce.net')
-            self.assertEqual(overrides.get('cc'), False)
-            self.assertEqual(overrides.get('bcc'), False)
-            self.assertEqual(overrides.get('subject'),'Factura electricidad False')
-            self.assertEqual(overrides.get('body_text'), body_text)
-            self.assertEqual(overrides.get('body_html'), False)
-            self.assertEqual(overrides.get('priority'), '1')
-            self.assertEqual(overrides.get('report'), False)
+            force_values = ctx.get('force_values', {})
+            self.assertEqual(force_values.get('to'), 'aorellana@gisce.net')
+            self.assertEqual(force_values.get('cc'), False)
+            self.assertEqual(force_values.get('bcc'), False)
+            self.assertEqual(force_values.get('subject'),'Factura electricidad False')
+            self.assertEqual(force_values.get('body_text'), body_text)
+            self.assertEqual(force_values.get('body_html'), False)
+            self.assertEqual(force_values.get('priority'), '1')
+            self.assertEqual(force_values.get('report'), False)
 
     def test_save_to_mailbox_inlining(self):
         with Transaction().start(self.database) as txn:

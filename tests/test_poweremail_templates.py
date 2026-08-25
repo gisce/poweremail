@@ -152,7 +152,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         mail = mail_obj.browse(cursor, uid, mailbox_id)
         self.assertEqual(mail.priority, '2')
 
-    def test_wizard_overrides_preserve_empty_values(self):
+    def test_force_values_preserve_empty_values(self):
         tmpl_obj = self.openerp.pool.get('poweremail.templates')
         mail_obj = self.openerp.pool.get('poweremail.mailbox')
         imd_obj = self.openerp.pool.get('ir.model.data')
@@ -168,7 +168,7 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         })
 
         mailbox_id = tmpl_obj.generate_mail_sync(cursor, uid, tmpl_id, [partner_id], context={
-            'wizard_overrides': {
+            'force_values': {
                 'subject': False,
                 'body_text': False,
             },

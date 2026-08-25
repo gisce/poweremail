@@ -26,7 +26,7 @@ from __future__ import absolute_import
 from osv import osv, fields
 import netsvc
 from tools.translate import _
-from .poweremail_template import get_value
+from .poweremail_template import get_value, get_values
 from .poweremail_core import filter_send_emails, _priority_selection
 from premailer import transform
 from mako.exceptions import html_error_template
@@ -104,14 +104,6 @@ class poweremail_send_wizard(osv.osv_memory):
             result = template.enforce_from_account.id
         return result
 
-    def get_value(self, cursor, user, template, message, context=None, id=None):
-        """Gets the value of the message parsed with the content of object id (or the first 'src_rec_ids' if id is not given)"""
-        if not message:
-            return ''
-        if not id:
-            id = context['src_rec_ids'][0]
-        return get_value(cursor, user, id, message, template, context)
-
     def _get_template(self, cr, uid, context=None):
         if context is None:
             context = {}
@@ -130,8 +122,8 @@ class poweremail_send_wizard(osv.osv_memory):
 
         template = template_obj.browse(cr, uid, template_ids[0], context)
 
-        lang = context.get('src_rec_ids') and self.get_value(
-            cr, uid, template, template.lang, context)
+        lang = context.get('src_rec_ids') and get_value(
+            cr, uid, context['src_rec_ids'][0], template.lang, template, context)
         if lang:
             # Use translated template if necessary
             ctx = context.copy()
@@ -205,26 +197,32 @@ class poweremail_send_wizard(osv.osv_memory):
             value = transform(value)
         return value
 
-    def _get_preview_values(self, cr, uid, wizard, context=None):
+    def _get_preview_values(self, cr, uid, wizard, context=None, body_only=False):
         template = self._get_template(cr, uid, context)
-        result = {
-            'to': filter_send_emails(
-                self.get_value(cr, uid, template, wizard.to, context)),
-            'cc': filter_send_emails(
-                self.get_value(cr, uid, template, wizard.cc, context)),
-            'bcc': filter_send_emails(
-                self.get_value(cr, uid, template, wizard.bcc, context)),
-            'subject': self.get_value(
-                cr, uid, template, wizard.subject, context),
-            'body_text': self.get_value(
-                cr, uid, template, wizard.body_text, context),
-            'body_html': self.get_value(
-                cr, uid, template, wizard.body_html, context),
-            'report': self.get_value(
-                cr, uid, template, wizard.report, context),
-            'signature': wizard.signature,
-            'priority': wizard.priority,
-        }
+        messages = {'body_text': wizard.body_text}
+        if not body_only:
+            messages.update({
+                'to': wizard.to,
+                'cc': wizard.cc,
+                'bcc': wizard.bcc,
+                'subject': wizard.subject,
+                'body_html': wizard.body_html,
+                'report': wizard.report,
+            })
+        rendered_values = get_values(
+            cr, uid, context['src_rec_ids'][0], messages, template, context)
+        result = {'body_text': rendered_values['body_text']}
+        if not body_only:
+            result.update({
+                'to': filter_send_emails(rendered_values['to']),
+                'cc': filter_send_emails(rendered_values['cc']),
+                'bcc': filter_send_emails(rendered_values['bcc']),
+                'subject': rendered_values['subject'],
+                'body_html': rendered_values['body_html'],
+                'report': rendered_values['report'],
+                'signature': wizard.signature,
+                'priority': wizard.priority,
+            })
         if template.inline:
             result['body_text'] = transform(result['body_text'])
         return result
@@ -305,7 +303,7 @@ class poweremail_send_wizard(osv.osv_memory):
         try:
             ctx['raise_exception'] = True
             ctx['src_rec_ids'] = ctx['src_rec_ids'][:1]
-            values = self._get_preview_values(cr, uid, wizard, ctx)
+            values = self._get_preview_values(cr, uid, wizard, ctx, body_only=True)
             if wizard.state == 'multi':
                 values = {
                     'body_preview': values['body_text'],
@@ -425,7 +423,7 @@ class poweremail_send_wizard(osv.osv_memory):
         ctx['save_to_drafts'] = True
         ctx['wizard_attachment_ids'] = [attachment.id for attachment in wiz.attachment_ids]
 
-        ctx['wizard_overrides'] = {
+        ctx['force_values'] = {
             'to': wiz.to,
             'cc': wiz.cc,
             'bcc': wiz.bcc,
