@@ -181,6 +181,165 @@ class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
         self.assertFalse(mailbox_values['pem_subject'])
         self.assertFalse(mailbox_values['pem_body_text'])
 
+    def test_single_wizard_sends_edited_preview_values_as_literals(self):
+        partner_obj = self.openerp.pool.get('res.partner')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        cursor = self.cursor
+        uid = self.uid
+
+        partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus')[1]
+        partner_name = partner_obj.read(
+            cursor, uid, partner_id, ['name'])['name']
+        template_id = self.create_template({
+            'def_to': '${object.name and "single@example.com"}',
+            'def_subject': 'Hello ${object.name}',
+            'def_body_text': 'Body for ${object.name}',
+        })
+        context = {
+            'active_id': partner_id,
+            'active_ids': [partner_id],
+            'src_model': 'res.partner',
+            'src_rec_ids': [partner_id],
+            'template_id': template_id,
+        }
+        wizard_id = send_obj.create(cursor, uid, {}, context=context)
+
+        send_obj.preview_mail(cursor, uid, [wizard_id], context=context)
+        wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+        self.assertEqual(wizard.to, 'single@example.com')
+        self.assertEqual(wizard.subject, 'Hello {}'.format(partner_name))
+
+        literal_subject = 'Literal ${object.name}'
+        literal_body = 'Edited ${object.name}'
+        send_obj.write(cursor, uid, [wizard_id], {
+            'subject': literal_subject,
+            'body_text': literal_body,
+        }, context=context)
+        mail_ids = send_obj.save_to_mailbox(
+            cursor, uid, [wizard_id], context=context)
+        mail_values = mailbox_obj.read(
+            cursor, uid, mail_ids[0], ['pem_subject', 'pem_body_text'])
+
+        self.assertEqual(mail_values['pem_subject'], literal_subject)
+        self.assertEqual(mail_values['pem_body_text'], literal_body)
+
+    def test_multi_wizard_keeps_expressions_and_renders_each_record(self):
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        partner_obj = self.openerp.pool.get('res.partner')
+        cursor = self.cursor
+        uid = self.uid
+
+        first_partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus')[1]
+        second_partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_agrolait')[1]
+
+        partner_ids = [first_partner_id, second_partner_id]
+        partners = partner_obj.read(
+            cursor, uid, partner_ids, ['name'])
+        partner_names = dict(
+            (partner['id'], partner['name']) for partner in partners)
+        to_expression = (
+            '${object.id == %s and "first@example.com" or '
+            '"second@example.com"}' % first_partner_id)
+        template_id = self.create_template({
+            'def_to': to_expression,
+            'def_subject': 'Hello ${object.name}',
+            'def_body_text': 'Body for ${object.name}',
+        })
+        context = {
+            'active_id': first_partner_id,
+            'active_ids': partner_ids,
+            'src_model': 'res.partner',
+            'src_rec_ids': partner_ids,
+            'template_id': template_id,
+        }
+        wizard_id = send_obj.create(cursor, uid, {
+            'single_email': False,
+        }, context=context)
+
+        send_obj.compute_second_step(cursor, uid, [wizard_id], context=context)
+        send_obj.preview_mail(cursor, uid, [wizard_id], context=context)
+        wizard = send_obj.browse(cursor, uid, wizard_id, context=context)
+
+        self.assertEqual(wizard.state, 'multi')
+        self.assertEqual(wizard.to, to_expression)
+        self.assertEqual(wizard.subject, 'Hello ${object.name}')
+        self.assertEqual(wizard.body_text, 'Body for ${object.name}')
+        self.assertEqual(
+            wizard.body_preview,
+            'Body for {}'.format(partner_names[first_partner_id]))
+
+        mail_ids = send_obj.save_to_mailbox(
+            cursor, uid, [wizard_id], context=context)
+        mails = mailbox_obj.read(cursor, uid, mail_ids, [
+            'pem_to', 'pem_subject', 'pem_body_text',
+        ])
+
+        self.assertEqual(len(mails), 2)
+        self.assertEqual(mails[0]['pem_to'], 'first@example.com')
+        self.assertEqual(
+            mails[0]['pem_subject'],
+            'Hello {}'.format(partner_names[first_partner_id]))
+        self.assertEqual(
+            mails[0]['pem_body_text'],
+            'Body for {}'.format(partner_names[first_partner_id]))
+        self.assertEqual(mails[1]['pem_to'], 'second@example.com')
+        self.assertEqual(
+            mails[1]['pem_subject'],
+            'Hello {}'.format(partner_names[second_partner_id]))
+        self.assertEqual(
+            mails[1]['pem_body_text'],
+            'Body for {}'.format(partner_names[second_partner_id]))
+
+    def test_template_language_is_rendered_once_for_each_record(self):
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        template_obj = self.openerp.pool.get('poweremail.templates')
+        cursor = self.cursor
+        uid = self.uid
+
+        first_partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_asus')[1]
+        second_partner_id = imd_obj.get_object_reference(
+            cursor, uid, 'base', 'res_partner_agrolait')[1]
+        partner_ids = [first_partner_id, second_partner_id]
+        template_id = self.create_template({
+            'lang': '${object.lang}',
+            'def_to': 'recipient@example.com',
+            'def_subject': 'Language test',
+            'def_body_text': 'Language body',
+        })
+        record_languages = {
+            first_partner_id: 'en_US',
+            second_partner_id: 'ca_ES',
+        }
+
+        def render_language(
+                render_cursor, render_uid, record_id, message,
+                template=None, context=None):
+            self.assertEqual(message, '${object.lang}')
+            return record_languages[record_id]
+
+        with mock.patch(
+                'poweremail.poweremail_template.get_value',
+                side_effect=render_language) as mocked_get_value:
+            mail_ids = template_obj.generate_mail_sync(
+                cursor, uid, template_id, partner_ids, context={
+                    'save_to_drafts': True,
+                })
+
+        self.assertEqual(len(mail_ids), 2)
+        self.assertEqual(mocked_get_value.call_count, 2)
+        rendered_record_ids = [
+            call_args[0][2] for call_args in mocked_get_value.call_args_list
+        ]
+        self.assertEqual(rendered_record_ids, partner_ids)
+
     def test_send_wizards_gets_default_priority_from_template(self):
         imd_obj = self.openerp.pool.get('ir.model.data')
         send_obj = self.openerp.pool.get('poweremail.send.wizard')
@@ -234,15 +393,17 @@ p { color:red;}
 
         tmpl_obj.write(cursor, uid, tmpl_id, write_vals)
 
-        wiz_id = send_obj.create(cursor, uid, {}, context={
+        context = {
             'active_id': partner_id,
             'active_ids': [partner_id],
             'src_rec_ids': [partner_id],
             'src_model': 'res.partner',
             'template_id': tmpl_id
-        })
-
-        wiz = send_obj.browse(cursor, uid, wiz_id)
+        }
+        wiz_id = send_obj.create(cursor, uid, {}, context=context)
+        send_obj.preview_mail(
+            cursor, uid, [wiz_id], context=context)
+        wiz = send_obj.browse(cursor, uid, wiz_id, context=context)
 
         inlined_html = '<html>\n<head></head>\n<body>\n<h1 style="border:1px solid black; font-weight:bolder">Peter</h1>\n<p style="color:red">Hej</p>\n</body>\n</html>\n'
 

@@ -192,6 +192,13 @@ def get_values(cursor, user, recid, messages, template=None, context=None):
     if not messages_to_render:
         return dict((name, message or '') for name, message in messages.iteritems())
 
+    if not template:
+        if context.get('raise_exception'):
+            raise ValueError('A template is required to render values')
+        return dict(
+            (name, False if message else message or '')
+            for name, message in messages.iteritems()
+        )
     pool = pooler.get_pool(cursor.dbname)
     ctx = context.copy()
     ctx['browse_reference'] = True
@@ -1089,8 +1096,8 @@ class poweremail_templates(osv.osv):
         """
         if context is None:
             context = {}
-        if '_poweremail_template_lang' in context:
-            lang = context['_poweremail_template_lang']
+        if 'poweremail_template_lang' in context:
+            lang = context['poweremail_template_lang']
         else:
             lang = get_value(cursor, user, record_ids[0], template.lang, template, context)
         ctx = context.copy()
