@@ -9,10 +9,9 @@ def up(cursor, installed_version):
         return
 
     cursor.execute("""
-        INSERT INTO res_config (name, type, value, description)
+        INSERT INTO res_config (name, value, description)
         SELECT
             'poweremail_templates_clear_error_on_success',
-            'string',
             '[]',
             'Select the specific IDs of the templates whose error records will be deleted if they were ultimately resubmitted successfully.'
         WHERE NOT EXISTS (
