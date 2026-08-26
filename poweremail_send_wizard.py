@@ -32,6 +32,7 @@ import tools
 from .poweremail_template import get_value
 from .poweremail_core import filter_send_emails, _priority_selection
 from premailer import transform
+from ast import literal_eval
 
 
 class poweremail_send_wizard(osv.osv_memory):
@@ -235,10 +236,18 @@ class poweremail_send_wizard(osv.osv_memory):
         if context is None:
             context = {}
         mailbox_obj = self.pool.get('poweremail.mailbox')
+        template_obj = self.pool.get('poweremail.templates')
+        res_config = self.pool.get('res.config')
         folder = context.get('folder', 'outbox')
         values = {'folder': folder}
 
         mail_ids = self.save_to_mailbox(cr, uid, ids, context)
+
+        configured_template_ids = res_config.get(cr, uid, 'poweremail_templates_clear_error_on_success', '[]')
+        if configured_template_ids == 'all':
+            template_ids = template_obj.search(cr, uid, [], context=context)
+        else:
+            template_ids = literal_eval(configured_template_ids or '[]')
 
         if mail_ids:
             for mail_id in mail_ids:
@@ -251,6 +260,17 @@ class poweremail_send_wizard(osv.osv_memory):
                 else:
                     values['folder'] = folder
                 mailbox_obj.write(cr, uid, [mail_id], values, context)
+
+                mail_data = mailbox_obj.read(cr, uid, mail_id, ['pem_subject', 'folder', 'template_id'], context)
+                template_id = mail_data['template_id'] and mail_data['template_id'][0] or False
+                if mail_data['folder'] != 'error' and template_id in template_ids:
+                    domain = [
+                        ('pem_subject', '=', mail_data['pem_subject']),
+                        ('folder', '=', 'error'),
+                    ]
+                    error_ids = mailbox_obj.qsearch(cr, uid, domain, context=context)
+                    if error_ids:
+                        mailbox_obj.unlink(cr, uid, error_ids, context)
 
         return {'type': 'ir.actions.act_window_close'}
 

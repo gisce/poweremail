@@ -6,5 +6,10 @@
             <field name="value">0</field>
             <field name="description">Sets a limit of mails to send every time the email cron is run. 0 for no limit.</field>
         </record>
+        <record model="res.config" id="poweremail_templates_clear_error_on_success">
+            <field name="name">poweremail_templates_clear_error_on_success</field>
+            <field name="value">[]</field>
+            <field name="description">Select the specific IDs of the templates whose error records will be deleted if they were ultimately resubmitted successfully.</field>
+        </record>
     </data>
 </openerp>
