@@ -517,15 +517,9 @@ class PoweremailMailbox(osv.osv):
             'pem_from':fields.char(
                             'From',
                             size=64),
-            'pem_to':fields.char(
-                            'Recepient (To)',
-                            size=800,),
-            'pem_cc':fields.char(
-                            ' CC',
-                            size=250),
-            'pem_bcc':fields.char(
-                            ' BCC',
-                            size=250),
+            'pem_to':fields.text('Recepient (To)'),
+            'pem_cc':fields.text(' CC'),
+            'pem_bcc':fields.text(' BCC'),
             'pem_subject':fields.char(
                             ' Subject',
                             size=200,),

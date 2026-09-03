@@ -442,19 +442,16 @@ class poweremail_templates(osv.osv):
             _get_model_name, string='Model Internal Name',
             type='char', size=250, method=True
         ),
-        'def_to':fields.char(
+        'def_to':fields.text(
                 'Recepient (To)',
-                size=250,
                 help="The default recepient of email. "
                 "Placeholders can be used here."),
-        'def_cc':fields.char(
+        'def_cc':fields.text(
                 'Default CC',
-                size=250,
                 help="The default CC for the email. "
                 "Placeholders can be used here."),
-        'def_bcc':fields.char(
+        'def_bcc':fields.text(
                 'Default BCC',
-                size=250,
                 help="The default BCC for the email. "
                 "Placeholders can be used here."),
         'lang':fields.char(
