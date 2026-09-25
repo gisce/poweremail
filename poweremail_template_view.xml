@@ -326,5 +326,18 @@
         <menuitem name="Email Basic Templates" id="menu_poweremail_basic_templates_all"
             parent="menu_poweremail_templates" action="action_poweremail_basic_template_all" />
 
+        <record id="act_report_xml_view_poweremail" model="ir.ui.view">
+            <field name="name">ir.actions.report.xml.poweremail</field>
+            <field name="model">ir.actions.report.xml</field>
+            <field name="inherit_id" ref="base.act_report_xml_view" />
+            <field name="arch" type="xml">
+                <notebook position="inside">
+                    <page string="Related email templates" icon="mail-share">
+                        <field name="poweremail_template_ids" colspan="4" nolabel="1"/>
+                    </page>
+                </notebook>
+            </field>
+        </record>
+
     </data>
 </openerp>
