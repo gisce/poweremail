@@ -460,6 +460,11 @@ class poweremail_send_wizard(osv.osv_memory):
             context['src_rec_ids'] = context['src_rec_ids'][:1]
         for src_rec_id in context['src_rec_ids']:
             attachment_ids = []
+            if not screen_vals['from']:
+                if template.enforce_from_account:
+                    screen_vals['from'] = template.enforce_from_account.id
+                else:
+                    raise osv.except_osv(_("Power Email"),_("The email address from which we should send the email has not been specified."))
             accounts = core_accounts_obj.read(cr, uid, screen_vals['from'], context=context)
             vals = {
                 'pem_from': tools.ustr(accounts['name']) + "<" + tools.ustr(accounts['email_id']) + ">",
