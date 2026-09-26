@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from oopgrade.oopgrade import column_exists, drop_columns, table_exists
 from tools import config
 
 
@@ -13,31 +14,6 @@ POWEREMAIL_TEMPLATE_FIELDS = (
     'attached_activity',
     'server_action',
 )
-
-
-def table_exists(cursor, table_name):
-    cursor.execute("""
-        SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-                AND table_name = %s
-        )
-    """, (table_name,))
-    return cursor.fetchone()[0]
-
-
-def column_exists(cursor, table_name, column_name):
-    cursor.execute("""
-        SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-                AND table_name = %s
-                AND column_name = %s
-        )
-    """, (table_name, column_name))
-    return cursor.fetchone()[0]
 
 
 def delete_model_data_for_records(cursor, model, table, record_ids):
@@ -139,20 +115,7 @@ def remove_poweremail_generated_actions(cursor):
         )
     """)
 
-    if column_exists(cursor, 'ir_act_server', 'poweremail_template'):
-        cursor.execute("""
-            ALTER TABLE ir_act_server
-            DROP COLUMN poweremail_template
-        """)
-
-
-def drop_poweremail_template_columns(cursor):
-    for column_name in POWEREMAIL_TEMPLATE_FIELDS:
-        if column_exists(cursor, 'poweremail_templates', column_name):
-            cursor.execute("""
-                ALTER TABLE poweremail_templates
-                DROP COLUMN {column_name}
-            """.format(column_name=column_name))
+    drop_columns(cursor, [('ir_act_server', 'poweremail_template')])
 
 
 def up(cursor, installed_version):
@@ -163,7 +126,10 @@ def up(cursor, installed_version):
         cursor, 'ir.ui.view', 'ir_ui_view', SERVER_ACTION_VIEW_XMLIDS
     )
     remove_poweremail_generated_actions(cursor)
-    drop_poweremail_template_columns(cursor)
+    drop_columns(
+        cursor,
+        [('poweremail_templates', field) for field in POWEREMAIL_TEMPLATE_FIELDS]
+    )
     remove_field_metadata(cursor, 'poweremail.templates', POWEREMAIL_TEMPLATE_FIELDS)
     remove_field_metadata(cursor, 'ir.actions.server', ('poweremail_template',))
 
