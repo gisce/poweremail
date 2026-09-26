@@ -20,7 +20,6 @@
 			<field eval="0" name="use_filter"/>
 			<field name="file_name">${object.number}</field>
 			<field name="def_to">${object.address_invoice_id.email}</field>
-			<field eval="0" name="auto_email"/>
 			<field eval="0" name="single_email"/>
 			<field eval="0" name="use_sign"/>
 			<field name="def_subject">Factura ${object.number}</field>

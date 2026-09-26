@@ -47,7 +47,7 @@
                     <field name="model_int_name" invisible="1" />
                     <notebook colspan="4">
                         <page string="Mail Details">
-                            <field name="enforce_from_account" attrs="{'required':[('auto_email','=',True)]}" colspan="4"/>
+                            <field name="enforce_from_account" colspan="4"/>
                             <field name="def_to" colspan="4" required="1" />
                             <field name="def_subject" colspan="4" required="1" />
                             <field name="def_cc"/>
@@ -108,13 +108,6 @@
                             </group>
                         </page>
                         <page string="Automatisms settings">
-                            <field name="auto_email" colspan="4"/>
-                            <field name="attached_wkf"
-                                domain="[('osv','=',model_int_name)]"
-                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
-                            <field name="attached_activity"
-                                domain="[('wkf_id', '=', attached_wkf)]"
-                                attrs="{'required':[('auto_email','=',True)],'readonly':[('auto_email','=', False)]}" colspan="4"/>
                             <field name="send_on_create" colspan="4"/>
                             <field name="send_on_write" colspan="4"/>
                             <field name="send_immediately" colspan="4"/>
@@ -171,7 +164,6 @@
                             </group>
                         </page>
                         <page string="Advanced">
-                            <field name="server_action" colspan="4" readonly="1" />
                             <separator string="Expression builder" colspan="4"/>
                             <field name="template_language" on_change="onchange_null_value(model_object_field,sub_model_object_field,null_value,template_language,context)" colspan="4"/>
                             <notebook colspan="4">
@@ -278,7 +270,7 @@
                 <form string="Power Email Templates">
                     <field name="model_int_name" invisible="1" />
                     <field name="name" colspan="4"/>
-                    <field name="enforce_from_account" attrs="{'required':[('auto_email','=',True)]}" />
+                    <field name="enforce_from_account" />
                     <field name="object_name" required="1"/>
                     <field name="def_to" colspan="4" required="1" />
                     <field name="def_subject" colspan="4" required="1" />

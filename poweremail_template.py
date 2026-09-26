@@ -507,27 +507,10 @@ class poweremail_templates(osv.osv):
                 string="Enforce From Account",
                 help="Emails will be sent only from this account.",
                 domain="[('company','=','yes')]"),
-        'auto_email':fields.boolean('Auto Email',
-                help="Selecting Auto Email will create a server "
-                "action for you which automatically sends mail after a "
-                "new record is created.\nNote: Auto email can be enabled "
-                "only after saving template."),
         'save_to_drafts':fields.boolean('Save to Drafts',
                     help="When automatically sending emails generated from"
                     " this template, save them into the Drafts folder rather"
                     " than sending them immediately."),
-        #Referred Stuff - Dont delete even if template is deleted
-        'attached_wkf':fields.many2one(
-                'workflow',
-                'Workflow'),
-        'attached_activity':fields.many2one(
-                'workflow.activity',
-                'Activity'),
-        #Referred Stuff - Delete these if template are deleted or they will crash the system
-        'server_action':fields.many2one(
-                'ir.actions.server',
-                'Related Server Action',
-                help="Corresponding server action is here."),
         'ref_ir_act_window':fields.many2one(
                 'ir.actions.act_window',
                 'Window Action',
@@ -707,38 +690,6 @@ class poweremail_templates(osv.osv):
         ('name', 'unique (name)', _('The template name must be unique!'))
     ]
 
-    def update_auto_email(self, cr, uid, ids, context=None):
-        for template in self.browse(cr, uid, ids, context):
-            if template.auto_email:
-                if not template.server_action:
-                    # Create server action if necessary
-                    action_id = self.pool.get('ir.actions.server').create(cr, uid, {
-                        'state': 'poweremail',
-                        'poweremail_template': template.id,
-                        'name': template.name,
-                        'condition': 'True',
-                        'model_id': template.object_name.id,
-                    }, context)
-                    self.write(cr, uid, template.id, {
-                        'server_action': action_id,
-                    }, context)
-                    self.pool.get('workflow.activity').write(cr, uid, template.attached_activity.id, {
-                        'action_id': action_id,
-                    }, context)
-                else:
-                    # Update activity if it was changed
-                    activity_ids = self.pool.get('workflow.activity').search(cr, uid, [('action_id', '=', template.server_action.id)], context=context)
-                    if not template.attached_activity.id in activity_ids:
-                        self.pool.get('workflow.activity').write(cr, uid, activity_ids, {
-                            'action_id': False,
-                        }, context)
-                        if template.attached_activity.id:
-                            self.pool.get('workflow.activity').write(cr, uid, template.attached_activity.id, {
-                                'action_id': template.server_action.id,
-                            }, context)
-            elif template.server_action:
-                    self.pool.get('ir.actions.server').unlink(cr, uid, template.server_action.id, context)
-
     def update_send_on_store(self, cr, uid, ids, context):
         for template in self.browse(cr, uid, ids, context):
             obj = self.pool.get(template.object_name.model)
@@ -764,8 +715,6 @@ class poweremail_templates(osv.osv):
     def create(self, cr, uid, vals, context=None):
         this_id = super(poweremail_templates, self).create(cr, uid, vals, context)
 
-        if vals.get('auto_email'):
-            self.update_auto_email(cr, uid, [this_id], context)
         if vals.get('send_on_create') or vals.get('send_on_write'):
             self.update_send_on_store(cr, uid, [this_id], context)
         #if vals.get('partner_event'):
@@ -774,8 +723,6 @@ class poweremail_templates(osv.osv):
 
     def write(self, cr, uid, ids, vals, context=None):
         result = super(poweremail_templates, self).write(cr, uid, ids, vals, context)
-        if 'auto_email' in vals or 'attached_activity' in vals:
-            self.update_auto_email(cr, uid, ids, context)
         if 'send_on_create' in vals or 'send_on_write' in vals:
             self.update_send_on_store(cr, uid, ids, context)
         #if 'partner_event' in vals:
@@ -796,8 +743,6 @@ class poweremail_templates(osv.osv):
                     self.pool.get('ir.actions.act_window').unlink(cr, uid, template.ref_ir_act_window.id, context)
                 if template.ref_ir_value:
                     self.pool.get('ir.values').unlink(cr, uid, template.ref_ir_value.id, context)
-                if template.server_action:
-                    self.pool.get('ir.actions.server').unlink(cr, uid, template.server_action.id, context)
             except:
                 raise osv.except_osv(_("Warning"), _("Deletion of Record failed"))
         return super(poweremail_templates, self).unlink(cr, uid, ids, context)
