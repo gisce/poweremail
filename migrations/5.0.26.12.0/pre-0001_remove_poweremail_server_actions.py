@@ -88,11 +88,11 @@ def remove_poweremail_generated_actions(cursor):
         """)
 
     if (
-        column_exists(cursor, 'workflow_activity', 'action_id')
+        column_exists(cursor, 'wkf_activity', 'action_id')
         and column_exists(cursor, 'poweremail_templates', 'server_action')
     ):
         cursor.execute("""
-            UPDATE workflow_activity
+            UPDATE wkf_activity
             SET action_id = NULL
             WHERE action_id IN (
                 SELECT id
