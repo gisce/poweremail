@@ -42,7 +42,7 @@
     5. Sending of Mails via SMTP (SMTP SSL also supported)
     6. Reception of Mails (IMAP & POP3) With SSL & Folders for IMAP supported
     7. Simple one point Template designer which automatically updates system. No extra config req.
-    8. Automatic Email feature on workflow stages
+    8. Automatic Email feature on create/write hooks
 
     NOTE: This is a beta release. Please update bugs at:
     http://bugs.launchpad.net/poweremail/+filebug (or) https://bugs.launchpad.net/poweremail/+filebug
@@ -65,7 +65,6 @@
         'poweremail_template_view.xml',
         'poweremail_send_wizard.xml',
         'poweremail_mailbox_view.xml',
-        'poweremail_serveraction_view.xml',
         'security/ir.model.access.csv',
         'poweremail_mailbox_cronjobs.xml'
     ],
