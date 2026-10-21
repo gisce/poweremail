@@ -1534,3 +1534,11 @@ class res_groups(osv.osv):
 res_groups()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+
+class ir_actions_report_xml(osv.osv):
+    _inherit = 'ir.actions.report.xml'
+
+    _columns = {
+        'poweremail_template_ids': fields.one2many('poweremail.templates', 'report_template', 'Email Templates'),
+    }
+ir_actions_report_xml()

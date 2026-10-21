@@ -30,7 +30,7 @@ import time
 from tools.translate import _
 import tools
 from .poweremail_template import get_value
-from .poweremail_core import filter_send_emails, _priority_selection
+from .poweremail_core import _priority_selection
 from premailer import transform
 
 
@@ -177,9 +177,9 @@ class poweremail_send_wizard(osv.osv_memory):
         'state': lambda self,cr,uid,ctx: len(ctx['src_rec_ids']) > 1 and 'send_type' or 'single',
         'rel_model': lambda self,cr,uid,ctx: self.pool.get('ir.model').search(cr,uid,[('model','=',ctx['src_model'])],context=ctx)[0],
         'rel_model_ref': lambda self,cr,uid,ctx: ctx['active_id'],
-        'to': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_to', ctx)),
-        'cc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_cc', ctx)),
-        'bcc': lambda self,cr,uid,ctx: filter_send_emails(self._get_template_value(cr, uid, 'def_bcc', ctx)),
+        'to': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_to', ctx),
+        'cc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_cc', ctx),
+        'bcc': lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_bcc', ctx),
         'subject':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_subject', ctx),
         'body_text':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_text', ctx),
         'body_html':lambda self,cr,uid,ctx: self._get_template_value(cr, uid, 'def_body_html', ctx),
@@ -460,6 +460,11 @@ class poweremail_send_wizard(osv.osv_memory):
             context['src_rec_ids'] = context['src_rec_ids'][:1]
         for src_rec_id in context['src_rec_ids']:
             attachment_ids = []
+            if not screen_vals['from']:
+                if template.enforce_from_account:
+                    screen_vals['from'] = template.enforce_from_account.id
+                else:
+                    raise osv.except_osv(_("Power Email"),_("The email address from which we should send the email has not been specified."))
             accounts = core_accounts_obj.read(cr, uid, screen_vals['from'], context=context)
             vals = {
                 'pem_from': tools.ustr(accounts['name']) + "<" + tools.ustr(accounts['email_id']) + ">",
