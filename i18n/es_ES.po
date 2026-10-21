@@ -1,14 +1,6 @@
 # 
-# Translators:
-#   <>, 2023, 2025, 2026.
-# Joan Perez <jperez@gisce.net>, 2024.
 msgid ""
 msgstr ""
-"Project-Id-Version: GISCE-ERP\n"
-"Report-Msgid-Bugs-To: https://github.com/gisce/erp/issues\n"
-"PO-Revision-Date: 2026-08-24 12:52+0000\n"
-"Last-Translator: destanyol <>\n"
-"Language-Team: Spanish (Spain) <erp@dev.gisce.net>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -34,7 +26,25 @@ msgid ""
 "</html>\n"
 "\n"
 "\t\t\t"
-msgstr "\n\n<!doctype html>\n<html>\n<head></head>\n<body>\nBenvolgut/da ${object.login},\n\nAixò és un email generic de prova per les poweremail_camapign.\n\n\nAtentament,\n\nun mort de gana.\n</body>\n</html>\n\n\t\t\t"
+msgstr ""
+"\n"
+"\n"
+"<!doctype html>\n"
+"<html>\n"
+"<head></head>\n"
+"<body>\n"
+"Benvolgut/da ${object.login},\n"
+"\n"
+"Això és un email generic de prova per les poweremail_camapign.\n"
+"\n"
+"\n"
+"Atentament,\n"
+"\n"
+"un mort de gana.\n"
+"</body>\n"
+"</html>\n"
+"\n"
+"\t\t\t"
 
 #. module: poweremail
 #: model:ir.module.module,description:poweremail.module_meta_information
@@ -57,7 +67,27 @@ msgid ""
 "    http://bugs.launchpad.net/poweremail/+filebug (or) https://bugs.launchpad.net/poweremail/+filebug\n"
 "\n"
 "    "
-msgstr "\n  Power Email - Amplia OpenERP con características de correo electrónico.\n  ============================================================================\n  Características\n  ============================================================================\n  1. Varias cuentas de correo electrónico\n  2. Cuentas de compañía y personal\n  3. Seguridad (en desarrollo)\n  4. Carpetas de correo electrónico (bandeja entrada, salida, borrador, ...)\n  5. Enviar correo vía SMTP (SMTP SSL también está soportado)\n  6. Recepción de correos (IMAP & POP3) con SSL y carpetas IMAP\n  7. Diseñador de plantillas sencillo con sistema de actualización automático. No requiere configuración extra.\n  8. Correos electrónicos automáticos según estados de un flujo de trabajo\n  ============================================================================\n  NOTA: Es una versión Beta. Para errores:\n  http://bugs.launchpad.net/poweremail/+filebug (o) https://bugs.launchpad.net/poweremail/+filebug\n  ============================================================================\n  Propuestas y Feedback: sharoon.thomas@openlabs.co.in\n  ============================================================================\n    "
+msgstr ""
+"\n"
+"  Power Email - Amplia OpenERP con características de correo electrónico.\n"
+"  ============================================================================\n"
+"  Características\n"
+"  ============================================================================\n"
+"  1. Varias cuentas de correo electrónico\n"
+"  2. Cuentas de compañía y personal\n"
+"  3. Seguridad (en desarrollo)\n"
+"  4. Carpetas de correo electrónico (bandeja entrada, salida, borrador, ...)\n"
+"  5. Enviar correo vía SMTP (SMTP SSL también está soportado)\n"
+"  6. Recepción de correos (IMAP & POP3) con SSL y carpetas IMAP\n"
+"  7. Diseñador de plantillas sencillo con sistema de actualización automático. No requiere configuración extra.\n"
+"  8. Correos electrónicos automáticos según estados de un flujo de trabajo\n"
+"  ============================================================================\n"
+"  NOTA: Es una versión Beta. Para errores:\n"
+"  http://bugs.launchpad.net/poweremail/+filebug (o) https://bugs.launchpad.net/poweremail/+filebug\n"
+"  ============================================================================\n"
+"  Propuestas y Feedback: sharoon.thomas@openlabs.co.in\n"
+"  ============================================================================\n"
+"    "
 
 #. module: poweremail
 #: view:poweremail.send.wizard:0
@@ -112,7 +142,14 @@ msgid ""
 "This is a demo email\n"
 "</body>\n"
 "</html>"
-msgstr "<!doctype html>\n<html>\n<head></head>\n<body>\nThis is a demo email\n</body>\n</html>"
+msgstr ""
+"<!doctype html>\n"
+"<html>\n"
+"<head></head>\n"
+"<body>\n"
+"This is a demo email\n"
+"</body>\n"
+"</html>"
 
 #. module: poweremail
 #: field:poweremail.core_accounts,state:0
@@ -134,7 +171,9 @@ msgstr "Actividad"
 msgid ""
 "Add here all attachments of the current document you want to include in the "
 "e-mail."
-msgstr "Añada aquí todos los archivos adjuntos del documento actual que desee incluir en el correo."
+msgstr ""
+"Añada aquí todos los archivos adjuntos del documento actual que desee "
+"incluir en el correo."
 
 #. module: poweremail
 #: view:poweremail.mailbox:0 view:poweremail.templates:0
@@ -146,7 +185,10 @@ msgstr "Avanzado"
 msgid ""
 "After clicking send all mails, mails will be sent to outbox and cleared in "
 "next Send/Recieve"
-msgstr "Después de hacer clic en \"Enviar todos los correos\", los correos se enviarán a la bandeja de salida y se eliminarán en el próximo \"Enviar/Recibir\"."
+msgstr ""
+"Después de hacer clic en \"Enviar todos los correos\", los correos se "
+"enviarán a la bandeja de salida y se eliminarán en el próximo "
+"\"Enviar/Recibir\"."
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_core_accounts_tree_all
@@ -164,7 +206,9 @@ msgstr "Todos los correos"
 #: view:ir.actions.server:0
 msgid ""
 "All values for the mail can be configured in the template editor itself."
-msgstr "Todos los valores del correo se pueden configurar en el editor de plantillas."
+msgstr ""
+"Todos los valores del correo se pueden configurar en el editor de "
+"plantillas."
 
 #. module: poweremail
 #: field:poweremail.core_accounts,allowed_groups:0
@@ -176,7 +220,8 @@ msgstr "Grupos de usuarios permitidos"
 #: code:addons/poweremail/poweremail_template.py:0
 #, python-format
 msgid "An error occurred while rendering template id {}:  {}"
-msgstr "Ha ocurrido un error mientras se renderizaba la plantilla con id {}:  {}"
+msgstr ""
+"Ha ocurrido un error mientras se renderizaba la plantilla con id {}:  {}"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -334,7 +379,9 @@ msgstr "Cancelar"
 #: code:addons/poweremail/poweremail_core.py:0
 #, python-format
 msgid "Cannot send mails of accounts {} when the addresses list is empty"
-msgstr "No se pueden enviar los correos de las cuentas {} cuando la lista de direcciones está vacía"
+msgstr ""
+"No se pueden enviar los correos de las cuentas {} cuando la lista de "
+"direcciones está vacía"
 
 #. module: poweremail
 #: model:ir.actions.act_window,name:poweremail.action_wizard_change_folder_email_form
@@ -365,7 +412,11 @@ msgid ""
 "optional attachment will be generated as a single file for all these r "
 "ecords). If you don't check it, an email with its optional attachment will "
 "be send for each record."
-msgstr "Marque esta opción si desea enviar un único correo electrónico para varios registros (el archivo adjunto opcional se generará como un único archivo para todos estos registros). Si no la marca, se enviará un correo electrónico con su archivo adjunto opcional para cada registro."
+msgstr ""
+"Marque esta opción si desea enviar un único correo electrónico para varios "
+"registros (el archivo adjunto opcional se generará como un único archivo "
+"para todos estos registros). Si no la marca, se enviará un correo "
+"electrónico con su archivo adjunto opcional para cada registro."
 
 #. module: poweremail
 #: help:poweremail.send.wizard,single_email:0
@@ -375,7 +426,11 @@ msgid ""
 "optional attachment will be generated as a single file for all these "
 "records). If you don't check it, an email with its optional attachment will "
 "be send for each record."
-msgstr "Marque esta opción si desea enviar un único correo para varios registros (el archivo adjunto opcional se generará como un único archivo para todos estos registros). Si no la marca, se enviará un correo con su archivo adjunto opcional para cada registro."
+msgstr ""
+"Marque esta opción si desea enviar un único correo para varios registros (el"
+" archivo adjunto opcional se generará como un único archivo para todos estos"
+" registros). Si no la marca, se enviará un correo con su archivo adjunto "
+"opcional para cada registro."
 
 #. module: poweremail
 #: view:poweremail.send.wizard:0
@@ -432,7 +487,9 @@ msgstr "Conversaciones son grupos de correos relacionados"
 #: help:poweremail.templates,copyvalue:0
 msgid ""
 "Copy and paste the value in the location you want to use a system value."
-msgstr "Copie y pegue el valor en la ubicación que quiera utilizar un valor del sistema."
+msgstr ""
+"Copie y pegue el valor en la ubicación que quiera utilizar un valor del "
+"sistema."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_template.py:0
@@ -445,7 +502,9 @@ msgstr "Copia de la plantilla"
 msgid ""
 "Copy this html code to your HTML message body for displaying the info in "
 "your mail."
-msgstr "Copie este código HTML en el cuerpo del mensaje HTML para mostrar la información en su correo electrónico."
+msgstr ""
+"Copie este código HTML en el cuerpo del mensaje HTML para mostrar la "
+"información en su correo electrónico."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -464,14 +523,19 @@ msgstr "La acción correspondiente de servidor está aquí."
 msgid ""
 "Could not create mail \"{subject}\" from Account \"{account.name}\".\n"
 "Description: {error}"
-msgstr "No se pudo crear el correo \"{subject}\" de la Cuenta \"{account.name}\".\nDescripción: {error}"
+msgstr ""
+"No se pudo crear el correo \"{subject}\" de la Cuenta \"{account.name}\".\n"
+"Descripción: {error}"
 
 #. module: poweremail
 #: help:poweremail.templates,send_on_create:0
 msgid ""
 "Create an e-mail when a new record is created. The instance where the record"
 " is created must be restarted for the changes to take effect."
-msgstr "Crear un correo electrónico cuando se cree un nuevo registro. La instancia en la que se crea el registro debe reiniciarse para que los cambios surtan efecto."
+msgstr ""
+"Crear un correo electrónico cuando se cree un nuevo registro. La instancia "
+"en la que se crea el registro debe reiniciarse para que los cambios surtan "
+"efecto."
 
 #. module: poweremail
 #: view:poweremail.templates:0
@@ -494,7 +558,9 @@ msgstr "Fecha de moodificación"
 msgid ""
 "Datetime Extraction failed. Date: %s\n"
 "Error: %s"
-msgstr "Extracción de fecha y hora ha fallado. Fecha: %s\nError: %s"
+msgstr ""
+"Extracción de fecha y hora ha fallado. Fecha: %s\n"
+"Error: %s"
 
 #. module: poweremail
 #: field:poweremail.templates,def_bcc:0
@@ -538,6 +604,11 @@ msgid "Discard Mail"
 msgstr "Cancelar"
 
 #. module: poweremail
+#: selection:poweremail.templates,template_language:0
+msgid "Django Template"
+msgstr "Plantilla de Django"
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_template.py:0
 #, python-format
 msgid "Django templates not installed"
@@ -558,6 +629,11 @@ msgstr "Descargar todo el correo"
 #, python-format
 msgid "Downloaded & saved %s attachments Account: %s."
 msgstr "Descargados y guardados %s adjuntos. Cuenta: %s."
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_esborrany
+msgid "Draft Emails"
+msgstr "Correos en borrador"
 
 #. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_drafts
@@ -607,7 +683,6 @@ msgid "Email Mailbox Conversation"
 msgstr "Conversación"
 
 #. module: poweremail
-#: field:ir.actions.report.xml,poweremail_template_ids:0
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_template_form
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_template_tree_all
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_templates_all
@@ -648,6 +723,16 @@ msgid "Email will be sent from this account."
 msgstr "El correo se enviará desde esta cuenta."
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_rebuts_avui
+msgid "Emails Received Today"
+msgstr "Correos recibidos hoy"
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_enviats_avui
+msgid "Emails Sent Today"
+msgstr "Correos enviados hoy"
+
+#. module: poweremail
 #: view:wizard.change.state.email:0
 msgid "Emails canviats d'estat!"
 msgstr "Estado de los correos cambiado!"
@@ -662,7 +747,9 @@ msgstr "Correos cambiados de buzón!"
 msgid ""
 "Emails created from this template will be sent immediately without going "
 "through outbox folder."
-msgstr "Los correos creados a partir de esta plantilla se enviarán inmediatamente sin pasar por la bandeja de salida."
+msgstr ""
+"Los correos creados a partir de esta plantilla se enviarán inmediatamente "
+"sin pasar por la bandeja de salida."
 
 #. module: poweremail
 #: view:wizard.send.email:0
@@ -722,12 +809,16 @@ msgstr "Fuerza desde la cuenta"
 #. module: poweremail
 #: help:poweremail.core_accounts,iserver:0
 msgid "Enter name of incoming server, eg: imap.gmail.com"
-msgstr "Introduzca el nombre de servidor del correo de entrada, por ejemplo: imap.gmail.com"
+msgstr ""
+"Introduzca el nombre de servidor del correo de entrada, por ejemplo: "
+"imap.gmail.com"
 
 #. module: poweremail
 #: help:poweremail.core_accounts,smtpserver:0
 msgid "Enter name of outgoing server, eg: smtp.gmail.com"
-msgstr "Escriba el nombre del servidor de correo de salida, por ejemplo: smtp.gmail.com"
+msgstr ""
+"Escriba el nombre del servidor de correo de salida, por ejemplo: "
+"smtp.gmail.com"
 
 #. module: poweremail
 #: help:poweremail.core_accounts,smtpport:0
@@ -800,6 +891,11 @@ msgid "Factura ${object.number}"
 msgstr "Factura ${object.number}"
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_en_error
+msgid "Failed Emails"
+msgstr "Correos fallidos"
+
+#. module: poweremail
 #: field:poweremail.templates,model_object_field:0
 msgid "Field"
 msgstr "Campo"
@@ -818,7 +914,9 @@ msgstr "Nombre del fichero"
 #: help:poweremail.templates,file_name:0
 msgid ""
 "File name pattern can be specified with placeholders. eg. 2009_SO003.pdf"
-msgstr "Patrón del nombre de fichero. Se puede especificar con expresiones de campos. Ejemplo: ${object.name}.pdf generaría 2009_SO003.pdf"
+msgstr ""
+"Patrón del nombre de fichero. Se puede especificar con expresiones de "
+"campos. Ejemplo: ${object.name}.pdf generaría 2009_SO003.pdf"
 
 #. module: poweremail
 #: field:poweremail.templates,filter:0 view:poweremail.templates:0
@@ -853,7 +951,9 @@ msgstr "Error carpeta"
 msgid ""
 "Folder to be used for downloading IMAP mails.\n"
 "Click on adjacent button to select from a list of folders."
-msgstr "Carpeta a usar para recibir los correos IMAP.\nSeleccione una de la lista de carpetas haciendo clic en el botón."
+msgstr ""
+"Carpeta a usar para recibir los correos IMAP.\n"
+"Seleccione una de la lista de carpetas haciendo clic en el botón."
 
 #. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_follow
@@ -917,7 +1017,8 @@ msgstr "Tiene adjuntos"
 #: code:addons/poweremail/poweremail_core.py:0
 #, python-format
 msgid "Header for Mail %s Saved successfully as ID: %s for Account: %s."
-msgstr "Cabecera del correo %s guardada correctamente con ID: %s para cuenta: %s."
+msgstr ""
+"Cabecera del correo %s guardada correctamente con ID: %s para cuenta: %s."
 
 #. module: poweremail
 #: selection:poweremail.mailbox,priority:0
@@ -1006,7 +1107,9 @@ msgstr "Error selección carpeta servidor IMAP. Cuenta: %s Error: %s."
 msgid ""
 "IMAP Server Folder Selection Error Account: %s Error: %s.\n"
 "Check account settings if you have selected a folder."
-msgstr "Error selección carpeta servidor IMAP. Cuenta: %s Error: %s.\nCompruebe si ha seleccionado una carpeta en la configuración de la cuenta."
+msgstr ""
+"Error selección carpeta servidor IMAP. Cuenta: %s Error: %s.\n"
+"Compruebe si ha seleccionado una carpeta en la configuración de la cuenta."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -1023,7 +1126,9 @@ msgstr "Error login servidor IMAP: {}"
 #. module: poweremail
 #: help:poweremail.templates,inline:0
 msgid "If the option is checked, the CSS will be inlined inside the HTML"
-msgstr "Si se marca la opción, el CSS se incrustará en los atributos de los elementos HTML"
+msgstr ""
+"Si se marca la opción, el CSS se incrustará en los atributos de los "
+"elementos HTML"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -1076,7 +1181,9 @@ msgstr "No se ha definido el servidor de entrada"
 msgid ""
 "Incoming server login attempt dropped Account: %s\n"
 "Check if Incoming server attributes are complete."
-msgstr "Intento de autenticación con el servidor de entrada abortado. Cuenta:%s.\nComprueba si los datos del servidor de entrada están completos."
+msgstr ""
+"Intento de autenticación con el servidor de entrada abortado. Cuenta:%s.\n"
+"Comprueba si los datos del servidor de entrada están completos."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -1084,7 +1191,9 @@ msgstr "Intento de autenticación con el servidor de entrada abortado. Cuenta:%s
 msgid ""
 "Incoming server login attempt dropped Account: %s Check if Incoming server "
 "attributes are complete."
-msgstr "Intento de autenticación con el servidor de entrada abortado. Cuenta: %s. Comprueba si los datos del servidor de entrada están completos."
+msgstr ""
+"Intento de autenticación con el servidor de entrada abortado. Cuenta: %s. "
+"Comprueba si los datos del servidor de entrada están completos."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -1141,7 +1250,10 @@ msgstr "Contenido variado"
 msgid ""
 "Invalid XML for View Architecture! Check server logs for details (view name,"
 " model, line number and RNG error)."
-msgstr "¡XML no válido para la arquitectura de la vista! Revisa los registros del servidor para obtener más detalles (nombre de la vista, modelo, número de línea y error RNG)."
+msgstr ""
+"¡XML no válido para la arquitectura de la vista! Revisa los registros del "
+"servidor para obtener más detalles (nombre de la vista, modelo, número de "
+"línea y error RNG)."
 
 #. module: poweremail
 #: constraint:ir.cron:0
@@ -1223,13 +1335,16 @@ msgstr "Excepción de extracción de correo"
 msgid ""
 "Mail from Account %s failed on login. Probable Reason: Could not login to server\n"
 "Error: %s"
-msgstr "El correo desde la cuenta %s ha fallado en la autenticación. Causa probable: No se puede autenticar al servidor\nError: %s"
+msgstr ""
+"El correo desde la cuenta %s ha fallado en la autenticación. Causa probable: No se puede autenticar al servidor\n"
+"Error: %s"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
 #, python-format
 msgid "Mail from Account %s failed. Probable Reason: Account not approved"
-msgstr "Correo desde la cuenta %s ha fallado. Motivo probable: Cuenta no aprobada."
+msgstr ""
+"Correo desde la cuenta %s ha fallado. Motivo probable: Cuenta no aprobada."
 
 #. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_mailbox_all_main2
@@ -1375,7 +1490,8 @@ msgstr "No hay asunto"
 #: code:addons/poweremail/poweremail_mailbox.py:0
 #, python-format
 msgid "No information on which mail should be fetched fully"
-msgstr "No existe información sobre que correo debería ser extraído completamente"
+msgstr ""
+"No existe información sobre que correo debería ser extraído completamente"
 
 #. module: poweremail
 #: code:addons/poweremail/wizard/wizard_poweremail_preview.py:0
@@ -1399,7 +1515,9 @@ msgstr "Nº de correos solicitados"
 msgid ""
 "No personal email accounts are configured for you. \n"
 "Either ask admin to enforce an account for this template or get yourself a personal power email account."
-msgstr "No se han configurado cuentas de correo personales para usted.\nSolicite al administrador que le proporcione una cuenta para esta plantilla o obtenga usted mismo una cuenta de correo personal de poweremail."
+msgstr ""
+"No se han configurado cuentas de correo personales para usted.\n"
+"Solicite al administrador que le proporcione una cuenta para esta plantilla o obtenga usted mismo una cuenta de correo personal de poweremail."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:0
@@ -1428,7 +1546,8 @@ msgstr "Correo de destino no válido"
 #. module: poweremail
 #: view:poweremail.templates:0
 msgid "Note: HTML body can't be edited with GTK desktop client."
-msgstr "Nota: El cuerpo HTML no se puede editar con el cliente de escritorio GTK."
+msgstr ""
+"Nota: El cuerpo HTML no se puede editar con el cliente de escritorio GTK."
 
 #. module: poweremail
 #: field:poweremail.templates,null_value:0
@@ -1440,7 +1559,10 @@ msgstr "Valor nulo"
 msgid ""
 "Number of days used to calculate the send count backwards from today. If "
 "empty or zero, all sent emails are taken into account."
-msgstr "Número de días utilizados para calcular el número de envíos hacia atrás desde hoy. Si está vacío o es cero, se tienen en cuenta todos los correos enviados."
+msgstr ""
+"Número de días utilizados para calcular el número de envíos hacia atrás "
+"desde hoy. Si está vacío o es cero, se tienen en cuenta todos los correos "
+"enviados."
 
 #. module: poweremail
 #: view:poweremail.send.wizard:0
@@ -1457,20 +1579,25 @@ msgstr "Aceptar"
 msgid ""
 "Only attach record attachments with the included categories in case there's "
 "any."
-msgstr "Adjuntar únicamente adjuntos del registro con las categorías incluidas en el caso de que haya alguna"
+msgstr ""
+"Adjuntar únicamente adjuntos del registro con las categorías incluidas en el"
+" caso de que haya alguna"
 
 #. module: poweremail
 #: help:poweremail.core_accounts,allowed_groups:0
 msgid ""
 "Only users from these groups will be allowed to send mails from this ID."
-msgstr "Sólo los usuarios de estos grupos pueden enviar correos desde esta cuenta."
+msgstr ""
+"Sólo los usuarios de estos grupos pueden enviar correos desde esta cuenta."
 
 #. module: poweremail
 #: help:poweremail.templates,allowed_groups:0
 msgid ""
 "Only users from these groups will be allowed to send mails from this "
 "Template."
-msgstr "Sólo los usuarios de estos grupos pueden enviar correos desde esta plantilla."
+msgstr ""
+"Sólo los usuarios de estos grupos pueden enviar correos desde esta "
+"plantilla."
 
 #. module: poweremail
 #: view:poweremail.templates:0
@@ -1557,13 +1684,22 @@ msgid ""
 "Placeholders can be used here. eg. ${object.partner_id.id}\n"
 "You must install the mail_gateway module to see the mail events in partner form.\n"
 "If you also want to record the link to the object that sends the email, you must to add this object in the 'Administration/Low Level Objects/Requests/Accepted Links in Requests' menu (or 'ir.attachment' to record the attachments)."
-msgstr "ID de empresa donde debe registrarse un evento de correo.\nSe pueden usar expresiones de campos. Por ej. ${object.partner_id.id}\nDebe instalar el módulo mail_gateway para ver los eventos de correo en el formulario de empresa.\nSi también desea guardar el enlace hacia el objeto que envía el correo, debe añadir este objeto en el menú 'Administración/Personalización/Objetos de bajo nivel/Solicitudes/Tipos de referencias en solicitudes' (o 'ir.attachment' para guardar los adjuntos)."
+msgstr ""
+"ID de empresa donde debe registrarse un evento de correo.\n"
+"Se pueden usar expresiones de campos. Por ej. ${object.partner_id.id}\n"
+"Debe instalar el módulo mail_gateway para ver los eventos de correo en el formulario de empresa.\n"
+"Si también desea guardar el enlace hacia el objeto que envía el correo, debe añadir este objeto en el menú 'Administración/Personalización/Objetos de bajo nivel/Solicitudes/Tipos de referencias en solicitudes' (o 'ir.attachment' para guardar los adjuntos)."
 
 #. module: poweremail
 #: field:poweremail.core_accounts,ispass:0
 #: field:poweremail.core_accounts,smtppass:0
 msgid "Password"
 msgstr "Contraseña"
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_per_enviar
+msgid "Pending Emails"
+msgstr "Correos pendientes"
 
 #. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_personal
@@ -1594,7 +1730,8 @@ msgstr "Texto plano y HTML sin adjunto"
 #: code:addons/poweremail/poweremail_serveraction.py:0
 #, python-format
 msgid "Please specify an template to use for auto email in poweremail!"
-msgstr "¡Indique una plantilla para usar para los correos automáticos en poweremail!"
+msgstr ""
+"¡Indique una plantilla para usar para los correos automáticos en poweremail!"
 
 #. module: poweremail
 #: field:poweremail.core_accounts,isport:0
@@ -1649,7 +1786,9 @@ msgstr "Entrada"
 #. module: poweremail
 #: model:ir.model,name:poweremail.model_poweremail_mailbox
 msgid "Power Email Mailbox included all type inbox,outbox,junk.."
-msgstr "Power Mail incluye todo tipo de buzones de correo: entrada, salida, basura, ..."
+msgstr ""
+"Power Mail incluye todo tipo de buzones de correo: entrada, salida, basura, "
+"..."
 
 #. module: poweremail
 #: view:poweremail.mailbox:0
@@ -1687,6 +1826,12 @@ msgid "Power Email Trash"
 msgstr "Papelera"
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_menu_poweremail_dashboard
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_dashboard
+msgid "Poweremail Dashboard"
+msgstr "Panel de control de Poweremail"
+
+#. module: poweremail
 #: model:ir.cron,name:poweremail.ir_cron_mail_scheduler_action
 msgid "Poweremail scheduler"
 msgstr "Planificador poweremail"
@@ -1722,7 +1867,9 @@ msgstr "Prioridad"
 msgid ""
 "Programming Error in _get_pop3_server method. The record received is "
 "invalid."
-msgstr "Error de programación en el método _get_pop3_server. El registro que se ha recibido no es valido."
+msgstr ""
+"Error de programación en el método _get_pop3_server. El registro que se ha "
+"recibido no es valido."
 
 #. module: poweremail
 #: view:poweremail.mailbox:0
@@ -1784,11 +1931,6 @@ msgstr "Acción de servidor relacionada"
 #: field:poweremail.core_accounts,user:0
 msgid "Related User"
 msgstr "Usuario relacionado"
-
-#. module: poweremail
-#: view:ir.actions.report.xml:0
-msgid "Related email templates"
-msgstr "Plantillas de correo relacionadas"
 
 #. module: poweremail
 #: view:poweremail.templates:0
@@ -1853,7 +1995,8 @@ msgstr "El test de la conexión SMTP ha sido un éxito"
 #: code:addons/poweremail/poweremail_core.py:0
 #, python-format
 msgid "Save Header -> Mailbox create error. Account: %s, Mail: %s, Error: %s"
-msgstr "Guardar cabecera -> Error al crear buzón. Cuenta: %s, Correo: %s, Error: %s"
+msgstr ""
+"Guardar cabecera -> Error al crear buzón. Cuenta: %s, Correo: %s, Error: %s"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -1899,7 +2042,9 @@ msgstr "Seleccione una carpeta antes de guardar el registro"
 msgid ""
 "Select if this mail account does not belong to specific user but the "
 "organisation as a whole. eg: info@somedomain.com"
-msgstr "Indica si esta cuenta de correo electrónico no pertenece a un usuario específico, si no a la organización. Por ejemplo: info@dominio.com"
+msgstr ""
+"Indica si esta cuenta de correo electrónico no pertenece a un usuario "
+"específico, si no a la organización. Por ejemplo: info@dominio.com"
 
 #. module: poweremail
 #: help:poweremail.templates,model_object_field:0
@@ -1907,14 +2052,19 @@ msgid ""
 "Select the field from the model you want to use.\n"
 "If it is a relationship field you will be able to choose the nested values in the box below.\n"
 "(Note: If there are no values make sure you have selected the correct model)."
-msgstr "Seleccione el campo del modelo que quiera utilizar.\nSi es un campo de relación podrá escoger los valores relacionados en la opción inferior.\n(Nota: Si no hay valores asegúrese de escoger el modelo correcto)."
+msgstr ""
+"Seleccione el campo del modelo que quiera utilizar.\n"
+"Si es un campo de relación podrá escoger los valores relacionados en la opción inferior.\n"
+"(Nota: Si no hay valores asegúrese de escoger el modelo correcto)."
 
 #. module: poweremail
 #: help:poweremail.templates,table_model_object_field:0
 msgid ""
 "Select the field from the model you want to use.\n"
 "Only one2many & many2many fields can be used for tables."
-msgstr "Seleccione el campo del modelo que quiera utilizar.\nSólo los campos one2many y many2many se pueden utilizar para las tablas."
+msgstr ""
+"Seleccione el campo del modelo que quiera utilizar.\n"
+"Sólo los campos one2many y many2many se pueden utilizar para las tablas."
 
 #. module: poweremail
 #: help:poweremail.templates,table_required_fields:0
@@ -1926,7 +2076,9 @@ msgstr "Seleccione los campos que necesite en la tabla."
 msgid ""
 "Selecting Auto Email will create a server action for you which automatically sends mail after a new record is created.\n"
 "Note: Auto email can be enabled only after saving template."
-msgstr "Si selecciona correo electrónico automático se creará una acción de servidor para que se envíe un correo después de crearse/actualizarse un registro.\nAtención: Se puede activar el correo automático sólo después de guardar la plantilla."
+msgstr ""
+"Si selecciona correo electrónico automático se creará una acción de servidor para que se envíe un correo después de crearse/actualizarse un registro.\n"
+"Atención: Se puede activar el correo automático sólo después de guardar la plantilla."
 
 #. module: poweremail
 #: field:poweremail.templates,send_count:0
@@ -2002,7 +2154,9 @@ msgstr "Enviando"
 msgid ""
 "Sending mail from Account {} failed.\n"
 "Description: {}"
-msgstr "El envio de correo desde la cuenta {} ha fallado.\nDescripción: {}"
+msgstr ""
+"El envio de correo desde la cuenta {} ha fallado.\n"
+"Descripción: {}"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:0
@@ -2010,7 +2164,9 @@ msgstr "El envio de correo desde la cuenta {} ha fallado.\nDescripción: {}"
 msgid ""
 "Sending of Mail %s failed. Probable Reason: Could not login to server\n"
 "Error: %s"
-msgstr "El envío del correo %s ha fallado. Probable razón: No se pudo conectar con el servidor\nError: %s"
+msgstr ""
+"El envío del correo %s ha fallado. Probable razón: No se pudo conectar con el servidor\n"
+"Error: %s"
 
 #. module: poweremail
 #: help:poweremail.templates,send_on_write:0
@@ -2053,7 +2209,9 @@ msgstr "Muestra la lista de carpetas IMAP"
 msgid ""
 "Si es marca aquesta opcio, s'enviaran com a fitxers adjunts del email tots "
 "els adjunts del registre utilitzat per renderitzar el email."
-msgstr "Si se marca esta opción, se enviarán como ficheros adjuntos del correo todos los adjuntos del registro indicado."
+msgstr ""
+"Si se marca esta opción, se enviarán como ficheros adjuntos del correo todos"
+" los adjuntos del registro indicado."
 
 #. module: poweremail
 #: selection:poweremail.send.wizard,state:0
@@ -2080,7 +2238,9 @@ msgstr "Establecer una conexión SMTP utilizando SSL (normalmente puerto 465)"
 #. module: poweremail
 #: help:poweremail.core_accounts,smtptls:0
 msgid "Start a TLS connection after the SMTP connection (Usually port 587)"
-msgstr "Establecer una conexión TLS después de la conexión SMTP (normalmente puerto 587)"
+msgstr ""
+"Establecer una conexión TLS después de la conexión SMTP (normalmente puerto "
+"587)"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -2197,7 +2357,9 @@ msgstr "Texto, en caso contrario HTML"
 #: constraint:ir.model:0
 msgid ""
 "The Object name must start with x_ and not contain any special character !"
-msgstr "¡El nombre del objeto debe empezar con x_ y no contener ningún carácter especial!"
+msgstr ""
+"¡El nombre del objeto debe empezar con x_ y no contener ningún carácter "
+"especial!"
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:0
@@ -2208,35 +2370,39 @@ msgstr "El contenido del correo no puede estar vacío"
 #. module: poweremail
 #: help:poweremail.templates,def_bcc:0
 msgid "The default BCC for the email. Placeholders can be used here."
-msgstr "El BCC por defecto del correo electrónico. Se pueden usar expresiones de campos."
+msgstr ""
+"El BCC por defecto del correo electrónico. Se pueden usar expresiones de "
+"campos."
 
 #. module: poweremail
 #: help:poweremail.templates,def_cc:0
 msgid "The default CC for the email. Placeholders can be used here."
-msgstr "El CC por defecto del correo electrónico. Se pueden usar expresiones de campos."
+msgstr ""
+"El CC por defecto del correo electrónico. Se pueden usar expresiones de "
+"campos."
 
 #. module: poweremail
 #: help:poweremail.templates,lang:0
 msgid ""
 "The default language for the email. Placeholders can be used here. eg. "
 "${object.partner_id.lang}"
-msgstr "El idioma por defecto del correo electrónico. Se pueden usar expresiones de campos, por ej. ${object.partner_id.lang}"
+msgstr ""
+"El idioma por defecto del correo electrónico. Se pueden usar expresiones de "
+"campos, por ej. ${object.partner_id.lang}"
 
 #. module: poweremail
 #: help:poweremail.templates,def_to:0
 msgid "The default recepient of email. Placeholders can be used here."
-msgstr "El destinatario por defecto del correo electrónico. Se pueden usar expresiones de campos."
+msgstr ""
+"El destinatario por defecto del correo electrónico. Se pueden usar "
+"expresiones de campos."
 
 #. module: poweremail
 #: help:poweremail.templates,def_subject:0
 msgid "The default subject of email. Placeholders can be used here."
-msgstr "El asunto por defecto del correo electrónico. Se pueden usar expresiones de campos."
-
-#. module: poweremail
-#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:0
-#, python-format
-msgid "The email address is not valid."
-msgstr "La dirección del correo no es válida."
+msgstr ""
+"El asunto por defecto del correo electrónico. Se pueden usar expresiones de "
+"campos."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_mailbox.py:0
@@ -2255,19 +2421,25 @@ msgstr "El correo debe tener una cuenta de envío."
 msgid ""
 "The file name must follow the format: TEXT.LANGUAGE.EXTENSION (for example: "
 "extraordinary_meeting.en_EN.pdf) to identify the document by language."
-msgstr "El nombre del archivo debe seguir el formato: TEXTO.IDIOMA.EXTENSION (por ejemplo: reunión_extraordinaria.es_ES.pdf) para identificar el documento por idioma."
+msgstr ""
+"El nombre del archivo debe seguir el formato: TEXTO.IDIOMA.EXTENSION (por "
+"ejemplo: reunión_extraordinaria.es_ES.pdf) para identificar el documento por"
+" idioma."
 
 #. module: poweremail
 #: help:poweremail.templates,filter:0
 msgid ""
 "The python code entered here will be excecuted if theresult is True the mail will be send if it false the mail won't be send.\n"
 "Example : o.type == 'out_invoice' and o.number and o.number[:3]<>'os_' "
-msgstr "El código python introducido aquí será ejecutado. Si el resultado es True el correo será enviado y si es False no se enviará.\nEjemplo : o.type == 'out_invoice' and o.number and o.number[:3]<>'os_' "
+msgstr ""
+"El código python introducido aquí será ejecutado. Si el resultado es True el correo será enviado y si es False no se enviará.\n"
+"Ejemplo : o.type == 'out_invoice' and o.number and o.number[:3]<>'os_' "
 
 #. module: poweremail
 #: help:poweremail.templates,use_sign:0
 msgid "The signature from the User details will be appened to the mail."
-msgstr "La firma del usuario (definida en sus preferencias) se añadirá al correo."
+msgstr ""
+"La firma del usuario (definida en sus preferencias) se añadirá al correo."
 
 #. module: poweremail
 #: code:addons/poweremail/poweremail_core.py:0
@@ -2312,14 +2484,17 @@ msgstr "Este es el asistente para enviar correo electrónico"
 #: help:poweremail.templates,use_filter:0
 msgid ""
 "This option allow you to add a custom python filter before sending a mail"
-msgstr "This option allow you to add a custom python filter before sending a mail"
+msgstr ""
+"This option allow you to add a custom python filter before sending a mail"
 
 #. module: poweremail
 #: view:poweremail.send.wizard:0
 msgid ""
 "Tip: Multiple emails are sent in the same language (the first one is "
 "proposed). We suggest you send emails in groups according to langu age."
-msgstr "Consejo: Los correos múltiples se envían en el mismo idioma (se propone el primero). Le recomendamos enviar los correos en grupos según el idioma."
+msgstr ""
+"Consejo: Los correos múltiples se envían en el mismo idioma (se propone el "
+"primero). Le recomendamos enviar los correos en grupos según el idioma."
 
 #. module: poweremail
 #: field:poweremail.preview,to:0 field:poweremail.send.wizard,to:0
@@ -2385,7 +2560,9 @@ msgstr "Aviso"
 msgid ""
 "When a relation field is used this field will show you the type of field you"
 " have selected."
-msgstr "Cuando se utiliza un campo de relación, este campo mostrará el tipo de campo que ha seleccionado."
+msgstr ""
+"Cuando se utiliza un campo de relación, este campo mostrará el tipo de campo"
+" que ha seleccionado."
 
 #. module: poweremail
 #: help:poweremail.preview,save_to_drafts_prev:0
@@ -2393,14 +2570,19 @@ msgstr "Cuando se utiliza un campo de relación, este campo mostrará el tipo de
 msgid ""
 "When automatically sending emails generated from this template, save them "
 "into the Drafts folder rather than sending them immediately."
-msgstr "Cuando se envian correos electrónico generados automáticamentes a partir de esta plantilla, se guardan en la carpeta Borradores en lugar de enviarlos inmediatamente."
+msgstr ""
+"Cuando se envian correos electrónico generados automáticamentes a partir de "
+"esta plantilla, se guardan en la carpeta Borradores en lugar de enviarlos "
+"inmediatamente."
 
 #. module: poweremail
 #: help:poweremail.templates,sub_model_object_field:0
 msgid ""
 "When you choose relationship fields this field will specify the sub value "
 "you can use."
-msgstr "Cuando seleccione campos de relación, este campo indicará el sub-valor que puede utilizar."
+msgstr ""
+"Cuando seleccione campos de relación, este campo indicará el sub-valor que "
+"puede utilizar."
 
 #. module: poweremail
 #: field:poweremail.templates,ref_ir_act_window:0

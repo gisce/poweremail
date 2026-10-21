@@ -510,6 +510,11 @@ msgid "Discard Mail"
 msgstr ""
 
 #. module: poweremail
+#: selection:poweremail.templates,template_language:0
+msgid "Django Template"
+msgstr ""
+
+#. module: poweremail
 #: code:addons/poweremail/poweremail_template.py:0
 #, python-format
 msgid "Django templates not installed"
@@ -529,6 +534,11 @@ msgstr ""
 #: code:addons/poweremail/poweremail_core.py:0
 #, python-format
 msgid "Downloaded & saved %s attachments Account: %s."
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_esborrany
+msgid "Draft Emails"
 msgstr ""
 
 #. module: poweremail
@@ -579,7 +589,6 @@ msgid "Email Mailbox Conversation"
 msgstr ""
 
 #. module: poweremail
-#: field:ir.actions.report.xml,poweremail_template_ids:0
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_template_form
 #: model:ir.actions.act_window,name:poweremail.action_poweremail_template_tree_all
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_templates_all
@@ -617,6 +626,16 @@ msgstr ""
 #. module: poweremail
 #: help:poweremail.preview,enforce_from_account:0
 msgid "Email will be sent from this account."
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_rebuts_avui
+msgid "Emails Received Today"
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_enviats_avui
+msgid "Emails Sent Today"
 msgstr ""
 
 #. module: poweremail
@@ -769,6 +788,11 @@ msgstr ""
 #. module: poweremail
 #: model:poweremail.templates,def_subject:poweremail.default_template_poweremail_2
 msgid "Factura ${object.number}"
+msgstr ""
+
+#. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_en_error
+msgid "Failed Emails"
 msgstr ""
 
 #. module: poweremail
@@ -1524,6 +1548,11 @@ msgid "Password"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_poweremail_emails_per_enviar
+msgid "Pending Emails"
+msgstr ""
+
+#. module: poweremail
 #: model:ir.ui.menu,name:poweremail.menu_poweremail_personal
 msgid "Personal"
 msgstr ""
@@ -1645,6 +1674,12 @@ msgid "Power Email Trash"
 msgstr ""
 
 #. module: poweremail
+#: model:ir.actions.act_window,name:poweremail.action_menu_poweremail_dashboard
+#: model:ir.ui.menu,name:poweremail.menu_poweremail_dashboard
+msgid "Poweremail Dashboard"
+msgstr ""
+
+#. module: poweremail
 #: model:ir.cron,name:poweremail.ir_cron_mail_scheduler_action
 msgid "Poweremail scheduler"
 msgstr ""
@@ -1741,11 +1776,6 @@ msgstr ""
 #. module: poweremail
 #: field:poweremail.core_accounts,user:0
 msgid "Related User"
-msgstr ""
-
-#. module: poweremail
-#: view:ir.actions.report.xml:0
-msgid "Related email templates"
 msgstr ""
 
 #. module: poweremail
@@ -2180,12 +2210,6 @@ msgstr ""
 #. module: poweremail
 #: help:poweremail.templates,def_subject:0
 msgid "The default subject of email. Placeholders can be used here."
-msgstr ""
-
-#. module: poweremail
-#: code:addons/poweremail/wizard/wizard_poweremail_preview.py:0
-#, python-format
-msgid "The email address is not valid."
 msgstr ""
 
 #. module: poweremail
