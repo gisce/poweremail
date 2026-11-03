@@ -60,6 +60,171 @@ class TestPoweremailMailbox(testing.OOTestCase):
         tmpl_id = tmpl_obj.create(cursor, uid, vals)
         return tmpl_id
 
+    def mail_values(self, account_id, **extra_vals):
+        vals = {
+            'pem_from': 'Original account<original@example.net>',
+            'pem_to': 'recipient@unmatched.example',
+            'pem_subject': 'Test email routing',
+            'pem_body_text': 'Test body',
+            'pem_account_id': account_id,
+            'folder': 'outbox',
+            'state': 'na',
+        }
+        vals.update(extra_vals)
+        return vals
+
+    def test_force_account_for_recipient_domain(self):
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            account_obj = self.openerp.pool.get('poweremail.core_accounts')
+            domain_obj = self.openerp.pool.get('poweremail.account.domain')
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            original_account_id = self.create_account(cursor, uid, {
+                'name': 'Original account',
+                'email_id': 'original@example.net',
+            })
+            forced_account_id = self.create_account(cursor, uid, {
+                'name': u'Compte d’enviament',
+                'email_id': 'forced@example.net',
+            })
+            domain_id = domain_obj.create(cursor, uid, {
+                'domain': ' @Example.ORG. ',
+                'account_id': forced_account_id,
+            })
+
+            domain = domain_obj.read(cursor, uid, domain_id, ['domain'])
+            self.assertEqual(domain['domain'], 'example.org')
+
+            mail_id = mailbox_obj.create(cursor, uid, self.mail_values(
+                original_account_id,
+                pem_to='Recipient <recipient@EXAMPLE.ORG>',
+            ))
+            mail = mailbox_obj.read(
+                cursor, uid, mail_id, ['pem_account_id', 'pem_from']
+            )
+
+            self.assertEqual(mail['pem_account_id'][0], forced_account_id)
+            self.assertEqual(
+                mail['pem_from'], u'Compte d’enviament<forced@example.net>'
+            )
+            forced_account = account_obj.read(
+                cursor, uid, forced_account_id, ['forced_domain_ids']
+            )
+            self.assertEqual(forced_account['forced_domain_ids'], [domain_id])
+
+    def test_force_account_checks_cc_and_bcc_domains(self):
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            domain_obj = self.openerp.pool.get('poweremail.account.domain')
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            original_account_id = self.create_account(cursor, uid, {
+                'name': 'Original account',
+                'email_id': 'original@example.net',
+            })
+            forced_account_id = self.create_account(cursor, uid, {
+                'name': 'Forced account',
+                'email_id': 'forced@example.net',
+            })
+            domain_obj.create(cursor, uid, {
+                'domain': 'example.org',
+                'account_id': forced_account_id,
+            })
+
+            cc_mail_id = mailbox_obj.create(cursor, uid, self.mail_values(
+                original_account_id,
+                pem_cc='copy@example.org',
+            ))
+            bcc_mail_id = mailbox_obj.create(cursor, uid, self.mail_values(
+                original_account_id,
+                pem_bcc='hidden@example.org',
+            ))
+
+            for mail_id in (cc_mail_id, bcc_mail_id):
+                mail = mailbox_obj.read(
+                    cursor, uid, mail_id, ['pem_account_id']
+                )
+                self.assertEqual(mail['pem_account_id'][0], forced_account_id)
+
+    def test_force_account_keeps_unmatched_and_incoming_accounts(self):
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            domain_obj = self.openerp.pool.get('poweremail.account.domain')
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            original_account_id = self.create_account(cursor, uid, {
+                'name': 'Original account',
+                'email_id': 'original@example.net',
+            })
+            forced_account_id = self.create_account(cursor, uid, {
+                'name': 'Forced account',
+                'email_id': 'forced@example.net',
+            })
+            domain_obj.create(cursor, uid, {
+                'domain': 'example.org',
+                'account_id': forced_account_id,
+            })
+
+            unmatched_mail_id = mailbox_obj.create(
+                cursor, uid, self.mail_values(original_account_id)
+            )
+            incoming_mail_id = mailbox_obj.create(cursor, uid, self.mail_values(
+                original_account_id,
+                pem_from='external@example.com',
+                pem_to='recipient@example.org',
+                folder='inbox',
+                state='unread',
+            ))
+
+            for mail_id in (unmatched_mail_id, incoming_mail_id):
+                mail = mailbox_obj.read(
+                    cursor, uid, mail_id, ['pem_account_id']
+                )
+                self.assertEqual(mail['pem_account_id'][0], original_account_id)
+
+    def test_force_account_rejects_conflicting_recipient_domains(self):
+        with Transaction().start(self.database) as txn:
+            cursor = txn.cursor
+            uid = txn.user
+            domain_obj = self.openerp.pool.get('poweremail.account.domain')
+            mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+
+            original_account_id = self.create_account(cursor, uid, {
+                'name': 'Original account',
+                'email_id': 'original@example.net',
+            })
+            first_account_id = self.create_account(cursor, uid, {
+                'name': 'First forced account',
+                'email_id': 'first@example.net',
+            })
+            second_account_id = self.create_account(cursor, uid, {
+                'name': 'Second forced account',
+                'email_id': 'second@example.net',
+            })
+            domain_obj.create(cursor, uid, {
+                'domain': 'first.example',
+                'account_id': first_account_id,
+            })
+            domain_obj.create(cursor, uid, {
+                'domain': 'second.example',
+                'account_id': second_account_id,
+            })
+
+            with self.assertRaises(Exception) as raised:
+                mailbox_obj.create(cursor, uid, self.mail_values(
+                    original_account_id,
+                    pem_to=(
+                        'one@first.example, two@second.example'
+                    ),
+                ))
+            self.assertIn(
+                'different sending accounts', str(raised.exception)
+            )
+
     def test_poweremail_n_mails_per_batch(self, extra_vals=None):
         self.openerp.install_module('base_extended')
 
