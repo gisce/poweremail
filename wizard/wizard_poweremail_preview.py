@@ -149,9 +149,9 @@ class poweremail_preview(osv.osv_memory):
             "Template reference", selection=_ref_models,
             size=64, required=True
         ),
-        'to': fields.char('To', size=250, readonly=True),
-        'cc': fields.char('CC', size=250, readonly=True),
-        'bcc': fields.char('BCC', size=250, readonly=True),
+        'to': fields.text('To', readonly=True),
+        'cc': fields.text('CC', readonly=True),
+        'bcc': fields.text('BCC', readonly=True),
         'subject': fields.char('Subject', size=200, readonly=True),
         'lang': fields.char('Language', size=6, readonly=True),
         'body_text': fields.text('Body', readonly=True),

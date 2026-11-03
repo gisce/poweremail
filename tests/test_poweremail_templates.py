@@ -8,6 +8,82 @@ from datetime import datetime, timedelta
 
 class TestPoweremailTemplates(testing.OOTestCaseWithCursor):
 
+    def test_recipient_fields_accept_long_values(self):
+        recipients = ', '.join(
+            'recipient{0}@example.com'.format(index)
+            for index in range(50)
+        )
+        recipient_fields = ('to', 'cc', 'bcc')
+
+        template_obj = self.openerp.pool.get('poweremail.templates')
+        template_id = self.create_template(dict(
+            ('def_' + field, recipients) for field in recipient_fields
+        ))
+        template = template_obj.read(
+            self.cursor, self.uid, template_id,
+            ['def_' + field for field in recipient_fields]
+        )
+        for field in recipient_fields:
+            self.assertEqual(template['def_' + field], recipients)
+
+        mailbox_obj = self.openerp.pool.get('poweremail.mailbox')
+        mailbox_values = dict(
+            ('pem_' + field, recipients) for field in recipient_fields
+        )
+        mailbox_values['pem_subject'] = 'Long recipient list'
+        mailbox_values['pem_account_id'] = template_obj.browse(
+            self.cursor, self.uid, template_id
+        ).enforce_from_account.id
+        mailbox_id = mailbox_obj.create(
+            self.cursor, self.uid, mailbox_values
+        )
+        mailbox = mailbox_obj.read(
+            self.cursor, self.uid, mailbox_id,
+            ['pem_' + field for field in recipient_fields]
+        )
+        for field in recipient_fields:
+            self.assertEqual(mailbox['pem_' + field], recipients)
+
+        imd_obj = self.openerp.pool.get('ir.model.data')
+        partner_id = imd_obj.get_object_reference(
+            self.cursor, self.uid, 'base', 'res_partner_asus'
+        )[1]
+        wizard_context = {
+            'active_id': partner_id,
+            'active_ids': [partner_id],
+            'src_rec_ids': [partner_id],
+            'src_model': 'res.partner',
+            'template_id': template_id,
+        }
+        send_obj = self.openerp.pool.get('poweremail.send.wizard')
+        send_id = send_obj.create(self.cursor, self.uid, {
+            field: recipients for field in recipient_fields
+        }, context=wizard_context)
+        send = send_obj.read(
+            self.cursor, self.uid, send_id, list(recipient_fields)
+        )[0]
+        for field in recipient_fields:
+            self.assertEqual(send[field], recipients)
+
+        preview_obj = self.openerp.pool.get('poweremail.preview')
+        preview_id = preview_obj.create(
+            self.cursor, self.uid,
+            dict(
+                [('model_ref', 'res.partner,{0}'.format(partner_id))] + [
+                    (field, recipients) for field in recipient_fields
+                ]
+            ),
+            context={
+                'active_id': template_id,
+                'active_ids': [template_id],
+            }
+        )
+        preview = preview_obj.read(
+            self.cursor, self.uid, preview_id, list(recipient_fields)
+        )[0]
+        for field in recipient_fields:
+            self.assertEqual(preview[field], recipients)
+
     def create_account(self, extra_vals=None):
         acc_obj = self.openerp.pool.get('poweremail.core_accounts')
         cursor = self.cursor
