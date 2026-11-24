@@ -27,6 +27,7 @@ from osv import osv, fields
 import netsvc
 import base64
 import time
+import six
 from tools.translate import _
 import tools
 from .poweremail_template import get_value
@@ -409,8 +410,8 @@ class poweremail_send_wizard(osv.osv_memory):
         # Create a partner event
         if template.partner_event and self._get_template_value(cr, uid, 'partner_event', context=context):
             name = vals['pem_subject']
-            if isinstance(name, str):
-                name = unicode(name, 'utf-8')
+            if isinstance(name, six.binary_type):
+                name = six.text_type(name, 'utf-8')
             if len(name) > 64:
                 name = name[:61] + '...'
             model = res_id = False

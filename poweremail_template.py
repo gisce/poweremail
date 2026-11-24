@@ -1006,8 +1006,8 @@ class poweremail_templates(osv.osv):
         @return: True
         """
         name = mail.pem_subject
-        if isinstance(name, str):
-            name = unicode(name, 'utf-8')
+        if isinstance(name, six.binary_type):
+            name = six.text_type(name, 'utf-8')
         if len(name) > 64:
             name = name[:61] + '...'
         model = res_id = False
